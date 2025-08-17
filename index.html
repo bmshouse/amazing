@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CalmMaze FPS (Teen-safe)</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="game" aria-label="Game canvas"></canvas>
+
+  <!-- HUD Overlay -->
+  <div id="hud" role="region" aria-label="Heads-up display">
+    <div class="row top">
+      <div class="hud-group">
+        <span class="label">Time:</span>
+        <span id="timer" aria-live="polite">00:00</span>
+      </div>
+      <div class="hud-group">
+        <span class="label">Sensitivity</span>
+        <input id="sensitivity" type="range" min="0.1" max="1.5" value="0.5" step="0.05" aria-label="Mouse sensitivity">
+      </div>
+      <div class="hud-group">
+        <label class="switch">
+          <input id="audioToggle" type="checkbox" checked>
+          <span class="slider"></span>
+        </label>
+        <span class="label">Audio</span>
+      </div>
+    </div>
+
+    <div class="row bottom">
+      <div class="hud-group ammo">
+        <div class="ammo-row">
+          <span class="label">Taser</span><div id="ammo-taser" class="bar"><span></span></div>
+          <span class="label small">[1]</span>
+        </div>
+        <div class="ammo-row">
+          <span class="label">Stun</span><div id="ammo-stun" class="bar"><span></span></div>
+          <span class="label small">[2]</span>
+        </div>
+        <div class="ammo-row">
+          <span class="label">Tranquil</span><div id="ammo-tranq" class="bar"><span></span></div>
+          <span class="label small">[3]</span>
+        </div>
+      </div>
+      <div id="subtitles" aria-live="polite"></div>
+    </div>
+
+    <div id="tutorial" class="panel" role="dialog" aria-modal="false" aria-live="polite">
+      <h2>Welcome!</h2>
+      <ol>
+        <li>W/A/S/D or arrow keys to move. Hold <b>Shift</b> to glide faster.</li>
+        <li>Move mouse to look. Keyboard-only? Use <b>Q/E</b> to turn.</li>
+        <li>Find the glowing exit before the timer runs out.</li>
+        <li>Friendly critters will gently <i>boop</i> you back. Use tools:
+          <ul>
+            <li><b>1</b> Taser (short-range stun)</li>
+            <li><b>2</b> Stun Launcher (slow orb)</li>
+            <li><b>3</b> Tranquilizer (sleepy dart)</li>
+          </ul>
+        </li>
+        <li>Step on recharge pads to refill tools.</li>
+      </ol>
+      <p>Press <b>Enter</b> to start. Press <b>R</b> to restart.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { bootstrap } from './main.js';
+    const params = new URLSearchParams(location.search);
+    bootstrap({ dev: params.get('dev') === '1' });
+  </script>
+</body>
+</html>
