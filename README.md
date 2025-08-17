@@ -1,4 +1,4 @@
-# CalmMaze FPS (Teen-Safe Browser FPS)
+# Amazing FPS
 
 Open `index.html` in any modern browser (Chrome, Edge, Firefox, Safari). No build step required for the playable demo.
 
