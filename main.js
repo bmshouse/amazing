@@ -3,6 +3,7 @@ import { Maze } from './modules/maze.js';
 import { PlayerController } from './modules/player.js';
 import { Defenses } from './modules/defenses.js';
 import { EnemyController } from './modules/enemies.js';
+import { generateWallTexture, generateBrickTexture } from './textures/wall-texture.js';
 
 export function bootstrap({ dev=false } = {}) {
   const canvas = document.getElementById('game');
@@ -66,6 +67,10 @@ export function bootstrap({ dev=false } = {}) {
   const mazeSize = 21; // odd number for perfect maze
   let maze = new Maze(mazeSize, mazeSize);
   maze.generate();
+
+  // Generate wall textures
+  const wallTexture = generateWallTexture(64, 64);
+  const brickTexture = generateBrickTexture(64, 64);
 
   const player = new PlayerController(maze);
   const enemies = new EnemyController(maze, player);
@@ -207,8 +212,31 @@ export function bootstrap({ dev=false } = {}) {
         const h = Math.min(H, (H / dist)|0);
         const y0 = ((H - h) / 2)|0;
         const shade = Math.max(0, 1 - dist/RC.maxDepth);
-        ctx.fillStyle = `rgba(${(60+80*shade)|0}, ${(140+40*shade)|0}, ${(200+20*shade)|0}, 1)`;
+
+        // Choose texture based on wall position (checkerboard pattern)
+        const texture = ((Math.floor(hit.nx) + Math.floor(hit.ny)) % 2 === 0) ? wallTexture : brickTexture;
+
+        // Calculate texture coordinates for proper wall texturing
+        // Use fractional part for texture sampling, scaled for better detail
+        const textureX = ((hit.nx % 1) * (texture.width - 1)) | 0;
+        const textureY = 0;
+        const textureW = 1;
+        const textureH = texture.height;
+
+        // Draw textured wall column
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.drawImage(
+          texture,
+          textureX, textureY, textureW, textureH, // source
+          x, y0, RC.columnStep, h // destination
+        );
+
+        // Apply distance-based shading overlay
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillStyle = `rgba(${(60+80*shade)|0}, ${(140+40*shade)|0}, ${(200+20*shade)|0}, 0.7)`;
         ctx.fillRect(x, y0, RC.columnStep, h);
+        ctx.restore();
       }
     }
 
