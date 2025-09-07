@@ -292,6 +292,11 @@ export function bootstrap({ dev=false } = {}) {
     const angleTo = Math.atan2(dy, dx) - player.a;
     const behind = Math.cos(angleTo) <= 0;
     if (behind) return;
+    // Check if the object is behind a wall using raycasting, but only for pads and entities
+    if (color !== '#7ee081') { // Exit color, skip check for exit
+      const hit = castRay(player.x, player.y, angleTo + player.a);
+      if (hit && hit.dist < dist) return; // Wall is closer than the object, don't render
+    }
     const proj = (H / dist) * size;
     const sx = Math.tan(angleTo) / Math.tan(RC.fov/2) * (W/2) + (W/2);
     const sy = H/2;
