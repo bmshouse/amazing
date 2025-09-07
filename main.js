@@ -72,6 +72,15 @@ export function bootstrap({ dev=false } = {}) {
   const wallTexture = generateWallTexture(64, 64);
   const brickTexture = generateBrickTexture(64, 64);
 
+  // Set entity colors
+  const exitDoorColor = '#a8f8abff';
+  const rechargePadColor = '#2b1bbdff';
+  const entityStunnedColor = '#ffd166';
+  const entityTranqColor = '#a29bfe';
+  const entitySlowedColor = '#00d1ff';
+  const entityColor = '#f0134aff';
+
+
   const player = new PlayerController(maze);
   const enemies = new EnemyController(maze, player);
   const defenses = new Defenses(player, enemies, audio, hud);
@@ -243,13 +252,13 @@ export function bootstrap({ dev=false } = {}) {
     // Sprites: enemies, recharge pads, exit
     // Exit
     if (maze.exit) {
-      drawBillboard(maze.exit.centerX, maze.exit.centerY, 0.6, '#7ee081');
+      drawBillboard(maze.exit.centerX, maze.exit.centerY, 0.6, exitDoorColor);
     }
     // Pads
-    maze.pads.forEach(p=> drawBillboard(p.x+0.5, p.y+0.5, 0.5, '#2bd4c5'));
+    maze.pads.forEach(p=> drawBillboard(p.x+0.5, p.y+0.5, 0.5, rechargePadColor));
     // Enemies
     enemies.entities.forEach(e=>{
-      const col = e.state==='stunned' ? '#ffd166' : e.state==='tranq' ? '#a29bfe' : e.state==='slowed' ? '#00d1ff' : '#ff8fab';
+      const col = e.state==='stunned' ? entityStunnedColor : e.state==='tranq' ? entityTranqColor : e.state==='slowed' ? entitySlowedColor : entityColor;
       drawBillboard(e.x, e.y, 0.6, col);
     });
 
@@ -265,8 +274,8 @@ export function bootstrap({ dev=false } = {}) {
     // Crosshair
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = '#e2e2e2';
-    ctx.fillRect(W/2-6, H/2, 12, 2);
-    ctx.fillRect(W/2, H/2-6, 2, 12);
+    ctx.fillRect(W/2-5, H/2, 12, 2);
+    ctx.fillRect(W/2, H/2-5, 2, 12);
     ctx.globalAlpha = 1;
   }
 
@@ -293,7 +302,7 @@ export function bootstrap({ dev=false } = {}) {
     const behind = Math.cos(angleTo) <= 0;
     if (behind) return;
     // Check if the object is behind a wall using raycasting, but only for pads and entities
-    if (color !== '#7ee081') { // Exit color, skip check for exit
+    if (color !== exitDoorColor) { // Exit color, skip check for exit
       const hit = castRay(player.x, player.y, angleTo + player.a);
       if (hit && hit.dist < dist) return; // Wall is closer than the object, don't render
     }
@@ -303,7 +312,11 @@ export function bootstrap({ dev=false } = {}) {
     ctx.globalAlpha = alpha * Math.max(0.3, 1 - dist/RC.maxDepth);
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.ellipse(sx, sy, proj, proj*1.2, 0, 0, Math.PI*2);
+    if (color !== exitDoorColor) {
+      ctx.ellipse(sx, sy, proj, proj*1.2, 0, 0, Math.PI*2);
+    } else {
+      ctx.rect(sx, sy, proj, proj*1.2);
+    }
     ctx.fill();
     ctx.globalAlpha = 1;
   }
