@@ -218,23 +218,42 @@ export function bootstrap({ dev=false } = {}) {
       const hit = castRay(player.x, player.y, rayAngle);
       if (hit) {
         const dist = hit.dist * Math.cos(rayAngle - player.a); // de-fish-eye
-        const h = Math.min(H, (H / dist)|0);
+        const clampedDist = Math.max(0.1, dist); // Prevent texture distortion when very close to walls
+        const h = Math.min(H, (H / clampedDist)|0);
         const y0 = ((H - h) / 2)|0;
-        const shade = Math.max(0, 1 - dist/RC.maxDepth);
+        const shade = Math.max(0, 1 - clampedDist/RC.maxDepth);
 
         // Choose texture based on wall position (checkerboard pattern)
         const texture = ((Math.floor(hit.nx) + Math.floor(hit.ny)) % 2 === 0) ? wallTexture : brickTexture;
 
-        // Calculate texture coordinates for proper wall texturing
-        // Use fractional part for texture sampling, scaled for better detail
-        const textureX = ((hit.nx % 1) * (texture.width - 1)) | 0;
-        const textureY = 0;
-        const textureW = 1;
-        const textureH = texture.height;
+        // Calculate texture coordinates that are fixed to world position
+        // Determine which side of the wall we hit for proper texture mapping
+        let wallU; // texture coordinate along the wall surface
+        if (Math.abs(hit.nx - Math.floor(hit.nx + 0.5)) < 0.01) {
+          // Hit vertical wall (north/south facing)
+          wallU = hit.ny % 1;
+        } else {
+          // Hit horizontal wall (east/west facing)
+          wallU = hit.nx % 1;
+        }
+
+        // Map wall position to texture coordinate - this stays fixed as player moves
+        const textureX = Math.floor(wallU * texture.width) % texture.width;
+
+        // Calculate vertical texture coordinate based on screen position
+        // Use a fixed texture scale so textures don't change size with distance
+        const textureScale = 64; // Fixed scale - adjust to make textures larger/smaller
+        const wallHeightInTexels = h / textureScale;
+        const textureV = 0; // Start from top of texture
+
+        const textureY = Math.floor(textureV * texture.height) % texture.height;
+        const textureW = 1; // Sample 1 pixel width
+        const textureH = Math.min(texture.height, Math.ceil(wallHeightInTexels));
 
         // Draw textured wall column
         ctx.save();
         ctx.globalAlpha = 1;
+
         ctx.drawImage(
           texture,
           textureX, textureY, textureW, textureH, // source
