@@ -198,72 +198,112 @@ export function bootstrap({ dev=false } = {}) {
   requestAnimationFrame(loop);
 
   function render() {
-    // Clear
+    // Clear the entire canvas with dark background color
     ctx.fillStyle = '#0b0e1d';
-    ctx.fillRect(0,0,W,H);
-    // Sky / floor gradient (colorblind-safe hues)
-    const sky = ctx.createLinearGradient(0,0,0,H/2);
-    sky.addColorStop(0,'#1c2050');
-    sky.addColorStop(1,'#2a2f4a');
-    ctx.fillStyle = sky; ctx.fillRect(0,0,W,H/2);
-    const floor = ctx.createLinearGradient(0,H/2,0,H);
-    floor.addColorStop(0,'#111728');
-    floor.addColorStop(1,'#0b0e1d');
-    ctx.fillStyle = floor; ctx.fillRect(0,H/2,W,H/2);
+    ctx.fillRect(0, 0, W, H);
 
-    // Rays
-    const angleStep = RC.fov / W;
-    let rayAngle = player.a - RC.fov/2;
-    for (let x=0; x<W; x+=RC.columnStep, rayAngle+=angleStep*RC.columnStep) {
-      const hit = castRay(player.x, player.y, rayAngle);
-      if (hit) {
-        const dist = hit.dist * Math.cos(rayAngle - player.a); // de-fish-eye
-        const clampedDist = Math.max(0.1, dist); // Prevent texture distortion when very close to walls
-        const h = Math.min(H, (H / clampedDist)|0);
-        const y0 = ((H - h) / 2)|0;
-        const shade = Math.max(0, 1 - clampedDist/RC.maxDepth);
+    // Draw sky gradient in upper half of screen (ceiling area)
+    const skyGradient = ctx.createLinearGradient(0, 0, 0, H/2);
+    skyGradient.addColorStop(0, '#1c2050'); // Darker blue at top
+    skyGradient.addColorStop(1, '#2a2f4a'); // Lighter blue at horizon
+    ctx.fillStyle = skyGradient;
+    ctx.fillRect(0, 0, W, H/2);
 
-        // Choose texture based on wall position (checkerboard pattern)
-        const texture = ((Math.floor(hit.nx) + Math.floor(hit.ny)) % 2 === 0) ? wallTexture : brickTexture;
+    // Draw floor gradient in lower half of screen
+    const floorGradient = ctx.createLinearGradient(0, H/2, 0, H);
+    floorGradient.addColorStop(0, '#111728'); // Lighter at horizon line
+    floorGradient.addColorStop(1, '#0b0e1d'); // Darker at bottom
+    ctx.fillStyle = floorGradient;
+    ctx.fillRect(0, H/2, W, H/2);
 
-        // Calculate texture coordinates that are fixed to world position
-        // Determine which side of the wall we hit for proper texture mapping
-        let wallU; // texture coordinate along the wall surface
-        if (Math.abs(hit.nx - Math.floor(hit.nx + 0.5)) < 0.01) {
-          // Hit vertical wall (north/south facing)
-          wallU = hit.ny % 1;
+    // RAYCASTING WALL RENDERING
+    // Calculate angular step between rays - spread field of view across screen width
+    const rayAngleStepPerPixel = RC.fov / W;
+
+    // Start with leftmost ray angle (player facing direction minus half FOV)
+    let currentRayAngle = player.a - RC.fov/2;
+
+    // Cast one ray for each pixel column across the screen
+    for (let screenX = 0; screenX < W; screenX += RC.columnStep, currentRayAngle += rayAngleStepPerPixel * RC.columnStep) {
+
+      // Cast ray from player position in current direction
+      const wallHitInfo = castRay(player.x, player.y, currentRayAngle);
+
+      if (wallHitInfo) {
+        // DISTANCE CALCULATION AND FISH-EYE CORRECTION
+        // Apply fish-eye correction: multiply by cosine of angle difference from center ray
+        // This prevents the "barrel distortion" effect where walls curve at screen edges
+        const fishEyeCorrectedDistance = wallHitInfo.dist * Math.cos(currentRayAngle - player.a);
+
+        // Clamp minimum distance to prevent extreme texture stretching when very close to walls
+        const clampedDistanceToWall = Math.max(0.1, fishEyeCorrectedDistance);
+
+        // WALL HEIGHT CALCULATION
+        // Wall height on screen is inversely proportional to distance (perspective projection)
+        // Closer walls appear taller, distant walls appear shorter
+        const wallHeightInPixels = Math.min(H, (H / clampedDistanceToWall) | 0);
+
+        // Calculate vertical position to center the wall on screen
+        const wallTopY = ((H - wallHeightInPixels) / 2) | 0;
+
+        // LIGHTING CALCULATION
+        // Calculate brightness based on distance - closer walls are brighter
+        const brightnessFactor = Math.max(0, 1 - clampedDistanceToWall / RC.maxDepth);
+
+        // TEXTURE SELECTION
+        // Choose between two textures based on wall grid position (creates checkerboard pattern)
+        const selectedTexture = ((Math.floor(wallHitInfo.nx) + Math.floor(wallHitInfo.ny)) % 2 === 0) ? wallTexture : brickTexture;
+
+        // TEXTURE COORDINATE CALCULATION
+        // Calculate horizontal texture coordinate (U) based on which wall face we hit
+        let wallSurfaceU; // Position along the wall surface (0.0 to 1.0)
+
+        // Determine if we hit a vertical wall (north/south facing) or horizontal wall (east/west facing)
+        const hitPointX = wallHitInfo.nx;
+        const hitPointY = wallHitInfo.ny;
+        const isVerticalWall = Math.abs(hitPointX - Math.floor(hitPointX + 0.5)) < 0.01;
+
+        if (isVerticalWall) {
+          // Hit vertical wall - use Y coordinate for texture mapping
+          wallSurfaceU = hitPointY % 1;
         } else {
-          // Hit horizontal wall (east/west facing)
-          wallU = hit.nx % 1;
+          // Hit horizontal wall - use X coordinate for texture mapping
+          wallSurfaceU = hitPointX % 1;
         }
 
-        // Map wall position to texture coordinate - this stays fixed as player moves
-        const textureX = Math.floor(wallU * texture.width) % texture.width;
+        // Convert wall surface position to texture pixel coordinate
+        const textureSourceX = Math.floor(wallSurfaceU * selectedTexture.width) % selectedTexture.width;
 
-        // Calculate vertical texture coordinate based on screen position
-        // Use a fixed texture scale so textures don't change size with distance
-        const textureScale = 64; // Fixed scale - adjust to make textures larger/smaller
-        const wallHeightInTexels = h / textureScale;
-        const textureV = 0; // Start from top of texture
+        // VERTICAL TEXTURE COORDINATE CALCULATION
+        // Use fixed texture scale to maintain consistent texture appearance regardless of distance
+        const fixedTextureScale = 64; // Controls apparent texture size - higher = smaller textures
+        const wallHeightInTexturePixels = wallHeightInPixels / fixedTextureScale;
+        const textureVerticalStart = 0; // Always start from top of texture
 
-        const textureY = Math.floor(textureV * texture.height) % texture.height;
-        const textureW = 1; // Sample 1 pixel width
-        const textureH = Math.min(texture.height, Math.ceil(wallHeightInTexels));
+        const textureSourceY = Math.floor(textureVerticalStart * selectedTexture.height) % selectedTexture.height;
+        const textureSourceWidth = 1; // Sample single pixel column to avoid distortion
+        const textureSourceHeight = Math.min(selectedTexture.height, Math.ceil(wallHeightInTexturePixels));
 
-        // Draw textured wall column
+        // WALL COLUMN RENDERING
         ctx.save();
         ctx.globalAlpha = 1;
 
+        // Draw textured wall column from texture to screen
         ctx.drawImage(
-          texture,
-          textureX, textureY, textureW, textureH, // source
-          x, y0, RC.columnStep, h // destination
+          selectedTexture,
+          textureSourceX, textureSourceY, textureSourceWidth, textureSourceHeight, // source rectangle
+          screenX, wallTopY, RC.columnStep, wallHeightInPixels // destination rectangle
         );
 
-        // Apply distance-based shading overlay
+        // DISTANCE-BASED SHADING OVERLAY
+        // Apply multiplicative color overlay to simulate distance fog/lighting
         ctx.globalCompositeOperation = 'multiply';
-        ctx.fillStyle = `rgba(${(60+80*shade)|0}, ${(140+40*shade)|0}, ${(200+20*shade)|0}, 0.7)`;
-        ctx.fillRect(x, y0, RC.columnStep, h);
+        const shadedRed = (60 + 80 * brightnessFactor) | 0;
+        const shadedGreen = (140 + 40 * brightnessFactor) | 0;
+        const shadedBlue = (200 + 20 * brightnessFactor) | 0;
+        ctx.fillStyle = `rgba(${shadedRed}, ${shadedGreen}, ${shadedBlue}, 0.7)`;
+        ctx.fillRect(screenX, wallTopY, RC.columnStep, wallHeightInPixels);
+
         ctx.restore();
       }
     }
@@ -298,46 +338,115 @@ export function bootstrap({ dev=false } = {}) {
     ctx.globalAlpha = 1;
   }
 
-  function castRay(x, y, angle) {
-    // DDA grid traversal
-    const sin = Math.sin(angle), cos = Math.cos(angle);
-    let dist = 0;
-    const step = 0.02;
-    for (let i=0; i<RC.maxDepth/step; i++) {
-      const nx = x + cos * dist;
-      const ny = y + sin * dist;
-      const cell = maze.cellAt(nx, ny);
-      if (cell===1) return { dist, nx, ny };
-      dist += step;
+  function castRay(startX, startY, rayAngle) {
+    // RAY CASTING USING STEP-BASED TRAVERSAL
+    // This function casts a ray from the starting position in the given direction
+    // until it hits a wall (maze cell value of 1) or reaches maximum distance
+
+    // Calculate ray direction components using trigonometry
+    const rayDirectionY = Math.sin(rayAngle); // Y component of unit direction vector
+    const rayDirectionX = Math.cos(rayAngle); // X component of unit direction vector
+
+    // Initialize ray marching variables
+    let currentDistanceFromStart = 0; // Distance traveled along the ray so far
+    const rayMarchingStepSize = 0.02; // How far to advance the ray each iteration (smaller = more accurate)
+
+    // Maximum number of steps to prevent infinite loops
+    const maxStepsToTake = RC.maxDepth / rayMarchingStepSize;
+
+    // Step along the ray until we hit a wall or reach maximum distance
+    for (let stepCount = 0; stepCount < maxStepsToTake; stepCount++) {
+      // Calculate current ray position by advancing from start position
+      const currentRayX = startX + rayDirectionX * currentDistanceFromStart;
+      const currentRayY = startY + rayDirectionY * currentDistanceFromStart;
+
+      // Check what type of maze cell we're currently in
+      const mazeCell = maze.cellAt(currentRayX, currentRayY);
+
+      // If we hit a wall (cell value 1), return hit information
+      if (mazeCell === 1) {
+        return {
+          dist: currentDistanceFromStart,    // Distance from ray start to wall
+          nx: currentRayX,                   // X coordinate where ray hit the wall
+          ny: currentRayY                    // Y coordinate where ray hit the wall
+        };
+      }
+
+      // Move ray forward by one step
+      currentDistanceFromStart += rayMarchingStepSize;
     }
+
+    // Ray didn't hit any walls within maximum distance
     return null;
   }
 
-  function drawBillboard(wx, wy, size, color, alpha=1) {
-    // Project to screen
-    const dx = wx - player.x, dy = wy - player.y;
-    const dist = Math.hypot(dx, dy);
-    const angleTo = Math.atan2(dy, dx) - player.a;
-    const behind = Math.cos(angleTo) <= 0;
-    if (behind) return;
-    // Check if the object is behind a wall using raycasting, but only for pads and entities
-    if (color !== exitDoorColor) { // Exit color, skip check for exit
-      const hit = castRay(player.x, player.y, angleTo + player.a);
-      if (hit && hit.dist < dist) return; // Wall is closer than the object, don't render
+  function drawBillboard(worldX, worldY, objectSize, objectColor, transparency = 1) {
+    // BILLBOARD SPRITE RENDERING
+    // This function renders 3D-looking sprites (enemies, items, etc.) that always face the player
+    // Uses perspective projection to make objects appear smaller when farther away
+
+    // DISTANCE AND DIRECTION CALCULATION
+    // Calculate vector from player to object in world coordinates
+    const deltaX = worldX - player.x;
+    const deltaY = worldY - player.y;
+
+    // Calculate straight-line distance from player to object
+    const distanceToObject = Math.hypot(deltaX, deltaY);
+
+    // Calculate angle from player's forward direction to the object
+    const angleFromPlayerToObject = Math.atan2(deltaY, deltaX) - player.a;
+
+    // VISIBILITY CULLING
+    // Check if object is behind the player (outside field of view)
+    const isObjectBehindPlayer = Math.cos(angleFromPlayerToObject) <= 0;
+    if (isObjectBehindPlayer) return; // Don't render objects behind the player
+
+    // WALL OCCLUSION CHECK
+    // Cast a ray to see if there's a wall between player and object
+    // Skip this check for the exit door (let it show through walls for gameplay)
+    if (objectColor !== exitDoorColor) {
+      const wallHitBetweenPlayerAndObject = castRay(player.x, player.y, angleFromPlayerToObject + player.a);
+
+      // If ray hits a wall closer than the object, the object is occluded
+      if (wallHitBetweenPlayerAndObject && wallHitBetweenPlayerAndObject.dist < distanceToObject) {
+        return; // Object is hidden behind a wall, don't render
+      }
     }
-    const proj = (H / dist) * size;
-    const sx = Math.tan(angleTo) / Math.tan(RC.fov/2) * (W/2) + (W/2);
-    const sy = H/2;
-    ctx.globalAlpha = alpha * Math.max(0.3, 1 - dist/RC.maxDepth);
-    ctx.fillStyle = color;
+
+    // PERSPECTIVE PROJECTION CALCULATIONS
+    // Calculate apparent size on screen using perspective projection
+    // Objects farther away appear smaller (size inversely proportional to distance)
+    const projectedSizeOnScreen = (H / distanceToObject) * objectSize;
+
+    // Calculate horizontal screen position using field of view projection
+    // Convert angle to horizontal screen coordinate
+    const screenPositionX = Math.tan(angleFromPlayerToObject) / Math.tan(RC.fov/2) * (W/2) + (W/2);
+
+    // Objects appear at vertical center of screen (horizon line)
+    const screenPositionY = H/2;
+
+    // DISTANCE-BASED TRANSPARENCY
+    // Calculate alpha based on distance - farther objects are more transparent
+    // Minimum alpha of 0.3 ensures objects don't completely disappear
+    const distanceBasedAlpha = transparency * Math.max(0.3, 1 - distanceToObject / RC.maxDepth);
+
+    // SPRITE RENDERING
+    ctx.globalAlpha = distanceBasedAlpha;
+    ctx.fillStyle = objectColor;
     ctx.beginPath();
-    if (color !== exitDoorColor) {
-      ctx.ellipse(sx, sy, proj, proj*1.2, 0, 0, Math.PI*2);
+
+    // Choose shape based on object type
+    if (objectColor !== exitDoorColor) {
+      // Most objects are rendered as ellipses (enemies, power-ups, etc.)
+      // Slightly taller than wide for better visibility
+      ctx.ellipse(screenPositionX, screenPositionY, projectedSizeOnScreen, projectedSizeOnScreen * 1.2, 0, 0, Math.PI * 2);
     } else {
-      ctx.rect(sx, sy, proj, proj*1.2);
+      // Exit door is rendered as a rectangle to distinguish it from other objects
+      ctx.rect(screenPositionX, screenPositionY, projectedSizeOnScreen, projectedSizeOnScreen * 1.2);
     }
+
     ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1; // Reset alpha for next drawing operations
   }
 
   // UI ammo bars
@@ -365,3 +474,4 @@ export function bootstrap({ dev=false } = {}) {
   enemies.reset(maze);
   updateBars();
 }
+
