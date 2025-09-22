@@ -1,10 +1,12 @@
 // modules/maze.js - generation, pathing, pads & exit
+import { GameConfig } from './GameConfig.js';
+
 export class Maze {
   constructor(w, h) {
     // Ensure odd sizes for perfect maze
     this.w = (w|0)|1; this.h = (h|0)|1;
-    this.grid = Array.from({length:this.h}, _=> Array(this.w).fill(1)); // 1=wall,0=path
-    this.exit = null; // {x,y,centerX,centerY}
+    this.grid = Array.from({length:this.h}, _=> Array(this.w).fill(1)); // 1=wall,0=path,2=exit door
+    this.exit = null; // {x,y,wallX,wallY}
     this.pads = [];   // recharge pads
   }
 
@@ -49,19 +51,54 @@ export class Maze {
         if (d > best.d) best = { d, x, y };
       }
     }
-    this.exit = { x: best.x, y: best.y, centerX: best.x+0.5, centerY: best.y+0.5 };
 
-    // Recharge pads: place 3 on path cells, not too close to start/exit
+    // Find a wall adjacent to the exit cell to place the exit door
+    const exitCellX = best.x;
+    const exitCellY = best.y;
+
+    // Check all four directions for walls to place the exit door
+    const wallDirections = [
+      { dx: 0, dy: -1 }, // North wall
+      { dx: 1, dy: 0 },  // East wall
+      { dx: 0, dy: 1 },  // South wall
+      { dx: -1, dy: 0 }  // West wall
+    ];
+
+    // Find the first wall direction that has a wall and mark it as exit door
+    let exitWallCell = null;
+    for (const dir of wallDirections) {
+      const wallCellX = exitCellX + dir.dx;
+      const wallCellY = exitCellY + dir.dy;
+
+      // Check if this position is within bounds and is a wall
+      if (wallCellY >= 0 && wallCellY < this.h && wallCellX >= 0 && wallCellX < this.w &&
+          g[wallCellY][wallCellX] === 1) {
+        // Mark this wall cell as exit door
+        g[wallCellY][wallCellX] = 2;
+        exitWallCell = { wallX: wallCellX, wallY: wallCellY };
+        break;
+      }
+    }
+
+    // Store exit information
+    this.exit = {
+      x: exitCellX,        // Exit walkway cell X
+      y: exitCellY,        // Exit walkway cell Y
+      wallX: exitWallCell ? exitWallCell.wallX : exitCellX,  // Exit door wall cell X
+      wallY: exitWallCell ? exitWallCell.wallY : exitCellY   // Exit door wall cell Y
+    };
+
+    // Recharge pads: place them on path cells, not too close to start/exit
     this.pads = [];
     const isOk = (x,y)=> {
-      const dxs = x-1, dys = y-1;
+      const dxs = x-GameConfig.PLAYER.START_X, dys = y-GameConfig.PLAYER.START_Y;
       const dStart = Math.hypot(dxs, dys);
       const dExit = Math.hypot(x-this.exit.x, y-this.exit.y);
-      return dStart > 6 && dExit > 6;
+      return dStart > GameConfig.MAZE.MIN_DISTANCE_FROM_START && dExit > GameConfig.MAZE.MIN_DISTANCE_FROM_EXIT;
     };
     const cand = [];
     for (let y=1;y<this.h;y+=2) for (let x=1;x<this.w;x+=2) if (g[y][x]===0 && isOk(x,y)) cand.push([x,y]);
-    for (let i=0;i<3 && cand.length;i++) {
+    for (let i=0;i<GameConfig.MAZE.RECHARGE_PAD_COUNT && cand.length;i++) {
       const k = (Math.random()*cand.length)|0;
       const [x,y] = cand.splice(k,1)[0];
       this.pads.push({ x, y });
