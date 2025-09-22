@@ -9,6 +9,11 @@ Open `index.html` in any modern browser (Chrome, Edge, Firefox, Safari). No buil
 - **Space** or **Left Click** to fire.
 - **R** to restart.
 
+## Gameplay Features
+- **Recharge Pads**: Blue circular pads on the ground that refill all weapon ammo when approached.
+- **Exit Door**: Green square door that ends the level when reached.
+- **Enemy AI**: Creatures with pathfinding that gently push the player back when touched.
+
 ## Teen-Safe
 - No damage or violence; creatures gently push the player back.
 - Tools apply friendly effects: **stunned**, **slowed**, **sleepy**.
@@ -30,20 +35,28 @@ npm run test
 ```
 /game
 ├─ index.html
-├─ main.js
+├─ main.js               # Game bootstrap and main loop
 ├─ styles.css
-├─ modules/
-│  ├─ maze.js
-│  ├─ player.js
-│  ├─ defenses.js
-│  └─ enemies.js
-├─ assets/
-│  ├─ textures/   (procedurally colored; not required)
-│  └─ sounds/     (WebAudio generated at runtime)
-└─ tests/
+├─ modules/              # 17 core game modules
+│  ├─ maze.js           # Maze generation and recharge pad placement
+│  ├─ player.js         # Player movement and controls
+│  ├─ defenses.js       # Weapon system and ammo management
+│  ├─ enemies.js        # Enemy AI and pathfinding
+│  ├─ GameConfig.js     # Centralized configuration constants
+│  ├─ GameState.js      # Game lifecycle management
+│  ├─ EventManager.js   # Pub/sub event system
+│  ├─ RaycastRenderer.js # 3D world rendering
+│  ├─ SpriteRenderer.js  # Entity and HUD sprite rendering
+│  ├─ ProjectileSystem.js # Projectile physics
+│  ├─ entities/         # Entity system (IEntity, PlayerEntity)
+│  └─ weapons/          # Weapon factory and implementations
+├─ textures/
+│  └─ wall-texture.js   # Procedural texture generation
+└─ tests/               # 4 unit test suites
    ├─ maze.test.js
    ├─ player.test.js
-   └─ defenses.test.js
+   ├─ defenses.test.js
+   └─ solid-architecture.test.js
 ```
 
 ## QA Hooks
