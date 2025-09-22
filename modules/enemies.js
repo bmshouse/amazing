@@ -1,4 +1,6 @@
 // modules/enemies.js - friendly AI that pushes player back
+import { GameConfig } from './GameConfig.js';
+
 export class EnemyController {
   constructor(maze, player) {
     this.maze = maze;
@@ -11,15 +13,20 @@ export class EnemyController {
   reset(maze) {
     this.maze = maze;
     this.entities = [];
-    // spawn 8-12 enemies on open cells not too close to start
     const cells = [];
     for (let y=1;y<maze.h;y+=2) for (let x=1;x<maze.w;x+=2) if (maze.grid[y][x]===0) cells.push({x:x+0.5, y:y+0.5});
-    for (let i=0;i<10 && cells.length;i++) {
+    for (let i=0;i<GameConfig.ENEMIES.COUNT && cells.length;i++) {
       const k = (Math.random()*cells.length)|0;
       const c = cells.splice(k,1)[0];
-      const dStart = Math.hypot(c.x-1.5, c.y-1.5);
-      if (dStart < 5) continue;
-      this.entities.push({ x:c.x, y:c.y, state:'idle', stateTime: performance.now(), speed:1.3, speedMul:1 });
+      const dStart = Math.hypot(c.x-GameConfig.PLAYER.START_X, c.y-GameConfig.PLAYER.START_Y);
+      if (dStart < GameConfig.ENEMIES.MIN_SPAWN_DISTANCE) continue;
+      this.entities.push({
+        x:c.x, y:c.y,
+        state:'idle',
+        stateTime: performance.now(),
+        speed: GameConfig.ENEMIES.SPEED,
+        speedMul: 1
+      });
     }
   }
 
@@ -27,19 +34,19 @@ export class EnemyController {
     this.maze = maze;
     const t = performance.now();
     for (const e of this.entities) {
-      // state recovery
-      if (e.state==='stunned' && t - e.stateTime > 1500) { e.state='idle'; e.speedMul=1; }
-      if (e.state==='slowed' && t - e.stateTime > 2500) { e.state='idle'; e.speedMul=1; }
-      if (e.state==='tranq'  && t - e.stateTime > 3000) { e.state='idle'; e.speedMul=1; }
+      // state recovery using config values
+      if (e.state==='stunned' && t - e.stateTime > GameConfig.ENEMIES.STUNNED_DURATION) { e.state='idle'; e.speedMul=1; }
+      if (e.state==='slowed' && t - e.stateTime > GameConfig.ENEMIES.SLOWED_DURATION) { e.state='idle'; e.speedMul=1; }
+      if (e.state==='tranq'  && t - e.stateTime > GameConfig.ENEMIES.TRANQ_DURATION) { e.state='idle'; e.speedMul=1; }
 
       // simple steering: chase if close, wander otherwise
       let targetA = Math.atan2(this.player.y - e.y, this.player.x - e.x);
       const dist = Math.hypot(this.player.x - e.x, this.player.y - e.y);
-      const chase = dist < 6 && e.state!=='tranq';
+      const chase = dist < GameConfig.ENEMIES.CHASE_DISTANCE && e.state!=='tranq';
 
       if (!chase) {
         // wander: jitter
-        targetA += (Math.random()-0.5)*0.2;
+        targetA += (Math.random()-0.5)*GameConfig.ENEMIES.WANDER_JITTER;
       }
 
       const v = e.speed * e.speedMul * (dt/1000);
@@ -49,11 +56,11 @@ export class EnemyController {
       if (maze.cellAt(e.x, ny) === 0) e.y = ny;
 
       // Pushback if close
-      if (dist < 0.6) {
+      if (dist < GameConfig.ENEMIES.COLLISION_DISTANCE) {
         const ax = this.player.x - e.x;
         const ay = this.player.y - e.y;
         const len = Math.hypot(ax, ay) || 1;
-        const push = 0.4;
+        const push = GameConfig.ENEMIES.PUSHBACK_FORCE;
         const px = this.player.x + (ax/len)*push;
         const py = this.player.y + (ay/len)*push;
         if (maze.cellAt(px, this.player.y) === 0) this.player.x = px;
@@ -65,7 +72,7 @@ export class EnemyController {
 
   // Utility for ray hit
   raycastForEnemy(x, y, a, maxDist=1.5) {
-    const step = 0.05;
+    const step = GameConfig.PERFORMANCE.RAYCAST_STEP_SIZE * 2.5; // Slightly larger step for enemy detection
     let d = 0;
     while (d < maxDist) {
       const rx = x + Math.cos(a)*d;
