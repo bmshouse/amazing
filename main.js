@@ -164,9 +164,10 @@ export function bootstrap({ dev=false } = {}) {
     enemies.reset(maze);
     defenses.reset();
     projectileSystem.clear();
-    gameState.restartGame();
-    hud.tutorial.style.display = 'none';
-    speak('Restarted!');
+    gameState.resetForRestart();
+    hud.tutorial.style.display = '';
+    hud.tutorial.querySelector('h2').textContent = 'Ready to go again!';
+    speak('Restarted! Press Enter to begin.');
     audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
   }
 
