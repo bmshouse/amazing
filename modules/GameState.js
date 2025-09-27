@@ -37,6 +37,15 @@ export class GameState {
     this.notifyStateChange();
   }
 
+  resetForRestart() {
+    this.state.won = false;
+    this.state.started = false;
+    this.state.startTime = 0;
+    this.state.elapsed = 0;
+    this.notifyCallbacks('onRestart');
+    this.notifyStateChange();
+  }
+
   winGame() {
     this.state.won = true;
     this.state.started = false;
