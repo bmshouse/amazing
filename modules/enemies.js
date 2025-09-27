@@ -70,7 +70,14 @@ export class EnemyController {
     }
   }
 
-  // Utility for ray hit
+  /**
+   * Casts a ray to find the first enemy hit (for instant hit weapons like taser)
+   * @param {number} x - Starting X coordinate of the ray
+   * @param {number} y - Starting Y coordinate of the ray
+   * @param {number} a - Ray angle in radians
+   * @param {number} maxDist - Maximum ray distance (default: 1.5)
+   * @returns {Object|null} The first enemy hit by the ray, or null if none
+   */
   raycastForEnemy(x, y, a, maxDist=1.5) {
     const step = GameConfig.PERFORMANCE.RAYCAST_STEP_SIZE * 2.5; // Slightly larger step for enemy detection
     let d = 0;
@@ -84,6 +91,13 @@ export class EnemyController {
     return null;
   }
 
+  /**
+   * Finds an enemy that collides with a circular area (for projectile hits)
+   * @param {number} x - X coordinate of the collision area center
+   * @param {number} y - Y coordinate of the collision area center
+   * @param {number} r - Radius of the collision area (default: 0.12)
+   * @returns {Object|null} The first enemy found in the collision area, or null if none
+   */
   findHit(x, y, r=0.12) {
     for (const e of this.entities) {
       const dx = e.x - x, dy = e.y - y;

@@ -1,5 +1,10 @@
 // modules/ProjectileSystem.js - Manages projectile physics and collisions
 export class ProjectileSystem {
+  /**
+   * Creates a new ProjectileSystem instance
+   * @param {Object} maze - Maze object for wall collision detection
+   * @param {Object} enemyController - Enemy controller for entity collision detection
+   */
   constructor(maze, enemyController) {
     this.maze = maze;
     this.enemyController = enemyController;
@@ -42,6 +47,11 @@ export class ProjectileSystem {
     }
   }
 
+  /**
+   * Handles collision between a projectile and an enemy
+   * @param {Object} projectile - The projectile that hit the enemy
+   * @param {Object} enemy - The enemy that was hit
+   */
   handleEnemyHit(projectile, enemy) {
     // Apply weapon effect based on projectile type
     if (projectile.weapon && projectile.weapon.applyEffect) {
@@ -57,6 +67,11 @@ export class ProjectileSystem {
     }
   }
 
+  /**
+   * Applies legacy weapon effects for backward compatibility
+   * @param {Object} projectile - The projectile with effect information
+   * @param {Object} enemy - The enemy to apply the effect to
+   */
   applyLegacyEffect(projectile, enemy) {
     const t = performance.now();
     switch (projectile.type) {
