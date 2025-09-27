@@ -12,6 +12,9 @@ import { ProjectileSystem } from './modules/ProjectileSystem.js';
 import { GameConfig } from './modules/GameConfig.js';
 
 export function bootstrap({ dev=false } = {}) {
+  // ═══════════════════════════════════════════════════════════════
+  // DOM ELEMENT SETUP
+  // ═══════════════════════════════════════════════════════════════
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const hud = {
@@ -27,11 +30,16 @@ export function bootstrap({ dev=false } = {}) {
     },
   };
 
-  // Initialize core systems
+  // ═══════════════════════════════════════════════════════════════
+  // CORE SYSTEMS INITIALIZATION
+  // ═══════════════════════════════════════════════════════════════
   const gameState = new GameState();
   const eventManager = new EventManager();
   gameState.initialize({ dev });
 
+  // ═══════════════════════════════════════════════════════════════
+  // CANVAS AND RENDERING SETUP
+  // ═══════════════════════════════════════════════════════════════
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   let W = GameConfig.RENDERING.INTERNAL_WIDTH, H = GameConfig.RENDERING.INTERNAL_HEIGHT;
   function resize() {
@@ -45,7 +53,9 @@ export function bootstrap({ dev=false } = {}) {
   eventManager.on('resize', resize);
   resize();
 
-  // Audio shim (procedural chimes); togglable
+  // ═════════════════════════════════════════════════════════════════
+  // AUDIO SYSTEM SETUP
+  // ═════════════════════════════════════════════════════════════════
   const audio = (function(){
     const enabled = () => hud.audioToggle.checked;
     let ac;
@@ -65,7 +75,9 @@ export function bootstrap({ dev=false } = {}) {
     return { beep };
   })();
 
-  // Initialize game systems
+  // ═════════════════════════════════════════════════════════════════
+  // GAME WORLD INITIALIZATION
+  // ═════════════════════════════════════════════════════════════════
   const mazeSize = GameConfig.MAZE.DEFAULT_SIZE;
   let maze = new Maze(mazeSize, mazeSize);
   maze.generate();
@@ -87,10 +99,15 @@ export function bootstrap({ dev=false } = {}) {
     entity: GameConfig.COLORS.ENTITY
   };
 
-  // Initialize renderers
+  // ═════════════════════════════════════════════════════════════════
+  // RENDERING SYSTEM INITIALIZATION
+  // ═════════════════════════════════════════════════════════════════
   const raycastRenderer = new RaycastRenderer(canvas, textures);
   const spriteRenderer = new SpriteRenderer(canvas);
 
+  // ═════════════════════════════════════════════════════════════════
+  // GAME ENTITY INITIALIZATION
+  // ═════════════════════════════════════════════════════════════════
   const player = new PlayerController(maze);
   const enemies = new EnemyController(maze, player);
   const projectileSystem = new ProjectileSystem(maze, enemies);
@@ -101,7 +118,9 @@ export function bootstrap({ dev=false } = {}) {
   player.setEventManager(eventManager);
   defenses.setEventManager(eventManager);
 
-  // Setup event handlers
+  // ═════════════════════════════════════════════════════════════════
+  // EVENT HANDLERS SETUP
+  // ═════════════════════════════════════════════════════════════════
   hud.sensitivity.addEventListener('input', (e)=>{
     player.sensitivity = parseFloat(e.target.value);
   });
@@ -129,6 +148,9 @@ export function bootstrap({ dev=false } = {}) {
 
   // Mouse movement is now handled directly in player.update()
 
+  // ═════════════════════════════════════════════════════════════════
+  // GAME CONTROL FUNCTIONS
+  // ═════════════════════════════════════════════════════════════════
   function startGame() {
     gameState.startGame();
     hud.tutorial.style.display = 'none';
@@ -148,7 +170,9 @@ export function bootstrap({ dev=false } = {}) {
     audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
   }
 
-  // HUD helpers
+  // ═════════════════════════════════════════════════════════════════
+  // UTILITY FUNCTIONS
+  // ═════════════════════════════════════════════════════════════════
   function fmtTime(ms) {
     const t = Math.max(0, Math.floor(ms/1000));
     const m = (t/60)|0, s = (t%60)|0;
@@ -160,7 +184,9 @@ export function bootstrap({ dev=false } = {}) {
     speak._t = setTimeout(()=>{ hud.subtitles.textContent=''; }, 1200);
   }
 
-  // Smoke tests (dev mode)
+  // ═════════════════════════════════════════════════════════════════
+  // DEVELOPMENT MODE TESTING
+  // ═════════════════════════════════════════════════════════════════
   if (gameState.isDev()) {
     const t0 = performance.now();
     const testMaze = new Maze(31,31); testMaze.generate();
@@ -170,7 +196,9 @@ export function bootstrap({ dev=false } = {}) {
     if (!testMaze.exit) console.error('Exit missing!');
   }
 
-  // Initialize particle system
+  // ═════════════════════════════════════════════════════════════════
+  // PARTICLE SYSTEM
+  // ═════════════════════════════════════════════════════════════════
   const particles = [];
 
   function spawnParticle(x, y, color = GameConfig.COLORS.PARTICLE_DEFAULT, life = GameConfig.PARTICLES.DEFAULT_LIFE) {
@@ -185,7 +213,9 @@ export function bootstrap({ dev=false } = {}) {
   }
 
 
-  // Game loop
+  // ═════════════════════════════════════════════════════════════════
+  // MAIN GAME LOOP
+  // ═════════════════════════════════════════════════════════════════
   let last = performance.now();
   function loop(now) {
     requestAnimationFrame(loop);
@@ -220,19 +250,20 @@ export function bootstrap({ dev=false } = {}) {
   }
   requestAnimationFrame(loop);
 
+  // ═════════════════════════════════════════════════════════════════
+  // RENDERING FUNCTIONS
+  // ═════════════════════════════════════════════════════════════════
   function render() {
     // Render walls using raycast renderer
     raycastRenderer.render(player, maze, W, H);
 
     // Render sprites using sprite renderer
     spriteRenderer.renderSprites(player, maze, enemies, particles, W, H, colors);
-
   }
 
-
-
-
-  // UI ammo bars
+  // ═════════════════════════════════════════════════════════════════
+  // HUD AND UI UPDATES
+  // ═════════════════════════════════════════════════════════════════
   function updateBars() {
     hud.bars.taser.style.transform = `scaleX(${defenses.taserAmmoRatio()})`;
     hud.bars.stun.style.transform = `scaleX(${defenses.stunAmmoRatio()})`;
@@ -240,7 +271,9 @@ export function bootstrap({ dev=false } = {}) {
   }
   setInterval(updateBars, GameConfig.PERFORMANCE.AMMO_BAR_UPDATE_INTERVAL);
 
-  // Setup callbacks
+  // ═════════════════════════════════════════════════════════════════
+  // GAME EVENT CALLBACKS
+  // ═════════════════════════════════════════════════════════════════
   enemies.onBoop = (x,y)=>{
     for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_BOOP;i++) {
       spawnParticle(x+(Math.random()-0.5)*0.2, y+(Math.random()-0.5)*0.2, GameConfig.COLORS.PARTICLE_BOOP, 300);
@@ -257,7 +290,9 @@ export function bootstrap({ dev=false } = {}) {
     for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_HIT;i++) spawnParticle(x, y, color, 350);
   });
 
-  // Start screen until Enter
+  // ═════════════════════════════════════════════════════════════════
+  // GAME INITIALIZATION FINALIZATION
+  // ═════════════════════════════════════════════════════════════════
   // Pre-warm controls to avoid initial stutter
   player.reset(maze);
   enemies.reset(maze);

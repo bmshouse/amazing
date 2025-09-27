@@ -47,6 +47,10 @@ export class IEntity {
   }
 
   // Collision detection interface
+  /**
+   * Gets the collision bounds for this entity
+   * @returns {Object} Collision bounds with x, y, and radius properties
+   */
   getBounds() {
     return {
       x: this.x,
@@ -55,6 +59,11 @@ export class IEntity {
     };
   }
 
+  /**
+   * Checks if this entity intersects with another entity using circular collision detection
+   * @param {Object} other - The other entity or object to check collision against
+   * @returns {boolean} True if the entities are colliding, false otherwise
+   */
   intersects(other) {
     const bounds1 = this.getBounds();
     const bounds2 = other.getBounds ? other.getBounds() : { x: other.x, y: other.y, radius: 0.3 };
@@ -67,15 +76,31 @@ export class IEntity {
   }
 
   // Event handling interface
+  /**
+   * Called when this entity collides with another entity
+   * @param {Object} other - The other entity involved in the collision
+   * @param {Object} gameContext - Game context containing relevant game state
+   */
   onCollision(other, gameContext) {
     // Override in concrete classes
   }
 
+  /**
+   * Called when this entity is destroyed
+   * @param {Object} gameContext - Game context containing relevant game state
+   */
   onDestroy(gameContext) {
     // Override in concrete classes
   }
 
   // Utility method for game state queries
+  /**
+   * Checks if a position would collide with maze walls
+   * @param {number} x - X coordinate to check
+   * @param {number} y - Y coordinate to check
+   * @param {Object} maze - Maze object with cellAt method
+   * @returns {boolean} True if the position would collide with a wall
+   */
   isColliding(x, y, maze) {
     return maze.cellAt(x, y) !== 0;
   }
