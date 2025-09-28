@@ -401,4 +401,75 @@ export class SpriteRenderer {
 
     return null;
   }
+
+  /**
+   * Renders a range indicator line showing the effective range of the current device
+   * @param {Object} player - Player object with position and angle
+   * @param {Object} rangeData - Range indicator data with x1, y1, x2, y2, color, alpha
+   * @param {number} W - Screen width in pixels
+   * @param {number} H - Screen height in pixels
+   */
+  renderRangeIndicator(player, rangeData, W, H) {
+    const { x1, y1, x2, y2, color, alpha } = rangeData;
+
+    // Transform world coordinates to screen coordinates
+    const startScreenPos = this.worldToScreen(x1, y1, player, W, H);
+    const endScreenPos = this.worldToScreen(x2, y2, player, W, H);
+
+    if (!startScreenPos || !endScreenPos) return;
+
+    // Draw the range indicator line - small and subtle
+    this.ctx.save();
+    this.ctx.globalAlpha = alpha * 0.7; // More transparent
+    this.ctx.strokeStyle = color;
+    this.ctx.lineWidth = 1; // Thinner line
+    this.ctx.setLineDash([3, 3]); // Smaller dashes
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(startScreenPos.screenX, startScreenPos.screenY);
+    this.ctx.lineTo(endScreenPos.screenX, endScreenPos.screenY);
+    this.ctx.stroke();
+
+    // Add a small dot at the end to show range endpoint
+    this.ctx.setLineDash([]); // Solid for dot
+    this.ctx.globalAlpha = alpha * 0.8;
+    this.ctx.fillStyle = color;
+    this.ctx.beginPath();
+    this.ctx.arc(endScreenPos.screenX, endScreenPos.screenY, 2, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.restore();
+  }
+
+  /**
+   * Convert world coordinates to screen coordinates
+   * @param {number} worldX - World X coordinate
+   * @param {number} worldY - World Y coordinate
+   * @param {Object} player - Player object with position and angle
+   * @param {number} W - Screen width in pixels
+   * @param {number} H - Screen height in pixels
+   * @returns {Object|null} Screen coordinates or null if behind player
+   */
+  worldToScreen(worldX, worldY, player, W, H) {
+    // Transform to camera space
+    const dx = worldX - player.x;
+    const dy = worldY - player.y;
+
+    const cosA = Math.cos(player.a);
+    const sinA = Math.sin(player.a);
+
+    // Rotate to camera space
+    const cameraX = dx * cosA + dy * sinA;
+    const cameraZ = -dx * sinA + dy * cosA;
+
+    // Check if behind player
+    if (cameraZ <= 0.1) return null;
+
+    // Project to screen space
+    const projectionScale = (W * 0.5) / Math.tan(this.config.fov * 0.5);
+    const screenX = W * 0.5 + (cameraX * projectionScale) / cameraZ;
+    const screenY = H * 0.5; // Keep at center height for simplicity
+
+    return { screenX, screenY };
+  }
 }

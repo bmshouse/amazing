@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "language": "Español",
+    "code": "es",
+    "rtl": false,
+    "version": "1.0.0"
+  },
+  "ui": {
+    "common": {
+      "ok": "Aceptar",
+      "cancel": "Cancelar",
+      "reset": "Restablecer por Defecto",
+      "apply": "Aplicar Cambios",
+      "settings": "Configuración",
+      "close": "Cerrar"
+    },
+    "tabs": {
+      "basic": "Básico",
+      "difficulty": "Dificultad",
+      "advanced": "Avanzado"
+    },
+    "tutorial": {
+      "welcome": "¡Bienvenido!",
+      "instruction_1": "W/A/S/D o flechas para mover. Mantén <strong>Shift</strong> para deslizarte más rápido.",
+      "instruction_2": "Mueve el ratón para mirar. ¿Solo teclado? Usa <strong>Q/E</strong> para girar.",
+      "instruction_3": "Encuentra la salida brillante antes de que se acabe el tiempo.",
+      "instruction_4": "Las criaturas amigables te harán <em>boop</em> suavemente. Usa herramientas defensivas:",
+      "instruction_5": "Pisa las plataformas de recarga para rellenar las cargas de los dispositivos.",
+      "instruction_6": "¡Haz clic en el <strong>⚙️ icono de engranaje</strong> para personalizar la dificultad, tamaño del laberinto, número de enemigos y configuración de dispositivos!",
+      "start_prompt": "Presiona <strong>Enter</strong> para comenzar. Presiona <strong>R</strong> para reiniciar.",
+      "device_list": {
+        "disruptor": "<strong>1</strong> Disruptor (aturdimiento de corto alcance)",
+        "immobilizer": "<strong>2</strong> Inmovilizador (orbe lento)",
+        "pacifier": "<strong>3</strong> Pacificador (dardo somnífero)"
+      }
+    }
+  },
+  "game": {
+    "devices": {
+      "disruptor": "Disruptor",
+      "immobilizer": "Inmovilizador",
+      "pacifier": "Pacificador",
+      "taser": "Disruptor",
+      "stun": "Inmovilizador",
+      "tranq": "Pacificador"
+    },
+    "messages": {
+      "boop": "¡Boop!",
+      "restarted": "¡Reiniciado! Presiona Enter para comenzar.",
+      "found_exit": "¡Buen trabajo! Presiona Enter para jugar de nuevo.",
+      "device_disabled": "Dispositivo deshabilitado",
+      "ready_again": "¡Listo para volver a jugar!",
+      "you_found_exit": "¡Encontraste la salida! 🎉"
+    },
+    "difficulty": {
+      "presets": {
+        "easy": "Fácil",
+        "normal": "Normal",
+        "hard": "Difícil",
+        "custom": "Personalizado",
+        "teensafe": "Adolescente-Seguro"
+      },
+      "descriptions": {
+        "easy": "Ritmo relajado con recursos generosos",
+        "normal": "Desafío equilibrado para la mayoría de jugadores",
+        "hard": "Laberinto desafiante con recursos limitados",
+        "teensafe": "Desafío mínimo, finalización rápida"
+      },
+      "rating": "Dificultad: {{rating}}/10",
+      "estimated_time": "Tiempo Est.: {{minutes}} min"
+    },
+    "timer": {
+      "time_label": "Tiempo:",
+      "remaining": "{{minutes}}:{{seconds}}"
+    }
+  },
+  "config": {
+    "language": {
+      "label": "Idioma",
+      "description": "Elige tu idioma preferido"
+    },
+    "audio": {
+      "label": "Audio",
+      "enabled": "Habilitado"
+    },
+    "sensitivity": {
+      "label": "Sensibilidad del Ratón",
+      "description": "Ajustar sensibilidad de vista del ratón"
+    },
+    "preset_section": {
+      "title": "Preconfiguración de Dificultad"
+    },
+    "maze": {
+      "title": "🏗️ Configuración del Laberinto",
+      "size": "Tamaño",
+      "recharge_pads": "Plataformas de Recarga",
+      "size_value": "{{size}}x{{size}}"
+    },
+    "enemies": {
+      "title": "👾 Configuración de Enemigos",
+      "count": "Cantidad",
+      "speed": "Velocidad",
+      "speed_values": {
+        "0.5": "Lento",
+        "0.8": "Fácil",
+        "1.0": "Normal",
+        "1.2": "Rápido",
+        "1.5": "Frenético",
+        "2.0": "Demente"
+      }
+    },
+    "devices": {
+      "title": "🛡️ Configuración de Dispositivos",
+      "charges": "Cargas"
+    }
+  }
+}

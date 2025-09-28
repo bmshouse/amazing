@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "language": "Français",
+    "code": "fr",
+    "rtl": false,
+    "version": "1.0.0"
+  },
+  "ui": {
+    "common": {
+      "ok": "OK",
+      "cancel": "Annuler",
+      "reset": "Rétablir par Défaut",
+      "apply": "Appliquer les Modifications",
+      "settings": "Paramètres",
+      "close": "Fermer"
+    },
+    "tabs": {
+      "basic": "Basique",
+      "difficulty": "Difficulté",
+      "advanced": "Avancé"
+    },
+    "tutorial": {
+      "welcome": "Bienvenue !",
+      "instruction_1": "W/A/S/D ou flèches pour bouger. Maintenez <strong>Shift</strong> pour glisser plus vite.",
+      "instruction_2": "Bougez la souris pour regarder. Clavier uniquement ? Utilisez <strong>Q/E</strong> pour tourner.",
+      "instruction_3": "Trouvez la sortie brillante avant que le temps ne s'écoule.",
+      "instruction_4": "Les créatures amicales vous feront gentiment <em>boop</em>. Utilisez des outils défensifs :",
+      "instruction_5": "Marchez sur les plateformes de recharge pour remplir les charges des appareils.",
+      "instruction_6": "Cliquez sur l'<strong>⚙️ icône d'engrenage</strong> pour personnaliser la difficulté, la taille du labyrinthe, le nombre d'ennemis et les paramètres des appareils !",
+      "start_prompt": "Appuyez sur <strong>Entrée</strong> pour commencer. Appuyez sur <strong>R</strong> pour redémarrer.",
+      "device_list": {
+        "disruptor": "<strong>1</strong> Perturbateur (étourdissement courte portée)",
+        "immobilizer": "<strong>2</strong> Immobilisateur (orbe lent)",
+        "pacifier": "<strong>3</strong> Pacificateur (fléchette somnifère)"
+      }
+    }
+  },
+  "game": {
+    "devices": {
+      "disruptor": "Perturbateur",
+      "immobilizer": "Immobilisateur",
+      "pacifier": "Pacificateur",
+      "taser": "Perturbateur",
+      "stun": "Immobilisateur",
+      "tranq": "Pacificateur"
+    },
+    "messages": {
+      "boop": "Boop !",
+      "restarted": "Redémarré ! Appuyez sur Entrée pour commencer.",
+      "found_exit": "Excellent travail ! Appuyez sur Entrée pour rejouer.",
+      "device_disabled": "Appareil désactivé",
+      "ready_again": "Prêt à rejouer !",
+      "you_found_exit": "Vous avez trouvé la sortie ! 🎉"
+    },
+    "difficulty": {
+      "presets": {
+        "easy": "Facile",
+        "normal": "Normal",
+        "hard": "Difficile",
+        "custom": "Personnalisé",
+        "teensafe": "Ado-Sécurisé"
+      },
+      "descriptions": {
+        "easy": "Rythme détendu avec des ressources généreuses",
+        "normal": "Défi équilibré pour la plupart des joueurs",
+        "hard": "Labyrinthe difficile avec des ressources limitées",
+        "teensafe": "Défi minimal, achèvement rapide"
+      },
+      "rating": "Difficulté : {{rating}}/10",
+      "estimated_time": "Temps Est. : {{minutes}} min"
+    },
+    "timer": {
+      "time_label": "Temps :",
+      "remaining": "{{minutes}}:{{seconds}}"
+    }
+  },
+  "config": {
+    "language": {
+      "label": "Langue",
+      "description": "Choisissez votre langue préférée"
+    },
+    "audio": {
+      "label": "Audio",
+      "enabled": "Activé"
+    },
+    "sensitivity": {
+      "label": "Sensibilité de la Souris",
+      "description": "Ajuster la sensibilité de vue de la souris"
+    },
+    "preset_section": {
+      "title": "Préréglage de Difficulté"
+    },
+    "maze": {
+      "title": "🏗️ Configuration du Labyrinthe",
+      "size": "Taille",
+      "recharge_pads": "Plateformes de Recharge",
+      "size_value": "{{size}}x{{size}}"
+    },
+    "enemies": {
+      "title": "👾 Configuration des Ennemis",
+      "count": "Nombre",
+      "speed": "Vitesse",
+      "speed_values": {
+        "0.5": "Lent",
+        "0.8": "Facile",
+        "1.0": "Normal",
+        "1.2": "Rapide",
+        "1.5": "Frénétique",
+        "2.0": "Dément"
+      }
+    },
+    "devices": {
+      "title": "🛡️ Configuration des Appareils",
+      "charges": "Charges"
+    }
+  }
+}

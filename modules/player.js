@@ -102,7 +102,7 @@ export class PlayerController {
   }
 
   turn(dx) {
-    this.a += dx * 0.002 * this.sensitivity;
+    this.a += dx * 0.005 * this.sensitivity;
   }
 
   distanceTo(x, y) { return Math.hypot(x - this.x, y - this.y); }
@@ -136,10 +136,10 @@ export class PlayerController {
     if (input.turnLeft) this.a -= (dt/1000)*this.turnSpeed;
     if (input.turnRight) this.a += (dt/1000)*this.turnSpeed;
 
-    // Handle mouse movement if EventManager available and pointer locked
-    if (this.eventManager && this.eventManager.isPointerLocked()) {
+    // Handle mouse movement if EventManager available
+    if (this.eventManager) {
       const mouseMovement = this.eventManager.getMouseMovement();
-      this.a += mouseMovement.dx * 0.002 * this.sensitivity;
+      this.a += mouseMovement.dx * 0.005 * this.sensitivity;
     }
 
     const mx = Math.cos(this.a) * (forward - back) + Math.cos(this.a + Math.PI/2) * (right - left);

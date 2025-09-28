@@ -29,7 +29,7 @@ export const GameConfig = {
     EXIT_DOOR_SIZE: 0.6,
     RECHARGE_PAD_SIZE: 0.4,
     ENEMY_SIZE: 0.6,
-    PARTICLE_SIZE: 0.2,
+    PARTICLE_SIZE: 0.05,
     BILLBOARD_HEIGHT_MULTIPLIER: 1.2,
 
 

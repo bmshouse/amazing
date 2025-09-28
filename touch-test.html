@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Touch Controls Test - CalmMaze</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0f1020;
+            color: #f7f7f7;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        }
+
+        .test-area {
+            min-height: 400px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .debug-info {
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .status {
+            color: #2bd4c5;
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        .warning {
+            color: #ffa726;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Touch Controls Test</h1>
+    <p>This page tests the touch control implementation for CalmMaze FPS.</p>
+
+    <div class="debug-info" id="platformInfo">
+        <h3>Platform Detection:</h3>
+        <div id="platformDetails">Loading...</div>
+    </div>
+
+    <div class="debug-info" id="touchInfo">
+        <h3>Touch Capabilities:</h3>
+        <div id="touchDetails">Loading...</div>
+    </div>
+
+    <div class="test-area" id="testArea">
+        <h3>Touch Test Area</h3>
+        <p>Touch/click in this area to test touch detection.</p>
+        <div id="touchFeedback"></div>
+    </div>
+
+    <div class="debug-info" id="joystickInfo">
+        <h3>Virtual Joystick Test:</h3>
+        <div id="joystickDetails">
+            <button onclick="testJoystick()">Create Test Joystick</button>
+            <button onclick="removeJoystick()">Remove Joystick</button>
+        </div>
+    </div>
+
+    <div class="debug-info" id="gestureInfo">
+        <h3>Gesture Recognition Test:</h3>
+        <div id="gestureDetails">
+            <button onclick="testGestures()">Enable Gesture Detection</button>
+            <button onclick="disableGestures()">Disable Gesture Detection</button>
+            <div id="gestureStatus">Gesture detection not initialized</div>
+        </div>
+    </div>
+
+    <div class="debug-info" id="lookControlInfo">
+        <h3>Touch Look Controls Test:</h3>
+        <div id="lookControlDetails">
+            <p>Touch and drag in the test area to test look controls</p>
+            <div>Sensitivity: <input type="range" id="lookSensitivity" min="0.001" max="0.008" value="0.003" step="0.0005" onchange="updateLookSensitivity()"></div>
+            <div id="lookControlStatus">Ready</div>
+        </div>
+    </div>
+
+    <div class="debug-info" id="eventInfo">
+        <h3>Event Log:</h3>
+        <div id="eventLog" style="max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <script type="module">
+        import { PlatformDetector } from './modules/platforms/PlatformDetector.js';
+        import { TouchManager } from './modules/input/TouchManager.js';
+        import { VirtualJoystick } from './modules/input/VirtualJoystick.js';
+        import { TouchGestureDetector } from './modules/input/TouchGestureDetector.js';
+
+        let platformDetector, touchManager, virtualJoystick, gestureDetector;
+        let eventLog = [];
+        let lookControlActive = false;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            eventLog.push(`[${timestamp}] ${message}`);
+            if (eventLog.length > 50) eventLog.shift(); // Keep only last 50 events
+
+            const logElement = document.getElementById('eventLog');
+            logElement.innerHTML = eventLog.map(entry => `<div class="${type}">${entry}</div>`).join('');
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function displayPlatformInfo() {
+            try {
+                platformDetector = new PlatformDetector();
+                const info = platformDetector.getDebugInfo();
+
+                document.getElementById('platformDetails').innerHTML = `
+                    <div class="status">Device Type: ${info.deviceType}</div>
+                    <div class="status">Layout Mode: ${info.layoutMode}</div>
+                    <div class="status">Screen Category: ${info.screenCategory}</div>
+                    <div class="status">Performance Tier: ${info.performanceTier}</div>
+                    <div class="status">Primary Input: ${info.primaryInput}</div>
+                    <div class="status">Orientation: ${info.orientation}</div>
+                `;
+
+                log('Platform detection successful', 'status');
+            } catch (error) {
+                document.getElementById('platformDetails').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                log(`Platform detection error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayTouchInfo() {
+            try {
+                touchManager = new TouchManager();
+
+                document.getElementById('touchDetails').innerHTML = `
+                    <div class="status">Has Touch: ${touchManager.capabilities.hasTouch}</div>
+                    <div class="status">Max Touch Points: ${touchManager.capabilities.maxTouchPoints}</div>
+                    <div class="status">Supports Pointer Events: ${touchManager.capabilities.supportsPointerEvents}</div>
+                    <div class="status">Screen Size: ${touchManager.capabilities.screenWidth}x${touchManager.capabilities.screenHeight}</div>
+                    <div class="status">Pixel Ratio: ${touchManager.capabilities.pixelRatio}</div>
+                `;
+
+                // Set up touch event logging
+                touchManager.on('touchstart', (data) => {
+                    log(`Touch Start: ${data.touchCount} touches`, 'status');
+                });
+
+                touchManager.on('touchmove', (data) => {
+                    if (Math.random() < 0.1) { // Only log 10% of move events to avoid spam
+                        log(`Touch Move: ${data.touchCount} touches`, 'status');
+                    }
+                });
+
+                touchManager.on('touchend', (data) => {
+                    log(`Touch End: ${data.touchCount} touches remaining`, 'status');
+                });
+
+                log('Touch manager initialized successfully', 'status');
+            } catch (error) {
+                document.getElementById('touchDetails').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                log(`Touch manager error: ${error.message}`, 'error');
+            }
+        }
+
+        function setupTestArea() {
+            const testArea = document.getElementById('testArea');
+            const feedback = document.getElementById('touchFeedback');
+
+            // Add basic touch/mouse event listeners for testing
+            testArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                feedback.innerHTML = `<div class="status">Touch Start at: (${e.touches[0].clientX}, ${e.touches[0].clientY})</div>`;
+                log(`Touch start at (${e.touches[0].clientX}, ${e.touches[0].clientY})`, 'status');
+            });
+
+            testArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length > 0) {
+                    feedback.innerHTML = `<div class="status">Touch Move to: (${e.touches[0].clientX}, ${e.touches[0].clientY})</div>`;
+                }
+            });
+
+            testArea.addEventListener('touchend', (e) => {
+                feedback.innerHTML = `<div class="status">Touch End</div>`;
+                log('Touch ended', 'status');
+            });
+
+            // Mouse events for desktop testing
+            testArea.addEventListener('mousedown', (e) => {
+                feedback.innerHTML = `<div class="status">Mouse Down at: (${e.clientX}, ${e.clientY})</div>`;
+                log(`Mouse down at (${e.clientX}, ${e.clientY})`, 'status');
+            });
+        }
+
+        window.testJoystick = function() {
+            try {
+                if (virtualJoystick) {
+                    virtualJoystick.destroy();
+                }
+
+                const controlConfig = platformDetector ? platformDetector.getVirtualControlConfig() : {
+                    joystick: { radius: 50, deadZone: 0.1, opacity: 0.7, positioning: 'bottom-right' }
+                };
+
+                virtualJoystick = new VirtualJoystick(document.body, {
+                    ...controlConfig.joystick,
+                    onMove: (x, y) => {
+                        document.getElementById('joystickDetails').innerHTML = `
+                            <button onclick="testJoystick()">Create Test Joystick</button>
+                            <button onclick="removeJoystick()">Remove Joystick</button>
+                            <div class="status">Joystick: X=${x.toFixed(2)}, Y=${y.toFixed(2)}</div>
+                        `;
+                    },
+                    onStart: () => {
+                        log('Virtual joystick activated', 'status');
+                    },
+                    onEnd: () => {
+                        log('Virtual joystick deactivated', 'status');
+                        document.getElementById('joystickDetails').innerHTML = `
+                            <button onclick="testJoystick()">Create Test Joystick</button>
+                            <button onclick="removeJoystick()">Remove Joystick</button>
+                            <div class="status">Joystick inactive</div>
+                        `;
+                    }
+                });
+
+                log('Virtual joystick created successfully', 'status');
+            } catch (error) {
+                log(`Joystick creation error: ${error.message}`, 'error');
+            }
+        };
+
+        window.removeJoystick = function() {
+            if (virtualJoystick) {
+                virtualJoystick.destroy();
+                virtualJoystick = null;
+                document.getElementById('joystickDetails').innerHTML = `
+                    <button onclick="testJoystick()">Create Test Joystick</button>
+                    <button onclick="removeJoystick()">Remove Joystick</button>
+                    <div class="status">Joystick removed</div>
+                `;
+                log('Virtual joystick removed', 'status');
+            }
+        };
+
+        window.testGestures = function() {
+            try {
+                if (!touchManager) {
+                    log('Touch manager not initialized', 'error');
+                    return;
+                }
+
+                gestureDetector = new TouchGestureDetector(touchManager);
+
+                // Set up gesture event listeners
+                gestureDetector.on('tap', (data) => {
+                    log(`Tap gesture: (${data.x}, ${data.y}) duration: ${data.duration}ms`, 'status');
+                });
+
+                gestureDetector.on('hold', (data) => {
+                    log(`Hold gesture: (${data.x}, ${data.y}) duration: ${data.duration}ms`, 'status');
+                });
+
+                gestureDetector.on('swipe', (data) => {
+                    log(`Swipe gesture: ${data.direction} distance: ${data.distance.toFixed(1)}px velocity: ${data.velocity.toFixed(2)}`, 'status');
+                });
+
+                gestureDetector.on('pinch', (data) => {
+                    log(`Pinch gesture: scale: ${data.scale.toFixed(2)} center: (${data.centerX.toFixed(1)}, ${data.centerY.toFixed(1)})`, 'status');
+                });
+
+                document.getElementById('gestureStatus').innerHTML = '<div class="status">Gesture detection active - Try tap, hold, swipe, and pinch gestures!</div>';
+                log('Gesture detection enabled', 'status');
+            } catch (error) {
+                log(`Gesture detection error: ${error.message}`, 'error');
+            }
+        };
+
+        window.disableGestures = function() {
+            if (gestureDetector) {
+                gestureDetector.destroy();
+                gestureDetector = null;
+                document.getElementById('gestureStatus').innerHTML = '<div class="status">Gesture detection disabled</div>';
+                log('Gesture detection disabled', 'status');
+            }
+        };
+
+        window.updateLookSensitivity = function() {
+            const sensitivity = document.getElementById('lookSensitivity').value;
+            document.getElementById('lookControlStatus').innerHTML = `<div class="status">Look sensitivity: ${sensitivity}</div>`;
+            log(`Look sensitivity updated to ${sensitivity}`, 'status');
+        };
+
+        function setupLookControlTesting() {
+            const testArea = document.getElementById('testArea');
+            let lookState = { active: false, lastX: 0, lastY: 0, sensitivity: 0.003 };
+
+            // Touch look control testing
+            testArea.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    lookState.active = true;
+                    lookState.lastX = e.touches[0].clientX;
+                    lookState.lastY = e.touches[0].clientY;
+                    document.getElementById('lookControlStatus').innerHTML = '<div class="status">Look control started</div>';
+                }
+            });
+
+            testArea.addEventListener('touchmove', (e) => {
+                if (lookState.active && e.touches.length === 1) {
+                    const deltaX = e.touches[0].clientX - lookState.lastX;
+                    const deltaY = e.touches[0].clientY - lookState.lastY;
+
+                    lookState.lastX = e.touches[0].clientX;
+                    lookState.lastY = e.touches[0].clientY;
+
+                    document.getElementById('lookControlStatus').innerHTML =
+                        `<div class="status">Look delta: (${deltaX.toFixed(1)}, ${deltaY.toFixed(1)})</div>`;
+
+                    if (Math.random() < 0.1) { // Log 10% of moves to avoid spam
+                        log(`Look control: dx=${deltaX.toFixed(1)}, dy=${deltaY.toFixed(1)}`, 'status');
+                    }
+                }
+            });
+
+            testArea.addEventListener('touchend', (e) => {
+                if (lookState.active) {
+                    lookState.active = false;
+                    document.getElementById('lookControlStatus').innerHTML = '<div class="status">Look control ended</div>';
+                }
+            });
+        }
+
+        // Initialize everything
+        log('Starting touch controls test (Phase 2)...', 'status');
+        displayPlatformInfo();
+        displayTouchInfo();
+        setupTestArea();
+        setupLookControlTesting();
+
+        log('Phase 2 touch controls test ready!', 'status');
+        log('Features: Touch look controls, gesture recognition, sensitivity settings', 'status');
+    </script>
+</body>
+</html>

@@ -13,14 +13,51 @@ export class Defenses {
     this.projectileSystem = null; // Will be injected
     this.eventManager = null; // Will be injected
     this.onActivation = (_x,_y,_c)=>{};
+    this.onRangeIndicator = (_x1,_y1,_x2,_y2,_c,_a)=>{};
 
     // Fallback to direct event listeners
     window.addEventListener('mousedown', (e)=>{
-      if (e.button === 0 && document.pointerLockElement) this.activate();
+      if (e.button === 0 && document.pointerLockElement && !this.isClickOnUI(e)) {
+        this.activate();
+      }
     });
     window.addEventListener('keydown', (e)=>{
       if (e.code === 'Space') { e.preventDefault(); this.activate(); }
     });
+  }
+
+  // Check if click is on UI elements to prevent accidental device activation
+  isClickOnUI(event) {
+    const target = event.target;
+    if (!target) return false;
+
+    // Check if click is on config button
+    if (target.id === 'configButton' || target.closest('#configButton')) {
+      return true;
+    }
+
+    // Check if click is on config panel
+    if (target.id === 'configPanel' || target.closest('#configPanel')) {
+      return true;
+    }
+
+    // Check if click is on HUD elements
+    if (target.closest('#hud')) {
+      return true;
+    }
+
+    // Check if click is on touch controls
+    if (target.closest('.touch-controls')) {
+      return true;
+    }
+
+    // Check if click is on any button or interactive element
+    if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' ||
+        target.tagName === 'SELECT' || target.closest('button')) {
+      return true;
+    }
+
+    return false;
   }
 
   reset() {
@@ -37,7 +74,9 @@ export class Defenses {
     // Set up event handlers through EventManager
     if (eventManager) {
       eventManager.on('mousedown', (data) => {
-        if (data.button === 0 && document.pointerLockElement) this.activate();
+        if (data.button === 0 && document.pointerLockElement && !this.isClickOnUI(data.event)) {
+          this.activate();
+        }
       });
       eventManager.on('keydown', (data) => {
         if (data.code === 'Space') {
@@ -60,6 +99,13 @@ export class Defenses {
 
     const result = device.activate(this.player, this.enemies, this.audio, this.onActivation, this.projectileSystem);
     return result;
+  }
+
+  showRangeIndicator() {
+    const device = this.devices[this.currentDevice];
+    if (device && device.showRangeIndicator) {
+      device.showRangeIndicator(this.player, this.onRangeIndicator);
+    }
   }
 
   update(dt) {
