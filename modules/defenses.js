@@ -1,5 +1,5 @@
-// modules/defenses.js - tools, ammo, cooldown, recharge (Legacy wrapper)
-import { WeaponFactory } from './weapons/WeaponFactory.js';
+// modules/defenses.js - tools, charges, cooldown, recharge (Legacy wrapper)
+import { DeviceFactory } from './devices/DeviceFactory.js';
 import { GameConfig } from './GameConfig.js';
 
 export class Defenses {
@@ -8,24 +8,24 @@ export class Defenses {
     this.enemies = enemies;
     this.audio = audio;
     this.hud = hud;
-    this.weapons = WeaponFactory.createAllWeapons();
-    this.currentWeapon = 'taser';
+    this.devices = DeviceFactory.createAllDevices();
+    this.currentDevice = 'taser';
     this.projectileSystem = null; // Will be injected
     this.eventManager = null; // Will be injected
-    this.onFire = (_x,_y,_c)=>{};
+    this.onActivation = (_x,_y,_c)=>{};
 
     // Fallback to direct event listeners
     window.addEventListener('mousedown', (e)=>{
-      if (e.button === 0) this.fire();
+      if (e.button === 0 && document.pointerLockElement) this.activate();
     });
     window.addEventListener('keydown', (e)=>{
-      if (e.code === 'Space') { e.preventDefault(); this.fire(); }
+      if (e.code === 'Space') { e.preventDefault(); this.activate(); }
     });
   }
 
   reset() {
-    this.currentWeapon = 'taser';
-    Object.values(this.weapons).forEach(weapon => weapon.reload());
+    this.currentDevice = 'taser';
+    Object.values(this.devices).forEach(device => device.recharge());
   }
 
   setProjectileSystem(projectileSystem) {
@@ -37,28 +37,28 @@ export class Defenses {
     // Set up event handlers through EventManager
     if (eventManager) {
       eventManager.on('mousedown', (data) => {
-        if (data.button === 0) this.fire();
+        if (data.button === 0 && document.pointerLockElement) this.activate();
       });
       eventManager.on('keydown', (data) => {
         if (data.code === 'Space') {
           data.event.preventDefault();
-          this.fire();
+          this.activate();
         }
       });
     }
   }
 
-  setMode(m) { this.currentWeapon = m; }
+  setMode(m) { this.currentDevice = m; }
 
-  taserAmmoRatio(){ return this.weapons.taser.getAmmoRatio(); }
-  stunAmmoRatio(){ return this.weapons.stun.getAmmoRatio(); }
-  tranqAmmoRatio(){ return this.weapons.tranq.getAmmoRatio(); }
+  taserChargeRatio(){ return this.devices.taser.getChargeRatio(); }
+  stunChargeRatio(){ return this.devices.stun.getChargeRatio(); }
+  tranqChargeRatio(){ return this.devices.tranq.getChargeRatio(); }
 
-  fire() {
-    const weapon = this.weapons[this.currentWeapon];
-    if (!weapon) return;
+  activate() {
+    const device = this.devices[this.currentDevice];
+    if (!device) return;
 
-    const result = weapon.fire(this.player, this.enemies, this.audio, this.onFire, this.projectileSystem);
+    const result = device.activate(this.player, this.enemies, this.audio, this.onActivation, this.projectileSystem);
     return result;
   }
 
@@ -69,7 +69,7 @@ export class Defenses {
       const dy = (pad.y+0.5) - this.player.y;
       const distance = Math.sqrt(dx*dx + dy*dy);
       if (distance < GameConfig.MAZE.RECHARGE_PAD_RADIUS) {
-        Object.values(this.weapons).forEach(weapon => weapon.reload());
+        Object.values(this.devices).forEach(device => device.recharge());
       }
     }
   }

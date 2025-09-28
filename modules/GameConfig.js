@@ -68,16 +68,16 @@ export const GameConfig = {
     TRANQ_DURATION: 3000
   },
 
-  // Weapon constants
-  WEAPONS: {
+  // Device constants
+  DEVICES: {
     TASER: {
-      MAX_AMMO: 8,
+      MAX_CHARGES: 8,
       COOLDOWN: 250,
       RANGE: 1.6,
       EFFECT_DURATION: 1500
     },
     STUN: {
-      MAX_AMMO: 6,
+      MAX_CHARGES: 6,
       COOLDOWN: 600,
       PROJECTILE_SPEED: 3.2,
       PROJECTILE_RADIUS: 0.08,
@@ -85,7 +85,7 @@ export const GameConfig = {
       SLOWDOWN_FACTOR: 0.35
     },
     TRANQ: {
-      MAX_AMMO: 4,
+      MAX_CHARGES: 4,
       COOLDOWN: 750,
       PROJECTILE_SPEED: 5.0,
       PROJECTILE_RADIUS: 0.05,
@@ -189,8 +189,8 @@ export const GameConfig = {
 };
 
 // Utility functions for accessing config values
-export const getWeaponConfig = (weaponType) => {
-  return GameConfig.WEAPONS[weaponType.toUpperCase()];
+export const getDeviceConfig = (deviceType) => {
+  return GameConfig.DEVICES[deviceType.toUpperCase()];
 };
 
 export const getColor = (colorName) => {

@@ -1,7 +1,7 @@
-// modules/weapons/TranqWeapon.js - Fast projectile weapon that immobilizes enemies
-import { IWeapon } from './IWeapon.js';
+// modules/devices/TranqDevice.js - Fast projectile device that immobilizes creatures
+import { IDevice } from './IDevice.js';
 
-export class TranqWeapon extends IWeapon {
+export class TranqDevice extends IDevice {
   constructor() {
     super('tranq', 4, 750);
     this.projectileSpeed = 5.0;
@@ -9,10 +9,10 @@ export class TranqWeapon extends IWeapon {
     this.effectDuration = 3000;
   }
 
-  fire(player, enemyController, audio, onFire, projectileSystem) {
-    if (!this.canFire()) return false;
+  activate(player, enemyController, audio, onActivation, projectileSystem) {
+    if (!this.canActivate()) return false;
 
-    this.consumeAmmo();
+    this.consumeCharge();
 
     // Create fast-moving dart projectile
     const projectile = {
@@ -24,7 +24,7 @@ export class TranqWeapon extends IWeapon {
       color: '#a29bfe',
       type: 'tranq',
       born: performance.now(),
-      weapon: this
+      device: this
     };
 
     projectileSystem.addProjectile(projectile);
@@ -44,6 +44,6 @@ export class TranqWeapon extends IWeapon {
   }
 
   getDescription() {
-    return 'Fast dart that completely immobilizes enemies';
+    return 'Fast dart that completely immobilizes creatures';
   }
 }
