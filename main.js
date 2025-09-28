@@ -11,8 +11,14 @@ import { EventManager } from './modules/EventManager.js';
 import { ProjectileSystem } from './modules/ProjectileSystem.js';
 import { GameConfig } from './modules/GameConfig.js';
 import { DifficultyConfig } from './modules/DifficultyConfig.js';
+import { I18nManager } from './modules/I18nManager.js';
 
 export function bootstrap({ dev=false } = {}) {
+  // ═══════════════════════════════════════════════════════════════
+  // I18N INITIALIZATION
+  // ═══════════════════════════════════════════════════════════════
+  const i18n = new I18nManager();
+
   // ═══════════════════════════════════════════════════════════════
   // DIFFICULTY CONFIGURATION SETUP
   // ═══════════════════════════════════════════════════════════════
@@ -33,6 +39,7 @@ export function bootstrap({ dev=false } = {}) {
     tutorial: document.getElementById('tutorial'),
     configButton: document.getElementById('configButton'),
     configPanel: document.getElementById('configPanel'),
+    languageSelect: document.getElementById('languageSelect'),
     // Difficulty UI elements
     difficultyRating: document.getElementById('difficultyRating'),
     estimatedTime: document.getElementById('estimatedTime'),
@@ -57,6 +64,19 @@ export function bootstrap({ dev=false } = {}) {
   const gameState = new GameState();
   const eventManager = new EventManager();
   gameState.initialize({ dev });
+
+  // Initialize i18n system
+  i18n.init().then(() => {
+    console.log('I18n initialized with language:', i18n.getCurrentLanguage());
+    hud.languageSelect.value = i18n.getCurrentLanguage();
+    i18n.updateDOM(); // Update all data-i18n elements
+    updateDifficultyUI(); // Initial update with translations
+
+    // Set initial config button tooltip
+    hud.configButton.title = i18n.t('ui.common.settings');
+  }).catch(error => {
+    console.error('Failed to initialize i18n:', error);
+  });
 
   // ═══════════════════════════════════════════════════════════════
   // CANVAS AND RENDERING SETUP
@@ -188,12 +208,12 @@ export function bootstrap({ dev=false } = {}) {
 
   function updateDifficultyUI() {
     // Update difficulty rating and estimated time
-    hud.difficultyRating.textContent = `Difficulty: ${difficultyConfig.getDifficultyRating()}/10`;
-    hud.estimatedTime.textContent = `Est. Time: ${difficultyConfig.getEstimatedTime()} min`;
+    hud.difficultyRating.textContent = i18n.t('game.difficulty.rating', { rating: difficultyConfig.getDifficultyRating() });
+    hud.estimatedTime.textContent = i18n.t('game.difficulty.estimated_time', { minutes: difficultyConfig.getEstimatedTime() });
 
     // Update maze settings
     hud.mazeSize.value = currentDifficulty.maze.size;
-    hud.mazeSizeValue.textContent = `${currentDifficulty.maze.size}x${currentDifficulty.maze.size}`;
+    hud.mazeSizeValue.textContent = i18n.t('config.maze.size_value', { size: currentDifficulty.maze.size });
     hud.rechargePads.value = currentDifficulty.maze.rechargePads;
     hud.rechargePadsValue.textContent = currentDifficulty.maze.rechargePads;
 
@@ -201,8 +221,9 @@ export function bootstrap({ dev=false } = {}) {
     hud.enemyCount.value = currentDifficulty.enemies.count;
     hud.enemyCountValue.textContent = currentDifficulty.enemies.count;
     hud.enemySpeed.value = currentDifficulty.enemies.speedMultiplier;
-    const speedNames = { 0.5: 'Slow', 0.8: 'Easy', 1.0: 'Normal', 1.2: 'Fast', 1.5: 'Frantic', 2.0: 'Insane' };
-    hud.enemySpeedValue.textContent = speedNames[currentDifficulty.enemies.speedMultiplier] || 'Custom';
+    const speedKey = `config.enemies.speed_values.${currentDifficulty.enemies.speedMultiplier}`;
+    hud.enemySpeedValue.textContent = i18n.getTranslation(speedKey) !== `[${speedKey}]` ?
+      i18n.t(speedKey) : 'Custom';
 
     // Update device settings
     document.getElementById('enableDisruptor').checked = currentDifficulty.devices.disruptor.enabled;
@@ -315,8 +336,7 @@ export function bootstrap({ dev=false } = {}) {
     closeConfigPanel();
   });
 
-  // Initialize difficulty UI
-  updateDifficultyUI();
+  // Difficulty UI will be initialized in i18n.init() promise
 
   // ═════════════════════════════════════════════════════════════════
   // EVENT HANDLERS SETUP
@@ -329,6 +349,31 @@ export function bootstrap({ dev=false } = {}) {
 
   // Initialize sensitivity display
   hud.sensitivityValue.textContent = hud.sensitivity.value;
+
+  // Language selector event handler
+  hud.languageSelect.addEventListener('change', async (e) => {
+    const selectedLanguage = e.target.value;
+    await i18n.setLanguage(selectedLanguage);
+
+    // Small delay to ensure DOM is ready, then force update all translations
+    setTimeout(() => {
+      i18n.updateDOM();
+      updateDifficultyUI(); // Refresh dynamic text
+
+      // Update tutorial header if currently visible
+      const tutorialHeader = hud.tutorial.querySelector('h2');
+      if (tutorialHeader && !gameState.isWon()) {
+        tutorialHeader.textContent = i18n.t('ui.tutorial.welcome');
+      }
+
+      // Update config button tooltip
+      hud.configButton.title = i18n.t('ui.common.settings');
+
+      console.log('Language changed to:', selectedLanguage, 'DOM updated');
+    }, 10);
+  });
+
+  // Language selector will be initialized in i18n.init() promise
 
   eventManager.on('keydown', (data)=>{
     if (data.code === 'Escape') closeConfigPanel();
@@ -346,7 +391,7 @@ export function bootstrap({ dev=false } = {}) {
         speak(requestedDevice);
         audio.beep('square', GameConfig.AUDIO.FREQ_WEAPON_SELECT, 0.06, 0.04);
       } else {
-        speak('Device disabled');
+        speak(i18n.t('game.messages.device_disabled'));
         audio.beep('triangle', 200, 0.05, 0.03);
       }
     }
@@ -389,8 +434,8 @@ export function bootstrap({ dev=false } = {}) {
     projectileSystem.clear();
     gameState.resetForRestart();
     hud.tutorial.style.display = '';
-    hud.tutorial.querySelector('h2').textContent = 'Ready to go again!';
-    speak('Restarted! Press Enter to begin.');
+    hud.tutorial.querySelector('h2').textContent = i18n.t('game.messages.ready_again');
+    speak(i18n.t('game.messages.restarted'));
     audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
   }
 
@@ -509,8 +554,8 @@ export function bootstrap({ dev=false } = {}) {
         if (distanceToExitWall < GameConfig.BALANCE.WIN_DISTANCE_TO_EXIT) {
           gameState.winGame();
           hud.tutorial.style.display = '';
-          hud.tutorial.querySelector('h2').textContent = 'You found the exit! 🎉';
-          speak('Great job! Press Enter to play again.');
+          hud.tutorial.querySelector('h2').textContent = i18n.t('game.messages.you_found_exit');
+          speak(i18n.t('game.messages.found_exit'));
           audio.beep('triangle', GameConfig.AUDIO.FREQ_WIN, 0.12, 0.07);
         }
       }
@@ -547,7 +592,7 @@ export function bootstrap({ dev=false } = {}) {
     for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_BOOP;i++) {
       spawnParticle(x+(Math.random()-0.5)*0.2, y+(Math.random()-0.5)*0.2, GameConfig.COLORS.PARTICLE_BOOP, 300);
     }
-    speak('Boop!');
+    speak(i18n.t('game.messages.boop'));
     audio.beep('sine', GameConfig.AUDIO.FREQ_BOOP, 0.05, 0.05);
   };
 

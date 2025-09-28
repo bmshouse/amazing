@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "language": "English",
+    "code": "en",
+    "rtl": false,
+    "version": "1.0.0"
+  },
+  "ui": {
+    "common": {
+      "ok": "OK",
+      "cancel": "Cancel",
+      "reset": "Reset to Defaults",
+      "apply": "Apply Changes",
+      "settings": "Settings",
+      "close": "Close"
+    },
+    "tabs": {
+      "basic": "Basic",
+      "difficulty": "Difficulty",
+      "advanced": "Advanced"
+    },
+    "tutorial": {
+      "welcome": "Welcome!",
+      "instruction_1": "W/A/S/D or arrow keys to move. Hold <strong>Shift</strong> to glide faster.",
+      "instruction_2": "Move mouse to look. Keyboard-only? Use <strong>Q/E</strong> to turn.",
+      "instruction_3": "Find the glowing exit before the timer runs out.",
+      "instruction_4": "Friendly critters will gently <em>boop</em> you back. Use defensive tools:",
+      "instruction_5": "Step on recharge pads to refill device charges.",
+      "instruction_6": "Click the <strong>⚙️ gear icon</strong> to customize difficulty, maze size, enemy count, and device settings!",
+      "start_prompt": "Press <strong>Enter</strong> to start. Press <strong>R</strong> to restart.",
+      "device_list": {
+        "disruptor": "<strong>1</strong> Disruptor (short-range stun)",
+        "immobilizer": "<strong>2</strong> Immobilizer (slow orb)",
+        "pacifier": "<strong>3</strong> Pacifier (sleepy dart)"
+      }
+    }
+  },
+  "game": {
+    "devices": {
+      "disruptor": "Disruptor",
+      "immobilizer": "Immobilizer",
+      "pacifier": "Pacifier",
+      "taser": "Disruptor",
+      "stun": "Immobilizer",
+      "tranq": "Pacifier"
+    },
+    "messages": {
+      "boop": "Boop!",
+      "restarted": "Restarted! Press Enter to begin.",
+      "found_exit": "Great job! Press Enter to play again.",
+      "device_disabled": "Device disabled",
+      "ready_again": "Ready to go again!",
+      "you_found_exit": "You found the exit! 🎉"
+    },
+    "difficulty": {
+      "presets": {
+        "easy": "Easy",
+        "normal": "Normal",
+        "hard": "Hard",
+        "custom": "Custom",
+        "teensafe": "Teen-Safe"
+      },
+      "descriptions": {
+        "easy": "Relaxed pace with generous resources",
+        "normal": "Balanced challenge for most players",
+        "hard": "Challenging maze with limited resources",
+        "teensafe": "Minimal challenge, quick completion"
+      },
+      "rating": "Difficulty: {{rating}}/10",
+      "estimated_time": "Est. Time: {{minutes}} min"
+    },
+    "timer": {
+      "time_label": "Time:",
+      "remaining": "{{minutes}}:{{seconds}}"
+    }
+  },
+  "config": {
+    "language": {
+      "label": "Language",
+      "description": "Choose your preferred language"
+    },
+    "audio": {
+      "label": "Audio",
+      "enabled": "Enabled"
+    },
+    "sensitivity": {
+      "label": "Mouse Sensitivity",
+      "description": "Adjust mouse look sensitivity"
+    },
+    "preset_section": {
+      "title": "Difficulty Preset"
+    },
+    "maze": {
+      "title": "🏗️ Maze Configuration",
+      "size": "Size",
+      "recharge_pads": "Recharge Pads",
+      "size_value": "{{size}}x{{size}}"
+    },
+    "enemies": {
+      "title": "👾 Enemy Configuration",
+      "count": "Count",
+      "speed": "Speed",
+      "speed_values": {
+        "0.5": "Slow",
+        "0.8": "Easy",
+        "1.0": "Normal",
+        "1.2": "Fast",
+        "1.5": "Frantic",
+        "2.0": "Insane"
+      }
+    },
+    "devices": {
+      "title": "🛡️ Device Configuration",
+      "charges": "Charges"
+    }
+  }
+}
