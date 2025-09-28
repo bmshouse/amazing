@@ -58,7 +58,9 @@ input:checked + .slider:before { transform: translateX(20px); }
   position: absolute;
   top: 60px;
   right: 8px;
-  width: 280px;
+  width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
   pointer-events: auto;
   background: rgba(10, 13, 30, 0.9);
   backdrop-filter: blur(8px);
@@ -79,11 +81,60 @@ input:checked + .slider:before { transform: translateX(20px); }
   padding: 16px;
 }
 
-.config-content h3 {
-  margin: 0 0 16px 0;
+/* Tab Navigation */
+.config-tabs {
+  display: flex;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.config-tab {
+  flex: 1;
+  padding: 8px 12px;
+  background: none;
+  border: none;
   color: #f7f7f7;
-  font-size: 16px;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.config-tab.active {
+  opacity: 1;
+  border-bottom-color: #2bd4c5;
+}
+
+.config-tab:hover {
+  opacity: 0.8;
+}
+
+/* Tab Content */
+.config-tab-content {
+  display: none;
+}
+
+.config-tab-content.active {
+  display: block;
+}
+
+/* Sections */
+.config-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.config-section:last-child {
+  border-bottom: none;
+}
+
+.config-section h4 {
+  margin: 0 0 12px 0;
+  color: #f7f7f7;
+  font-size: 14px;
   font-weight: 500;
+  opacity: 0.9;
 }
 
 .config-item {
@@ -143,6 +194,123 @@ input:checked + .slider:before { transform: translateX(20px); }
   opacity: 0.7;
   min-width: 32px;
   text-align: right;
+}
+
+/* Preset Buttons */
+.preset-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.preset-btn {
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: #f7f7f7;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.preset-btn:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.preset-btn.active {
+  background: #2bd4c5;
+  border-color: #2bd4c5;
+  color: #0f1020;
+}
+
+/* Difficulty Info */
+.difficulty-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #f7f7f7;
+  opacity: 0.7;
+  margin-top: 8px;
+}
+
+/* Device Configuration */
+.device-config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.device-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+}
+
+.device-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.device-toggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #2bd4c5;
+}
+
+.device-name {
+  font-size: 13px;
+  color: #f7f7f7;
+}
+
+.device-item .config-input-group {
+  flex: 1;
+}
+
+/* Action Buttons */
+.config-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.config-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.config-btn.primary {
+  background: #2bd4c5;
+  color: #0f1020;
+}
+
+.config-btn.primary:hover {
+  background: #26c4b5;
+}
+
+.config-btn.secondary {
+  background: rgba(255,255,255,0.1);
+  color: #f7f7f7;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.config-btn.secondary:hover {
+  background: rgba(255,255,255,0.15);
 }
 
 /* Tutorial panel */

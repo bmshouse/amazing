@@ -10,8 +10,15 @@ import { GameState } from './modules/GameState.js';
 import { EventManager } from './modules/EventManager.js';
 import { ProjectileSystem } from './modules/ProjectileSystem.js';
 import { GameConfig } from './modules/GameConfig.js';
+import { DifficultyConfig } from './modules/DifficultyConfig.js';
 
 export function bootstrap({ dev=false } = {}) {
+  // ═══════════════════════════════════════════════════════════════
+  // DIFFICULTY CONFIGURATION SETUP
+  // ═══════════════════════════════════════════════════════════════
+  const difficultyConfig = new DifficultyConfig();
+  let currentDifficulty = difficultyConfig.getConfig();
+
   // ═══════════════════════════════════════════════════════════════
   // DOM ELEMENT SETUP
   // ═══════════════════════════════════════════════════════════════
@@ -26,6 +33,17 @@ export function bootstrap({ dev=false } = {}) {
     tutorial: document.getElementById('tutorial'),
     configButton: document.getElementById('configButton'),
     configPanel: document.getElementById('configPanel'),
+    // Difficulty UI elements
+    difficultyRating: document.getElementById('difficultyRating'),
+    estimatedTime: document.getElementById('estimatedTime'),
+    mazeSize: document.getElementById('mazeSize'),
+    mazeSizeValue: document.getElementById('mazeSizeValue'),
+    rechargePads: document.getElementById('rechargePads'),
+    rechargePadsValue: document.getElementById('rechargePadsValue'),
+    enemyCount: document.getElementById('enemyCount'),
+    enemyCountValue: document.getElementById('enemyCountValue'),
+    enemySpeed: document.getElementById('enemySpeed'),
+    enemySpeedValue: document.getElementById('enemySpeedValue'),
     bars: {
       taser: document.querySelector('#charges-taser span'),
       stun: document.querySelector('#charges-stun span'),
@@ -81,9 +99,15 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   // GAME WORLD INITIALIZATION
   // ═════════════════════════════════════════════════════════════════
-  const mazeSize = GameConfig.MAZE.DEFAULT_SIZE;
-  let maze = new Maze(mazeSize, mazeSize);
-  maze.generate();
+  function createGameWorld() {
+    const mazeSize = currentDifficulty.maze.size;
+    const rechargePads = currentDifficulty.maze.rechargePads;
+    let maze = new Maze(mazeSize, mazeSize, rechargePads);
+    maze.generate();
+    return maze;
+  }
+
+  let maze = createGameWorld();
 
   // Generate wall textures
   const textures = {
@@ -159,6 +183,142 @@ export function bootstrap({ dev=false } = {}) {
   });
 
   // ═════════════════════════════════════════════════════════════════
+  // DIFFICULTY CONFIGURATION UI SETUP
+  // ═════════════════════════════════════════════════════════════════
+
+  function updateDifficultyUI() {
+    // Update difficulty rating and estimated time
+    hud.difficultyRating.textContent = `Difficulty: ${difficultyConfig.getDifficultyRating()}/10`;
+    hud.estimatedTime.textContent = `Est. Time: ${difficultyConfig.getEstimatedTime()} min`;
+
+    // Update maze settings
+    hud.mazeSize.value = currentDifficulty.maze.size;
+    hud.mazeSizeValue.textContent = `${currentDifficulty.maze.size}x${currentDifficulty.maze.size}`;
+    hud.rechargePads.value = currentDifficulty.maze.rechargePads;
+    hud.rechargePadsValue.textContent = currentDifficulty.maze.rechargePads;
+
+    // Update enemy settings
+    hud.enemyCount.value = currentDifficulty.enemies.count;
+    hud.enemyCountValue.textContent = currentDifficulty.enemies.count;
+    hud.enemySpeed.value = currentDifficulty.enemies.speedMultiplier;
+    const speedNames = { 0.5: 'Slow', 0.8: 'Easy', 1.0: 'Normal', 1.2: 'Fast', 1.5: 'Frantic', 2.0: 'Insane' };
+    hud.enemySpeedValue.textContent = speedNames[currentDifficulty.enemies.speedMultiplier] || 'Custom';
+
+    // Update device settings
+    document.getElementById('enableDisruptor').checked = currentDifficulty.devices.disruptor.enabled;
+    document.getElementById('disruptorCharges').value = currentDifficulty.devices.disruptor.charges;
+    document.getElementById('disruptorChargesValue').textContent = currentDifficulty.devices.disruptor.charges;
+
+    document.getElementById('enableImmobilizer').checked = currentDifficulty.devices.immobilizer.enabled;
+    document.getElementById('immobilizerCharges').value = currentDifficulty.devices.immobilizer.charges;
+    document.getElementById('immobilizerChargesValue').textContent = currentDifficulty.devices.immobilizer.charges;
+
+    document.getElementById('enablePacifier').checked = currentDifficulty.devices.pacifier.enabled;
+    document.getElementById('pacifierCharges').value = currentDifficulty.devices.pacifier.charges;
+    document.getElementById('pacifierChargesValue').textContent = currentDifficulty.devices.pacifier.charges;
+
+    // Update preset buttons
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.preset === currentDifficulty.preset);
+    });
+  }
+
+  // Tab switching
+  document.querySelectorAll('.config-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+
+      // Update tab buttons
+      document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Update tab content
+      document.querySelectorAll('.config-tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(targetTab + 'Tab').classList.add('active');
+    });
+  });
+
+  // Preset selection
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = btn.dataset.preset;
+      difficultyConfig.applyPreset(preset);
+      currentDifficulty = difficultyConfig.getConfig();
+      updateDifficultyUI();
+    });
+  });
+
+  // Maze size slider
+  hud.mazeSize.addEventListener('input', (e) => {
+    let size = parseInt(e.target.value);
+    if (size % 2 === 0) size += 1; // Ensure odd number
+    difficultyConfig.updateConfig('maze', 'size', size);
+    currentDifficulty = difficultyConfig.getConfig();
+    updateDifficultyUI();
+  });
+
+  // Recharge pads slider
+  hud.rechargePads.addEventListener('input', (e) => {
+    const count = parseInt(e.target.value);
+    difficultyConfig.updateConfig('maze', 'rechargePads', count);
+    currentDifficulty = difficultyConfig.getConfig();
+    updateDifficultyUI();
+  });
+
+  // Enemy count slider
+  hud.enemyCount.addEventListener('input', (e) => {
+    const count = parseInt(e.target.value);
+    difficultyConfig.updateConfig('enemies', 'count', count);
+    currentDifficulty = difficultyConfig.getConfig();
+    updateDifficultyUI();
+  });
+
+  // Enemy speed slider
+  hud.enemySpeed.addEventListener('input', (e) => {
+    const speed = parseFloat(e.target.value);
+    difficultyConfig.updateConfig('enemies', 'speedMultiplier', speed);
+    currentDifficulty = difficultyConfig.getConfig();
+    updateDifficultyUI();
+  });
+
+  // Device toggles and charge sliders
+  ['disruptor', 'immobilizer', 'pacifier'].forEach(deviceType => {
+    const enableCheckbox = document.getElementById(`enable${deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}`);
+    const chargeSlider = document.getElementById(`${deviceType}Charges`);
+
+    enableCheckbox.addEventListener('change', (e) => {
+      difficultyConfig.updateDevice(deviceType, 'enabled', e.target.checked);
+      currentDifficulty = difficultyConfig.getConfig();
+      updateDifficultyUI();
+    });
+
+    chargeSlider.addEventListener('input', (e) => {
+      const charges = parseInt(e.target.value);
+      difficultyConfig.updateDevice(deviceType, 'charges', charges);
+      currentDifficulty = difficultyConfig.getConfig();
+      updateDifficultyUI();
+    });
+  });
+
+  // Reset and Apply buttons
+  document.getElementById('resetDifficulty').addEventListener('click', () => {
+    difficultyConfig.reset();
+    currentDifficulty = difficultyConfig.getConfig();
+    updateDifficultyUI();
+  });
+
+  document.getElementById('applyDifficulty').addEventListener('click', () => {
+    // Apply changes and restart game
+    restart();
+    closeConfigPanel();
+  });
+
+  // Initialize difficulty UI
+  updateDifficultyUI();
+
+  // ═════════════════════════════════════════════════════════════════
   // EVENT HANDLERS SETUP
   // ═════════════════════════════════════════════════════════════════
   hud.sensitivity.addEventListener('input', (e)=>{
@@ -175,10 +335,20 @@ export function bootstrap({ dev=false } = {}) {
     if (data.code === 'Enter' && !gameState.isStarted()) startGame();
     if (data.code === 'KeyR') restart();
     if (['Digit1','Digit2','Digit3'].includes(data.code)) {
-      const m = { Digit1:'taser', Digit2:'stun', Digit3:'tranq' }[data.code];
-      defenses.setMode(m);
-      speak(m);
-      audio.beep('square', GameConfig.AUDIO.FREQ_WEAPON_SELECT, 0.06, 0.04);
+      const deviceMapping = { Digit1:'taser', Digit2:'stun', Digit3:'tranq' };
+      const difficultyMapping = { taser: 'disruptor', stun: 'immobilizer', tranq: 'pacifier' };
+      const requestedDevice = deviceMapping[data.code];
+      const difficultyDevice = difficultyMapping[requestedDevice];
+
+      // Check if device is enabled in current difficulty
+      if (currentDifficulty.devices[difficultyDevice]?.enabled) {
+        defenses.setMode(requestedDevice);
+        speak(requestedDevice);
+        audio.beep('square', GameConfig.AUDIO.FREQ_WEAPON_SELECT, 0.06, 0.04);
+      } else {
+        speak('Device disabled');
+        audio.beep('triangle', 200, 0.05, 0.03);
+      }
     }
   });
 
@@ -204,17 +374,69 @@ export function bootstrap({ dev=false } = {}) {
   }
 
   function restart() {
-    maze = new Maze(mazeSize, mazeSize);
-    maze.generate();
+    // Apply current difficulty configuration
+    currentDifficulty = difficultyConfig.getConfig();
+
+    // Create new maze with difficulty settings
+    maze = createGameWorld();
+
+    // Reset game entities with difficulty settings
     player.reset(maze);
     enemies.reset(maze);
+    applyDifficultyToEnemies();
     defenses.reset();
+    applyDifficultyToDevices();
     projectileSystem.clear();
     gameState.resetForRestart();
     hud.tutorial.style.display = '';
     hud.tutorial.querySelector('h2').textContent = 'Ready to go again!';
     speak('Restarted! Press Enter to begin.');
     audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
+  }
+
+  function applyDifficultyToEnemies() {
+    // Adjust enemy count and speed
+    const targetCount = currentDifficulty.enemies.count;
+    const speedMultiplier = currentDifficulty.enemies.speedMultiplier;
+
+    // Adjust enemy array to match target count
+    while (enemies.entities.length > targetCount) {
+      enemies.entities.pop();
+    }
+
+    // Apply speed multiplier to all enemies
+    enemies.entities.forEach(enemy => {
+      enemy.speed = GameConfig.ENEMIES.SPEED * speedMultiplier;
+    });
+  }
+
+  function applyDifficultyToDevices() {
+    // Update device charges and availability
+    const deviceMapping = {
+      disruptor: 'taser',
+      immobilizer: 'stun',
+      pacifier: 'tranq'
+    };
+
+    Object.entries(currentDifficulty.devices).forEach(([deviceType, config]) => {
+      const gameDeviceType = deviceMapping[deviceType];
+      if (defenses.devices[gameDeviceType]) {
+        defenses.devices[gameDeviceType].maxCharges = config.charges;
+        defenses.devices[gameDeviceType].charges = config.charges;
+
+        // If device is disabled, ensure it can't be selected
+        if (!config.enabled && defenses.currentDevice === gameDeviceType) {
+          // Switch to first enabled device
+          const enabledDevices = Object.entries(currentDifficulty.devices)
+            .filter(([_, dev]) => dev.enabled)
+            .map(([type, _]) => deviceMapping[type]);
+
+          if (enabledDevices.length > 0) {
+            defenses.setMode(enabledDevices[0]);
+          }
+        }
+      }
+    });
   }
 
   // ═════════════════════════════════════════════════════════════════
