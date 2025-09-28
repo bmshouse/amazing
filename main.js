@@ -20,9 +20,12 @@ export function bootstrap({ dev=false } = {}) {
   const hud = {
     timer: document.getElementById('timer'),
     sensitivity: document.getElementById('sensitivity'),
+    sensitivityValue: document.getElementById('sensitivityValue'),
     audioToggle: document.getElementById('audioToggle'),
     subtitles: document.getElementById('subtitles'),
     tutorial: document.getElementById('tutorial'),
+    configButton: document.getElementById('configButton'),
+    configPanel: document.getElementById('configPanel'),
     bars: {
       taser: document.querySelector('#charges-taser span'),
       stun: document.querySelector('#charges-stun span'),
@@ -119,13 +122,56 @@ export function bootstrap({ dev=false } = {}) {
   defenses.setEventManager(eventManager);
 
   // ═════════════════════════════════════════════════════════════════
+  // CONFIGURATION PANEL SETUP
+  // ═════════════════════════════════════════════════════════════════
+  let configPanelOpen = false;
+
+  function toggleConfigPanel() {
+    configPanelOpen = !configPanelOpen;
+    if (configPanelOpen) {
+      hud.configPanel.style.display = 'block';
+      setTimeout(() => hud.configPanel.classList.add('show'), 10);
+    } else {
+      hud.configPanel.classList.remove('show');
+      setTimeout(() => hud.configPanel.style.display = 'none', 300);
+    }
+  }
+
+  function closeConfigPanel() {
+    if (configPanelOpen) {
+      configPanelOpen = false;
+      hud.configPanel.classList.remove('show');
+      setTimeout(() => hud.configPanel.style.display = 'none', 300);
+    }
+  }
+
+  // Config button click handler
+  hud.configButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleConfigPanel();
+  });
+
+  // Click outside to close
+  document.addEventListener('click', (e) => {
+    if (configPanelOpen && !hud.configPanel.contains(e.target) && e.target !== hud.configButton) {
+      closeConfigPanel();
+    }
+  });
+
+  // ═════════════════════════════════════════════════════════════════
   // EVENT HANDLERS SETUP
   // ═════════════════════════════════════════════════════════════════
   hud.sensitivity.addEventListener('input', (e)=>{
-    player.sensitivity = parseFloat(e.target.value);
+    const value = parseFloat(e.target.value);
+    player.sensitivity = value;
+    hud.sensitivityValue.textContent = value.toFixed(1);
   });
 
+  // Initialize sensitivity display
+  hud.sensitivityValue.textContent = hud.sensitivity.value;
+
   eventManager.on('keydown', (data)=>{
+    if (data.code === 'Escape') closeConfigPanel();
     if (data.code === 'Enter' && !gameState.isStarted()) startGame();
     if (data.code === 'KeyR') restart();
     if (['Digit1','Digit2','Digit3'].includes(data.code)) {
