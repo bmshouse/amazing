@@ -26,20 +26,127 @@
     <!-- Configuration Panel -->
     <div id="configPanel" class="config-panel" style="display: none;">
       <div class="config-content">
-        <h3>Settings</h3>
-        <div class="config-item">
-          <label for="sensitivity" class="config-label">Mouse Sensitivity</label>
-          <div class="config-input-group">
-            <input id="sensitivity" type="range" min="0.1" max="1.5" value="0.5" step="0.05" aria-label="Mouse sensitivity">
-            <span id="sensitivityValue" class="config-value">0.5</span>
+        <!-- Tab Navigation -->
+        <div class="config-tabs">
+          <button class="config-tab active" data-tab="basic">Basic</button>
+          <button class="config-tab" data-tab="difficulty">Difficulty</button>
+        </div>
+
+        <!-- Basic Settings Tab -->
+        <div id="basicTab" class="config-tab-content active">
+          <div class="config-item">
+            <label for="sensitivity" class="config-label">Mouse Sensitivity</label>
+            <div class="config-input-group">
+              <input id="sensitivity" type="range" min="0.1" max="1.5" value="0.5" step="0.05" aria-label="Mouse sensitivity">
+              <span id="sensitivityValue" class="config-value">0.5</span>
+            </div>
+          </div>
+          <div class="config-item">
+            <label class="config-label">Audio</label>
+            <label class="switch">
+              <input id="audioToggle" type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
           </div>
         </div>
-        <div class="config-item">
-          <label class="config-label">Audio</label>
-          <label class="switch">
-            <input id="audioToggle" type="checkbox" checked>
-            <span class="slider"></span>
-          </label>
+
+        <!-- Difficulty Settings Tab -->
+        <div id="difficultyTab" class="config-tab-content">
+          <!-- Preset Selection -->
+          <div class="config-section">
+            <h4>Difficulty Preset</h4>
+            <div class="preset-buttons">
+              <button class="preset-btn" data-preset="easy">Easy</button>
+              <button class="preset-btn active" data-preset="normal">Normal</button>
+              <button class="preset-btn" data-preset="hard">Hard</button>
+              <button class="preset-btn" data-preset="custom">Custom</button>
+            </div>
+            <div class="difficulty-info">
+              <span id="difficultyRating">Difficulty: 5.0/10</span>
+              <span id="estimatedTime">Est. Time: 8 min</span>
+            </div>
+          </div>
+
+          <!-- Maze Configuration -->
+          <div class="config-section">
+            <h4>🏗️ Maze Configuration</h4>
+            <div class="config-item">
+              <label for="mazeSize" class="config-label">Size</label>
+              <div class="config-input-group">
+                <input id="mazeSize" type="range" min="11" max="41" value="21" step="2">
+                <span id="mazeSizeValue" class="config-value">21x21</span>
+              </div>
+            </div>
+            <div class="config-item">
+              <label for="rechargePads" class="config-label">Recharge Pads</label>
+              <div class="config-input-group">
+                <input id="rechargePads" type="range" min="1" max="6" value="3" step="1">
+                <span id="rechargePadsValue" class="config-value">3</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enemy Configuration -->
+          <div class="config-section">
+            <h4>👾 Enemy Configuration</h4>
+            <div class="config-item">
+              <label for="enemyCount" class="config-label">Count</label>
+              <div class="config-input-group">
+                <input id="enemyCount" type="range" min="0" max="20" value="10" step="1">
+                <span id="enemyCountValue" class="config-value">10</span>
+              </div>
+            </div>
+            <div class="config-item">
+              <label for="enemySpeed" class="config-label">Speed</label>
+              <div class="config-input-group">
+                <input id="enemySpeed" type="range" min="0.5" max="2.0" value="1.0" step="0.1">
+                <span id="enemySpeedValue" class="config-value">Normal</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Device Configuration -->
+          <div class="config-section">
+            <h4>🛡️ Device Configuration</h4>
+            <div class="device-config">
+              <div class="device-item">
+                <label class="device-toggle">
+                  <input type="checkbox" id="enableDisruptor" checked>
+                  <span class="device-name">Disruptor</span>
+                </label>
+                <div class="config-input-group">
+                  <input id="disruptorCharges" type="range" min="1" max="15" value="8" step="1">
+                  <span id="disruptorChargesValue" class="config-value">8</span>
+                </div>
+              </div>
+              <div class="device-item">
+                <label class="device-toggle">
+                  <input type="checkbox" id="enableImmobilizer" checked>
+                  <span class="device-name">Immobilizer</span>
+                </label>
+                <div class="config-input-group">
+                  <input id="immobilizerCharges" type="range" min="1" max="12" value="6" step="1">
+                  <span id="immobilizerChargesValue" class="config-value">6</span>
+                </div>
+              </div>
+              <div class="device-item">
+                <label class="device-toggle">
+                  <input type="checkbox" id="enablePacifier" checked>
+                  <span class="device-name">Pacifier</span>
+                </label>
+                <div class="config-input-group">
+                  <input id="pacifierCharges" type="range" min="1" max="10" value="4" step="1">
+                  <span id="pacifierChargesValue" class="config-value">4</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="config-actions">
+            <button id="resetDifficulty" class="config-btn secondary">Reset to Defaults</button>
+            <button id="applyDifficulty" class="config-btn primary">Apply Changes</button>
+          </div>
         </div>
       </div>
     </div>
@@ -76,6 +183,7 @@
           </ul>
         </li>
         <li>Step on recharge pads to refill device charges.</li>
+        <li>Click the <b>⚙️ gear icon</b> to customize difficulty, maze size, enemy count, and device settings!</li>
       </ol>
       <p>Press <b>Enter</b> to start. Press <b>R</b> to restart.</p>
     </div>

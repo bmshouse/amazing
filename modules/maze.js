@@ -2,12 +2,13 @@
 import { GameConfig } from './GameConfig.js';
 
 export class Maze {
-  constructor(w, h) {
+  constructor(w, h, rechargePadCount = null) {
     // Ensure odd sizes for perfect maze
     this.w = (w|0)|1; this.h = (h|0)|1;
     this.grid = Array.from({length:this.h}, _=> Array(this.w).fill(1)); // 1=wall,0=path,2=exit door
     this.exit = null; // {x,y,wallX,wallY}
     this.pads = [];   // recharge pads
+    this.rechargePadCount = rechargePadCount ?? GameConfig.MAZE.RECHARGE_PAD_COUNT;
   }
 
   cellAt(x, y) {
@@ -98,7 +99,7 @@ export class Maze {
     };
     const cand = [];
     for (let y=1;y<this.h;y+=2) for (let x=1;x<this.w;x+=2) if (g[y][x]===0 && isOk(x,y)) cand.push([x,y]);
-    for (let i=0;i<GameConfig.MAZE.RECHARGE_PAD_COUNT && cand.length;i++) {
+    for (let i=0;i<this.rechargePadCount && cand.length;i++) {
       const k = (Math.random()*cand.length)|0;
       const [x,y] = cand.splice(k,1)[0];
       this.pads.push({ x, y });
