@@ -33,7 +33,7 @@ export class SpriteRenderer {
 
     // Recharge pads
     maze.pads.forEach(p => {
-      this.drawFixedGroundObject(p.x + 0.5, p.y + 0.5, GameConfig.RENDERING.RECHARGE_PAD_SIZE, colors.rechargePad, player, W, H, maze);
+      this.drawRechargePad(p.x + 0.5, p.y + 0.5, colors.rechargePad, player, W, H, maze);
     });
 
     // Enemies
@@ -126,6 +126,9 @@ export class SpriteRenderer {
       case 'snowman':
         this._drawSnowmanShape(x, y, size, color, alpha);
         break;
+      case 'recharge_pad':
+        this._drawRechargePadShape(x, y, size, color, alpha);
+        break;
       case 'ellipse':
       default:
         this._drawEllipseShape(x, y, size);
@@ -189,6 +192,37 @@ export class SpriteRenderer {
     // Top sphere
     this.ctx.ellipse(x, topY, topRadius, topRadius * 0.8, 0, 0, Math.PI * 2);
     this.ctx.fill();
+  }
+
+  /**
+   * Draws a recharge pad shape with glow effect, positioned lower on screen
+   * @param {number} x - Screen X position
+   * @param {number} y - Screen Y position
+   * @param {number} size - Projected size on screen
+   * @param {string} color - Object color
+   * @param {number} alpha - Current alpha transparency
+   * @private
+   */
+  _drawRechargePadShape(x, y, size, color, alpha) {
+    // Position lower on screen for ground-level appearance
+    const groundY = y + size * 0.8;
+
+    // Main pad (flattened ellipse)
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, groundY, size, size * 0.3, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Inner glow effect (white center)
+    const currentAlpha = this.ctx.globalAlpha;
+    this.ctx.globalAlpha = currentAlpha * 0.6;
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, groundY, size * 0.6, size * 0.18, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Restore original color and alpha
+    this.ctx.globalAlpha = currentAlpha;
+    this.ctx.fillStyle = color;
   }
 
   /**
@@ -272,120 +306,33 @@ export class SpriteRenderer {
   }
 
   /**
-   * Draws a fixed ground object (like recharge pads) anchored to ground level
+   * Draws a recharge pad - ground-level, with glow effect
    * @param {number} worldX - World X coordinate
    * @param {number} worldY - World Y coordinate
-   * @param {number} objectRadius - Radius of the ground object
-   * @param {string} objectColor - Color of the object
+   * @param {string} padColor - Color of the recharge pad
    * @param {Object} player - Player object with position and angle
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    * @param {Object} maze - Maze object for occlusion checking
    */
-  drawFixedGroundObject(worldX, worldY, objectRadius, objectColor, player, W, H, maze) {
-    const deltaX = worldX - player.x;
-    const deltaY = worldY - player.y;
-    const distanceToObject = Math.hypot(deltaX, deltaY);
-    const angleFromPlayerToObject = Math.atan2(deltaY, deltaX) - player.a;
-
-    // Visibility culling - only render objects in front of player
-    if (Math.cos(angleFromPlayerToObject) <= 0) return;
-
-    // Wall occlusion check
-    const wallHitBetweenPlayerAndObject = this.castRayForOcclusion(player.x, player.y, angleFromPlayerToObject + player.a, maze);
-    if (wallHitBetweenPlayerAndObject && wallHitBetweenPlayerAndObject.dist < distanceToObject) {
-      return;
-    }
-
-    // Fixed ground object positioning - anchored to world coordinates
-    const halfFOV = this.config.fov / 2;
-
-    // When very close (less than 1 unit), hide the object to prevent positioning issues
-    if (distanceToObject < GameConfig.RENDERING.GROUND_VISIBILITY_DISTANCE) {
-      return;
-    }
-
-    // Use a more stable angle calculation that doesn't break down at close range
-    const normalizedAngle = angleFromPlayerToObject;
-
-    // Only render if within reasonable FOV range
-    if (Math.abs(normalizedAngle) > halfFOV * GameConfig.RENDERING.GROUND_FOV_EXTENSION) {
-      return;
-    }
-
-    const screenPositionX = (normalizedAngle / halfFOV) * (W * GameConfig.RENDERING.GROUND_PROJECTION_WIDTH_RATIO) + (W/2);
-    const screenPositionY = H * GameConfig.RENDERING.GROUND_LEVEL_Y; // Fixed ground level
-
-    // Size with reasonable maximum for ground objects
-    const baseSizeProjection = (H / distanceToObject) * objectRadius;
-    const maxGroundSize = H * GameConfig.RENDERING.GROUND_OBJECT_MAX_SIZE_RATIO; // Smaller max for better ground appearance
-    const projectedSizeOnScreen = Math.min(baseSizeProjection, maxGroundSize);
-
-    // Distance-based transparency
-    const distanceBasedAlpha = Math.max(GameConfig.BALANCE.GROUND_CIRCLE_MIN_ALPHA, 1 - distanceToObject / this.config.maxDepth);
-
-    this.ctx.save();
-    this.ctx.globalAlpha = distanceBasedAlpha;
-    this.ctx.fillStyle = objectColor;
-    this.ctx.beginPath();
-    this.ctx.ellipse(screenPositionX, screenPositionY, projectedSizeOnScreen, projectedSizeOnScreen * GameConfig.RENDERING.GROUND_OBJECT_HEIGHT_RATIO, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Inner glow for ground objects
-    this.ctx.globalAlpha = distanceBasedAlpha * GameConfig.RENDERING.GROUND_GLOW_OPACITY;
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.beginPath();
-    this.ctx.ellipse(screenPositionX, screenPositionY, projectedSizeOnScreen * GameConfig.RENDERING.GROUND_GLOW_SIZE_RATIO, projectedSizeOnScreen * GameConfig.RENDERING.GROUND_GLOW_HEIGHT_RATIO, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    this.ctx.restore();
+  drawRechargePad(worldX, worldY, padColor, player, W, H, maze) {
+    return this._drawBillboard(
+      worldX,
+      worldY,
+      GameConfig.RENDERING.RECHARGE_PAD_SIZE,
+      padColor,
+      player,
+      W,
+      H,
+      {
+        checkOcclusion: true,   // Hidden behind walls
+        maze: maze,
+        shape: 'recharge_pad'   // Special shape with glow effect
+      }
+    );
   }
 
-  /**
-   * Draws a mobile ground circle sprite (alternative ground object rendering)
-   * @param {number} worldX - World X coordinate
-   * @param {number} worldY - World Y coordinate
-   * @param {number} circleRadius - Radius of the circle
-   * @param {string} circleColor - Color of the circle
-   * @param {Object} player - Player object with position and angle
-   * @param {number} W - Screen width in pixels
-   * @param {number} H - Screen height in pixels
-   * @param {Object} maze - Maze object for occlusion checking
-   */
-  drawGroundCircle(worldX, worldY, circleRadius, circleColor, player, W, H, maze) {
-    // Simplified mobile sprite version
-    const deltaX = worldX - player.x;
-    const deltaY = worldY - player.y;
-    const distanceToObject = Math.hypot(deltaX, deltaY);
-    const angleFromPlayerToObject = Math.atan2(deltaY, deltaX) - player.a;
 
-    // Visibility culling
-    if (Math.cos(angleFromPlayerToObject) <= 0) return;
-
-    // Wall occlusion check
-    const wallHitBetweenPlayerAndObject = this.castRayForOcclusion(player.x, player.y, angleFromPlayerToObject + player.a, maze);
-    if (wallHitBetweenPlayerAndObject && wallHitBetweenPlayerAndObject.dist < distanceToObject) {
-      return;
-    }
-
-    // Mobile sprite positioning
-    const projectedSizeOnScreen = (H / distanceToObject) * circleRadius;
-    const halfFOV = this.config.fov / 2;
-    const screenPositionX = Math.tan(angleFromPlayerToObject) / Math.tan(halfFOV) * (W/2) + (W/2);
-    const screenPositionY = H * GameConfig.RENDERING.MOBILE_GROUND_Y_RATIO + (distanceToObject * GameConfig.RENDERING.MOBILE_GROUND_DISTANCE_MULTIPLIER); // Mobile position
-
-    // Distance-based transparency
-    const distanceBasedAlpha = Math.max(0.4, 1 - distanceToObject / this.config.maxDepth);
-
-    this.ctx.save();
-    this.ctx.globalAlpha = distanceBasedAlpha;
-    this.ctx.fillStyle = circleColor;
-    this.ctx.beginPath();
-    this.ctx.ellipse(screenPositionX, screenPositionY, projectedSizeOnScreen, projectedSizeOnScreen * 0.3, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    this.ctx.restore();
-  }
 
   /**
    * Renders all active particles and removes expired ones
