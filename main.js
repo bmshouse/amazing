@@ -24,9 +24,9 @@ export function bootstrap({ dev=false } = {}) {
     subtitles: document.getElementById('subtitles'),
     tutorial: document.getElementById('tutorial'),
     bars: {
-      taser: document.querySelector('#ammo-taser span'),
-      stun: document.querySelector('#ammo-stun span'),
-      tranq: document.querySelector('#ammo-tranq span'),
+      taser: document.querySelector('#charges-taser span'),
+      stun: document.querySelector('#charges-stun span'),
+      tranq: document.querySelector('#charges-tranq span'),
     },
   };
 
@@ -266,9 +266,9 @@ export function bootstrap({ dev=false } = {}) {
   // HUD AND UI UPDATES
   // ═════════════════════════════════════════════════════════════════
   function updateBars() {
-    hud.bars.taser.style.transform = `scaleX(${defenses.taserAmmoRatio()})`;
-    hud.bars.stun.style.transform = `scaleX(${defenses.stunAmmoRatio()})`;
-    hud.bars.tranq.style.transform = `scaleX(${defenses.tranqAmmoRatio()})`;
+    hud.bars.taser.style.transform = `scaleX(${defenses.taserChargeRatio()})`;
+    hud.bars.stun.style.transform = `scaleX(${defenses.stunChargeRatio()})`;
+    hud.bars.tranq.style.transform = `scaleX(${defenses.tranqChargeRatio()})`;
   }
   setInterval(updateBars, GameConfig.PERFORMANCE.AMMO_BAR_UPDATE_INTERVAL);
 
@@ -283,7 +283,7 @@ export function bootstrap({ dev=false } = {}) {
     audio.beep('sine', GameConfig.AUDIO.FREQ_BOOP, 0.05, 0.05);
   };
 
-  defenses.onFire = (x,y,color)=>{
+  defenses.onActivation = (x,y,color)=>{
     for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_HIT;i++) spawnParticle(x, y, color, 350);
   };
 

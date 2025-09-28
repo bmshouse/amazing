@@ -1,17 +1,17 @@
-// modules/weapons/TaserWeapon.js - Short-range instant hit weapon
-import { IWeapon } from './IWeapon.js';
+// modules/devices/TaserDevice.js - Short-range instant stun device
+import { IDevice } from './IDevice.js';
 
-export class TaserWeapon extends IWeapon {
+export class TaserDevice extends IDevice {
   constructor() {
     super('taser', 8, 250);
     this.range = 1.6;
     this.effectDuration = 1500;
   }
 
-  fire(player, enemyController, audio, onFire) {
-    if (!this.canFire()) return false;
+  activate(player, enemyController, audio, onActivation) {
+    if (!this.canActivate()) return false;
 
-    this.consumeAmmo();
+    this.consumeCharge();
 
     // Short-range instant hit
     const hit = enemyController.raycastForEnemy(player.x, player.y, player.a, this.range);
@@ -25,10 +25,10 @@ export class TaserWeapon extends IWeapon {
       audio.beep('triangle', 520, 0.04, 0.035);
     }
 
-    // Fire effect
+    // Activation effect
     const fxX = player.x + Math.cos(player.a) * 0.8;
     const fxY = player.y + Math.sin(player.a) * 0.8;
-    onFire(fxX, fxY, '#ffd166');
+    onActivation(fxX, fxY, '#ffd166');
 
     return true;
   }
@@ -38,6 +38,6 @@ export class TaserWeapon extends IWeapon {
   }
 
   getDescription() {
-    return 'Short-range taser that stuns enemies instantly';
+    return 'Short-range disruptor that stuns creatures instantly';
   }
 }

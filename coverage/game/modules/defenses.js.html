@@ -215,8 +215,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// modules/defenses.js - tools, ammo, cooldown, recharge (Legacy wrapper)
-import { WeaponFactory } from './weapons/WeaponFactory.js';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// modules/defenses.js - tools, charges, cooldown, recharge (Legacy wrapper)
+import { DeviceFactory } from './devices/DeviceFactory.js';
 import { GameConfig } from './GameConfig.js';
 &nbsp;
 export class Defenses {
@@ -225,24 +225,24 @@ export class Defenses {
     this.enemies = enemies;
     this.audio = audio;
     this.hud = hud;
-    this.weapons = WeaponFactory.createAllWeapons();
-    this.currentWeapon = 'taser';
+    this.devices = DeviceFactory.createAllDevices();
+    this.currentDevice = 'taser';
     this.projectileSystem = null; // Will be injected
     this.eventManager = null; // Will be injected
-    this.onFire = <span class="fstat-no" title="function not covered" >(_x,_y,_c)=&gt;{};</span>
+    this.onActivation = <span class="fstat-no" title="function not covered" >(_x,_y,_c)=&gt;{};</span>
 &nbsp;
     // Fallback to direct event listeners
     window.addEventListener('mousedown', (e)=&gt;{
-<span class="cstat-no" title="statement not covered" >      if (e.button === 0) this.fire();</span>
+<span class="cstat-no" title="statement not covered" >      if (e.button === 0 &amp;&amp; document.pointerLockElement) this.activate();</span>
     });
     window.addEventListener('keydown', (e)=&gt;{
-<span class="cstat-no" title="statement not covered" >      if (e.code === 'Space') { e.preventDefault(); this.fire(); }</span>
+<span class="cstat-no" title="statement not covered" >      if (e.code === 'Space') { e.preventDefault(); this.activate(); }</span>
     });
   }
 &nbsp;
   reset() {
-    this.currentWeapon = 'taser';
-    Object.values(this.weapons).forEach(weapon =&gt; weapon.reload());
+    this.currentDevice = 'taser';
+    Object.values(this.devices).forEach(device =&gt; device.recharge());
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  setProjectileSystem(projectileSystem) {</span>
@@ -254,28 +254,28 @@ export class Defenses {
 <span class="cstat-no" title="statement not covered" >    // Set up event handlers through EventManager</span>
 <span class="cstat-no" title="statement not covered" >    if (eventManager) {</span>
 <span class="cstat-no" title="statement not covered" >      eventManager.on('mousedown', (data) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        if (data.button === 0) this.fire();</span>
+<span class="cstat-no" title="statement not covered" >        if (data.button === 0 &amp;&amp; document.pointerLockElement) this.activate();</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >      eventManager.on('keydown', (data) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (data.code === 'Space') {</span>
 <span class="cstat-no" title="statement not covered" >          data.event.preventDefault();</span>
-<span class="cstat-no" title="statement not covered" >          this.fire();</span>
+<span class="cstat-no" title="statement not covered" >          this.activate();</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
-<span class="fstat-no" title="function not covered" >  setMode(m) { this.currentWeapon = m; }</span>
+<span class="fstat-no" title="function not covered" >  setMode(m) { this.currentDevice = m; }</span>
 &nbsp;
-  taserAmmoRatio(){ return this.weapons.taser.getAmmoRatio(); }
-<span class="fstat-no" title="function not covered" >  stunAmmoRatio(){ return this.weapons.stun.getAmmoRatio(); }</span>
-<span class="fstat-no" title="function not covered" >  tranqAmmoRatio(){ return this.weapons.tranq.getAmmoRatio(); }</span>
+  taserChargeRatio(){ return this.devices.taser.getChargeRatio(); }
+<span class="fstat-no" title="function not covered" >  stunChargeRatio(){ return this.devices.stun.getChargeRatio(); }</span>
+<span class="fstat-no" title="function not covered" >  tranqChargeRatio(){ return this.devices.tranq.getChargeRatio(); }</span>
 &nbsp;
-<span class="fstat-no" title="function not covered" >  fire() {</span>
-<span class="cstat-no" title="statement not covered" >    const weapon = this.weapons[this.currentWeapon];</span>
-<span class="cstat-no" title="statement not covered" >    if (!weapon) return;</span>
+<span class="fstat-no" title="function not covered" >  activate() {</span>
+<span class="cstat-no" title="statement not covered" >    const device = this.devices[this.currentDevice];</span>
+<span class="cstat-no" title="statement not covered" >    if (!device) return;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    const result = weapon.fire(this.player, this.enemies, this.audio, this.onFire, this.projectileSystem);</span>
+<span class="cstat-no" title="statement not covered" >    const result = device.activate(this.player, this.enemies, this.audio, this.onActivation, this.projectileSystem);</span>
 <span class="cstat-no" title="statement not covered" >    return result;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
@@ -286,7 +286,7 @@ export class Defenses {
 <span class="cstat-no" title="statement not covered" >      const dy = (pad.y+0.5) - this.player.y;</span>
 <span class="cstat-no" title="statement not covered" >      const distance = Math.sqrt(dx*dx + dy*dy);</span>
 <span class="cstat-no" title="statement not covered" >      if (distance &lt; GameConfig.MAZE.RECHARGE_PAD_RADIUS) {</span>
-<span class="cstat-no" title="statement not covered" >        Object.values(this.weapons).forEach(weapon =&gt; weapon.reload());</span>
+<span class="cstat-no" title="statement not covered" >        Object.values(this.devices).forEach(device =&gt; device.recharge());</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -298,7 +298,7 @@ export class Defenses {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-28T14:08:25.229Z
+                at 2025-09-28T15:17:29.008Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

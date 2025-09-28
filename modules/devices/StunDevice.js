@@ -1,7 +1,7 @@
-// modules/weapons/StunWeapon.js - Projectile weapon that slows enemies
-import { IWeapon } from './IWeapon.js';
+// modules/devices/StunDevice.js - Projectile device that slows creatures
+import { IDevice } from './IDevice.js';
 
-export class StunWeapon extends IWeapon {
+export class StunDevice extends IDevice {
   constructor() {
     super('stun', 6, 600);
     this.projectileSpeed = 3.2;
@@ -10,10 +10,10 @@ export class StunWeapon extends IWeapon {
     this.slowdownFactor = 0.35;
   }
 
-  fire(player, enemyController, audio, onFire, projectileSystem) {
-    if (!this.canFire()) return false;
+  activate(player, enemyController, audio, onActivation, projectileSystem) {
+    if (!this.canActivate()) return false;
 
-    this.consumeAmmo();
+    this.consumeCharge();
 
     // Create slow-moving orb projectile
     const projectile = {
@@ -25,7 +25,7 @@ export class StunWeapon extends IWeapon {
       color: '#00d1ff',
       type: 'stun',
       born: performance.now(),
-      weapon: this
+      device: this
     };
 
     projectileSystem.addProjectile(projectile);
@@ -45,6 +45,6 @@ export class StunWeapon extends IWeapon {
   }
 
   getDescription() {
-    return 'Projectile that slows down enemies on impact';
+    return 'Projectile that slows down creatures on impact';
   }
 }

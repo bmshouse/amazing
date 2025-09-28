@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for game/modules/weapons/TranqWeapon.js</title>
+    <title>Code coverage report for game/modules/devices/StunDevice.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../../prettify.css" />
     <link rel="stylesheet" href="../../../base.css" />
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../../index.html">All files</a> / <a href="index.html">game/modules/weapons</a> TranqWeapon.js</h1>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">game/modules/devices</a> StunDevice.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">38.77% </span>
+                <span class="strong">40% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>19/49</span>
+                <span class='fraction'>20/50</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">38.77% </span>
+                <span class="strong">40% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>19/49</span>
+                <span class='fraction'>20/50</span>
             </div>
         
             
@@ -111,7 +111,8 @@
 <a name='L46'></a><a href='#L46'>46</a>
 <a name='L47'></a><a href='#L47'>47</a>
 <a name='L48'></a><a href='#L48'>48</a>
-<a name='L49'></a><a href='#L49'>49</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -121,6 +122,7 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -159,53 +161,54 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">// modules/weapons/TranqWeapon.js - Fast projectile weapon that immobilizes enemies
-import { IWeapon } from './IWeapon.js';
+<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">// modules/devices/StunDevice.js - Projectile device that slows creatures
+import { IDevice } from './IDevice.js';
 &nbsp;
-export class TranqWeapon extends IWeapon {
+export class StunDevice extends IDevice {
   constructor() {
-    super('tranq', 4, 750);
-    this.projectileSpeed = 5.0;
-    this.projectileRadius = 0.05;
-    this.effectDuration = 3000;
+    super('stun', 6, 600);
+    this.projectileSpeed = 3.2;
+    this.projectileRadius = 0.08;
+    this.effectDuration = 2500;
+    this.slowdownFactor = 0.35;
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  fire(player, enemyController, audio, onFire, projectileSystem) {</span>
-<span class="cstat-no" title="statement not covered" >    if (!this.canFire()) return false;</span>
+<span class="fstat-no" title="function not covered" >  activate(player, enemyController, audio, onActivation, projectileSystem) {</span>
+<span class="cstat-no" title="statement not covered" >    if (!this.canActivate()) return false;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    this.consumeAmmo();</span>
+<span class="cstat-no" title="statement not covered" >    this.consumeCharge();</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    // Create fast-moving dart projectile</span>
+<span class="cstat-no" title="statement not covered" >    // Create slow-moving orb projectile</span>
 <span class="cstat-no" title="statement not covered" >    const projectile = {</span>
 <span class="cstat-no" title="statement not covered" >      x: player.x,</span>
 <span class="cstat-no" title="statement not covered" >      y: player.y,</span>
 <span class="cstat-no" title="statement not covered" >      a: player.a,</span>
 <span class="cstat-no" title="statement not covered" >      v: this.projectileSpeed,</span>
 <span class="cstat-no" title="statement not covered" >      r: this.projectileRadius,</span>
-<span class="cstat-no" title="statement not covered" >      color: '#a29bfe',</span>
-<span class="cstat-no" title="statement not covered" >      type: 'tranq',</span>
+<span class="cstat-no" title="statement not covered" >      color: '#00d1ff',</span>
+<span class="cstat-no" title="statement not covered" >      type: 'stun',</span>
 <span class="cstat-no" title="statement not covered" >      born: performance.now(),</span>
-<span class="cstat-no" title="statement not covered" >      weapon: this</span>
+<span class="cstat-no" title="statement not covered" >      device: this</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    projectileSystem.addProjectile(projectile);</span>
-<span class="cstat-no" title="statement not covered" >    audio.beep('sine', 420, 0.06, 0.05);</span>
+<span class="cstat-no" title="statement not covered" >    audio.beep('sine', 600, 0.06, 0.05);</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    return true;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="fstat-no" title="function not covered" >  applyEffect(enemy) {</span>
-<span class="cstat-no" title="statement not covered" >    enemy.state = 'tranq';</span>
-<span class="cstat-no" title="statement not covered" >    enemy.speedMul = 0;</span>
+<span class="cstat-no" title="statement not covered" >    enemy.state = 'slowed';</span>
+<span class="cstat-no" title="statement not covered" >    enemy.speedMul = this.slowdownFactor;</span>
 <span class="cstat-no" title="statement not covered" >    enemy.stateTime = performance.now();</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="fstat-no" title="function not covered" >  getEffectColor() {</span>
-<span class="cstat-no" title="statement not covered" >    return '#a29bfe';</span>
+<span class="cstat-no" title="statement not covered" >    return '#00d1ff';</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="fstat-no" title="function not covered" >  getDescription() {</span>
-<span class="cstat-no" title="statement not covered" >    return 'Fast dart that completely immobilizes enemies';</span>
+<span class="cstat-no" title="statement not covered" >    return 'Projectile that slows down creatures on impact';</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 }</pre></td></tr></table></pre>
 
@@ -214,7 +217,7 @@ export class TranqWeapon extends IWeapon {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-28T14:08:25.229Z
+                at 2025-09-28T15:17:29.008Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

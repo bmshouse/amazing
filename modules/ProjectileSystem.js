@@ -53,9 +53,9 @@ export class ProjectileSystem {
    * @param {Object} enemy - The enemy that was hit
    */
   handleEnemyHit(projectile, enemy) {
-    // Apply weapon effect based on projectile type
-    if (projectile.weapon && projectile.weapon.applyEffect) {
-      projectile.weapon.applyEffect(enemy);
+    // Apply device effect based on projectile type
+    if (projectile.device && projectile.device.applyEffect) {
+      projectile.device.applyEffect(enemy);
     } else {
       // Fallback for legacy projectile types
       this.applyLegacyEffect(projectile, enemy);
@@ -68,7 +68,7 @@ export class ProjectileSystem {
   }
 
   /**
-   * Applies legacy weapon effects for backward compatibility
+   * Applies legacy device effects for backward compatibility
    * @param {Object} projectile - The projectile with effect information
    * @param {Object} enemy - The enemy to apply the effect to
    */

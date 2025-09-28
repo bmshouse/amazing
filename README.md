@@ -1,66 +1,80 @@
-# Amazing FPS
+# CalmMaze FPS
 
-Open `index.html` in any modern browser (Chrome, Edge, Firefox, Safari). No build step required for the playable demo.
+A browser-based 3D maze game built with vanilla JavaScript and raycasting. Navigate procedurally generated mazes using classic FPS controls while avoiding friendly creatures that apply stunning effects instead of damage.
+
+**[🎮 Play the Live Demo](https://bmshouse.github.io/amazing/)**
+
+![Browser Compatibility](https://img.shields.io/badge/browser-Chrome%20%7C%20Firefox%20%7C%20Safari%20%7C%20Edge-brightgreen)
+![No Build Required](https://img.shields.io/badge/build-none%20required-green)
+![Test Status](https://img.shields.io/badge/tests-passing-brightgreen)
+
+## Quick Start
+
+1. **Download** or clone this repository
+2. **Open `index.html`** in any modern browser
+3. **Click the canvas** to enter pointer lock mode
+4. **Use WASD** to move and **mouse** to look around
+5. **Find the green exit door** to complete the maze
+
+No installation, build step, or server required!
+
+## Features
+
+### Technical Highlights
+- **Pure Vanilla JavaScript** - No frameworks or dependencies for the game engine
+- **Raycasting 3D Renderer** - Real-time 3D world rendering using classic raycasting techniques
+- **Procedural Maze Generation** - Infinite variety using recursive backtracking algorithm
+- **Optimized Performance** - Internal low-res buffer upscaled for 60 FPS on mid-range devices
+- **Modular Architecture** - 17 clean ES6 modules with event-driven design
+
+### Gameplay
+- **Three Device Types** - Disruptor (short range), Immobilizer (projectile), Pacifier (precise)
+- **Smart Enemy AI** - Pathfinding creatures that gently push you back when touched
+- **Recharge Pads** - Blue circular stations that refill all device charges
+- **Teen-Safe Design** - No violence or damage, just friendly stunning effects
+- **Accessibility** - Color-blind safe palette, keyboard-only controls available
 
 ## Controls
-- **W A S D / Arrow Keys** to move, **Shift** to glide.
-- **Mouse** to look (click canvas for pointer lock). Keyboard-only: **Q/E** to turn.
-- **1 / 2 / 3** to switch tools (Taser / Stun / Tranquilizer).
-- **Space** or **Left Click** to fire.
-- **R** to restart.
 
-## Gameplay Features
-- **Recharge Pads**: Blue circular pads on the ground that refill all weapon ammo when approached.
-- **Exit Door**: Green square door that ends the level when reached.
-- **Enemy AI**: Creatures with pathfinding that gently push the player back when touched.
+- **WASD / Arrow Keys** - Move around
+- **Mouse** - Look around (click canvas first for pointer lock)
+- **Q/E** - Turn left/right (keyboard-only alternative)
+- **Shift** - Sprint/glide
+- **1/2/3** - Switch between devices
+- **Space / Left Click** - Activate device
+- **R** - Restart current maze
 
-## Teen-Safe
-- No damage or violence; creatures gently push the player back.
-- Tools apply friendly effects: **stunned**, **slowed**, **sleepy**.
-- Color-blind safe palette; particles capped at 200.
+## Development
 
-## Performance
-- Internal low-res buffer upscaled for 60 FPS on mid-range laptops.
-- Procedural maze generation typically under 200ms.
-- Capped effects and simplified billboards instead of heavy meshes.
-
-## Testing
-Unit tests provided with **Vitest** under `/tests`. To run tests:
+### Testing
 ```bash
-npm i
+npm install
 npm run test
 ```
 
-## Project Structure
-```
-/game
-├─ index.html
-├─ main.js               # Game bootstrap and main loop
-├─ styles.css
-├─ modules/              # 17 core game modules
-│  ├─ maze.js           # Maze generation and recharge pad placement
-│  ├─ player.js         # Player movement and controls
-│  ├─ defenses.js       # Weapon system and ammo management
-│  ├─ enemies.js        # Enemy AI and pathfinding
-│  ├─ GameConfig.js     # Centralized configuration constants
-│  ├─ GameState.js      # Game lifecycle management
-│  ├─ EventManager.js   # Pub/sub event system
-│  ├─ RaycastRenderer.js # 3D world rendering
-│  ├─ SpriteRenderer.js  # Entity and HUD sprite rendering
-│  ├─ ProjectileSystem.js # Projectile physics
-│  ├─ entities/         # Entity system (IEntity, PlayerEntity)
-│  └─ weapons/          # Weapon factory and implementations
-├─ textures/
-│  └─ wall-texture.js   # Procedural texture generation
-└─ tests/               # 4 unit test suites
-   ├─ maze.test.js
-   ├─ player.test.js
-   ├─ defenses.test.js
-   └─ solid-architecture.test.js
-```
+Unit tests cover maze generation, player mechanics, device systems, and architectural integrity using Vitest with jsdom.
 
-## QA Hooks
-- Start with `?dev=1` to log smoke tests (maze gen time, exit presence).
-- Ammo bars update instantly; restarting resets ammo.
-- Pushback vector always away from enemy; no AI stuck states by grid nav.
-- Tutorial is completable in under 3 minutes.
+### Architecture
+The game uses a modular event-driven architecture with:
+- **Centralized Configuration** (`GameConfig.js`) for all game constants
+- **State Management** (`GameState.js`) for game lifecycle
+- **Event System** (`EventManager.js`) for decoupled module communication
+- **Rendering Pipeline** split between raycasting (`RaycastRenderer.js`) and sprite rendering (`SpriteRenderer.js`)
+
+### Performance
+- Ray marching optimized for quality/performance balance
+- Particle system capped at 200 particles
+- Simplified billboards instead of complex 3D models
+- Procedural maze generation typically completes under 200ms
+
+## Browser Compatibility
+
+Works in all modern browsers including Chrome, Firefox, Safari, and Edge. Requires:
+- ES6 module support
+- Canvas 2D rendering context
+- Pointer Lock API (for mouse look)
+- Performance API (for timing)
+
+---
+
+*Built with ❤️ using vanilla JavaScript and classic raycasting techniques*
