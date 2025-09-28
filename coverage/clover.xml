@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1759072649056" clover="3.2.0">
-  <project timestamp="1759072649056" name="All files">
-    <metrics statements="2534" coveredstatements="1123" conditionals="110" coveredconditionals="83" methods="110" coveredmethods="46" elements="2754" coveredelements="1252" complexity="0" loc="2534" ncloc="2534" packages="5" files="19" classes="19"/>
+<coverage generated="1759076581627" clover="3.2.0">
+  <project timestamp="1759076581627" name="All files">
+    <metrics statements="2580" coveredstatements="1123" conditionals="111" coveredconditionals="85" methods="110" coveredmethods="46" elements="2801" coveredelements="1254" complexity="0" loc="2580" ncloc="2580" packages="5" files="19" classes="19"/>
     <package name="game">
-      <metrics statements="301" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
+      <metrics statements="347" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
       <file name="main.js" path="C:\Users\Alien\Desktop\Amazing\calmmaze-fps-game\game\main.js">
-        <metrics statements="301" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
+        <metrics statements="347" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="1" count="0" type="cond" truecount="0" falsecount="1"/>
         <line num="2" count="0" type="stmt"/>
         <line num="3" count="0" type="stmt"/>
@@ -307,10 +307,56 @@
         <line num="299" count="0" type="stmt"/>
         <line num="300" count="0" type="stmt"/>
         <line num="301" count="0" type="stmt"/>
+        <line num="302" count="0" type="stmt"/>
+        <line num="303" count="0" type="stmt"/>
+        <line num="304" count="0" type="stmt"/>
+        <line num="305" count="0" type="stmt"/>
+        <line num="306" count="0" type="stmt"/>
+        <line num="307" count="0" type="stmt"/>
+        <line num="308" count="0" type="stmt"/>
+        <line num="309" count="0" type="stmt"/>
+        <line num="310" count="0" type="stmt"/>
+        <line num="311" count="0" type="stmt"/>
+        <line num="312" count="0" type="stmt"/>
+        <line num="313" count="0" type="stmt"/>
+        <line num="314" count="0" type="stmt"/>
+        <line num="315" count="0" type="stmt"/>
+        <line num="316" count="0" type="stmt"/>
+        <line num="317" count="0" type="stmt"/>
+        <line num="318" count="0" type="stmt"/>
+        <line num="319" count="0" type="stmt"/>
+        <line num="320" count="0" type="stmt"/>
+        <line num="321" count="0" type="stmt"/>
+        <line num="322" count="0" type="stmt"/>
+        <line num="323" count="0" type="stmt"/>
+        <line num="324" count="0" type="stmt"/>
+        <line num="325" count="0" type="stmt"/>
+        <line num="326" count="0" type="stmt"/>
+        <line num="327" count="0" type="stmt"/>
+        <line num="328" count="0" type="stmt"/>
+        <line num="329" count="0" type="stmt"/>
+        <line num="330" count="0" type="stmt"/>
+        <line num="331" count="0" type="stmt"/>
+        <line num="332" count="0" type="stmt"/>
+        <line num="333" count="0" type="stmt"/>
+        <line num="334" count="0" type="stmt"/>
+        <line num="335" count="0" type="stmt"/>
+        <line num="336" count="0" type="stmt"/>
+        <line num="337" count="0" type="stmt"/>
+        <line num="338" count="0" type="stmt"/>
+        <line num="339" count="0" type="stmt"/>
+        <line num="340" count="0" type="stmt"/>
+        <line num="341" count="0" type="stmt"/>
+        <line num="342" count="0" type="stmt"/>
+        <line num="343" count="0" type="stmt"/>
+        <line num="344" count="0" type="stmt"/>
+        <line num="345" count="0" type="stmt"/>
+        <line num="346" count="0" type="stmt"/>
+        <line num="347" count="0" type="stmt"/>
       </file>
     </package>
     <package name="game.modules">
-      <metrics statements="1648" coveredstatements="1003" conditionals="91" coveredconditionals="69" methods="80" coveredmethods="36"/>
+      <metrics statements="1648" coveredstatements="1003" conditionals="92" coveredconditionals="71" methods="80" coveredmethods="36"/>
       <file name="EventManager.js" path="C:\Users\Alien\Desktop\Amazing\calmmaze-fps-game\game\modules\EventManager.js">
         <metrics statements="151" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="1" count="0" type="cond" truecount="0" falsecount="1"/>
@@ -1609,7 +1655,7 @@
         <line num="76" count="1" type="stmt"/>
       </file>
       <file name="enemies.js" path="C:\Users\Alien\Desktop\Amazing\calmmaze-fps-game\game\modules\enemies.js">
-        <metrics statements="108" coveredstatements="53" conditionals="7" coveredconditionals="6" methods="6" coveredmethods="2"/>
+        <metrics statements="108" coveredstatements="53" conditionals="8" coveredconditionals="8" methods="6" coveredmethods="2"/>
         <line num="1" count="1" type="stmt"/>
         <line num="2" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
@@ -1631,15 +1677,15 @@
         <line num="19" count="10" type="stmt"/>
         <line num="20" count="10" type="stmt"/>
         <line num="21" count="10" type="stmt"/>
-        <line num="22" count="10" type="cond" truecount="0" falsecount="1"/>
-        <line num="23" count="10" type="stmt"/>
-        <line num="24" count="10" type="stmt"/>
-        <line num="25" count="10" type="stmt"/>
-        <line num="26" count="10" type="stmt"/>
-        <line num="27" count="10" type="stmt"/>
-        <line num="28" count="10" type="stmt"/>
-        <line num="29" count="10" type="stmt"/>
-        <line num="30" count="10" type="stmt"/>
+        <line num="22" count="10" type="cond" truecount="1" falsecount="0"/>
+        <line num="23" count="8" type="cond" truecount="1" falsecount="0"/>
+        <line num="24" count="8" type="stmt"/>
+        <line num="25" count="8" type="stmt"/>
+        <line num="26" count="8" type="stmt"/>
+        <line num="27" count="8" type="stmt"/>
+        <line num="28" count="8" type="stmt"/>
+        <line num="29" count="8" type="stmt"/>
+        <line num="30" count="8" type="stmt"/>
         <line num="31" count="1" type="stmt"/>
         <line num="32" count="1" type="stmt"/>
         <line num="33" count="1" type="stmt"/>
@@ -1734,10 +1780,10 @@
         <line num="11" count="8" type="stmt"/>
         <line num="12" count="1" type="stmt"/>
         <line num="13" count="1" type="cond" truecount="1" falsecount="0"/>
-        <line num="14" count="833" type="stmt"/>
-        <line num="15" count="833" type="cond" truecount="0" falsecount="1"/>
-        <line num="16" count="833" type="stmt"/>
-        <line num="17" count="833" type="stmt"/>
+        <line num="14" count="849" type="stmt"/>
+        <line num="15" count="849" type="cond" truecount="0" falsecount="1"/>
+        <line num="16" count="849" type="stmt"/>
+        <line num="17" count="849" type="stmt"/>
         <line num="18" count="1" type="stmt"/>
         <line num="19" count="1" type="cond" truecount="1" falsecount="0"/>
         <line num="20" count="8" type="stmt"/>
@@ -1754,16 +1800,16 @@
         <line num="31" count="1130" type="cond" truecount="1" falsecount="0"/>
         <line num="32" count="1130" type="stmt"/>
         <line num="33" count="1130" type="cond" truecount="1" falsecount="0"/>
-        <line num="34" count="3341" type="stmt"/>
-        <line num="35" count="3341" type="cond" truecount="4" falsecount="0"/>
-        <line num="36" count="3341" type="cond" truecount="2" falsecount="0"/>
+        <line num="34" count="3330" type="stmt"/>
+        <line num="35" count="3330" type="cond" truecount="4" falsecount="0"/>
+        <line num="36" count="3330" type="cond" truecount="2" falsecount="0"/>
         <line num="37" count="561" type="stmt"/>
         <line num="38" count="561" type="stmt"/>
         <line num="39" count="561" type="stmt"/>
         <line num="40" count="561" type="stmt"/>
         <line num="41" count="561" type="stmt"/>
         <line num="42" count="561" type="stmt"/>
-        <line num="43" count="3341" type="stmt"/>
+        <line num="43" count="3330" type="stmt"/>
         <line num="44" count="1130" type="cond" truecount="1" falsecount="0"/>
         <line num="45" count="1130" type="stmt"/>
         <line num="46" count="8" type="stmt"/>
@@ -1790,18 +1836,18 @@
         <line num="67" count="8" type="stmt"/>
         <line num="68" count="8" type="stmt"/>
         <line num="69" count="8" type="cond" truecount="1" falsecount="0"/>
-        <line num="70" count="14" type="stmt"/>
-        <line num="71" count="14" type="stmt"/>
-        <line num="72" count="14" type="stmt"/>
-        <line num="73" count="14" type="stmt"/>
-        <line num="74" count="14" type="stmt"/>
-        <line num="75" count="14" type="cond" truecount="1" falsecount="0"/>
+        <line num="70" count="15" type="stmt"/>
+        <line num="71" count="15" type="stmt"/>
+        <line num="72" count="15" type="stmt"/>
+        <line num="73" count="15" type="stmt"/>
+        <line num="74" count="15" type="stmt"/>
+        <line num="75" count="15" type="cond" truecount="1" falsecount="0"/>
         <line num="76" count="8" type="stmt"/>
         <line num="77" count="8" type="stmt"/>
         <line num="78" count="8" type="stmt"/>
         <line num="79" count="8" type="stmt"/>
         <line num="80" count="8" type="stmt"/>
-        <line num="81" count="14" type="stmt"/>
+        <line num="81" count="15" type="stmt"/>
         <line num="82" count="8" type="stmt"/>
         <line num="83" count="8" type="stmt"/>
         <line num="84" count="8" type="stmt"/>
@@ -1910,18 +1956,18 @@
         <line num="75" count="47" type="stmt"/>
         <line num="76" count="47" type="stmt"/>
         <line num="77" count="47" type="cond" truecount="1" falsecount="0"/>
-        <line num="78" count="592" type="stmt"/>
-        <line num="79" count="592" type="stmt"/>
-        <line num="80" count="592" type="stmt"/>
-        <line num="81" count="592" type="stmt"/>
-        <line num="82" count="592" type="cond" truecount="1" falsecount="0"/>
-        <line num="83" count="45" type="stmt"/>
-        <line num="84" count="45" type="stmt"/>
-        <line num="85" count="547" type="cond" truecount="1" falsecount="0"/>
-        <line num="86" count="547" type="stmt"/>
-        <line num="87" count="547" type="stmt"/>
-        <line num="88" count="2" type="cond" truecount="1" falsecount="0"/>
-        <line num="89" count="2" type="stmt"/>
+        <line num="78" count="608" type="stmt"/>
+        <line num="79" count="608" type="stmt"/>
+        <line num="80" count="608" type="stmt"/>
+        <line num="81" count="608" type="stmt"/>
+        <line num="82" count="608" type="cond" truecount="1" falsecount="0"/>
+        <line num="83" count="41" type="stmt"/>
+        <line num="84" count="41" type="stmt"/>
+        <line num="85" count="567" type="cond" truecount="1" falsecount="0"/>
+        <line num="86" count="567" type="stmt"/>
+        <line num="87" count="567" type="stmt"/>
+        <line num="88" count="6" type="cond" truecount="1" falsecount="0"/>
+        <line num="89" count="6" type="stmt"/>
         <line num="90" count="47" type="stmt"/>
         <line num="91" count="1" type="stmt"/>
         <line num="92" count="1" type="cond" truecount="1" falsecount="0"/>

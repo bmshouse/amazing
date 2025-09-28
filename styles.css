@@ -29,6 +29,122 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* Subtitles */
 #subtitles { min-height: 24px; padding: 6px 10px; background: rgba(0,0,0,0.35); border-radius: 12px; }
 
+/* Configuration Button */
+.config-button {
+  pointer-events: auto;
+  background: rgba(0,0,0,0.35);
+  border: none;
+  padding: 8px;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #f7f7f7;
+}
+
+.config-button:hover {
+  background: rgba(0,0,0,0.5);
+  transform: rotate(15deg);
+}
+
+.config-button svg {
+  display: block;
+  fill: currentColor;
+}
+
+/* Configuration Panel */
+.config-panel {
+  position: absolute;
+  top: 60px;
+  right: 8px;
+  width: 280px;
+  pointer-events: auto;
+  background: rgba(10, 13, 30, 0.9);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.config-panel.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.config-content {
+  padding: 16px;
+}
+
+.config-content h3 {
+  margin: 0 0 16px 0;
+  color: #f7f7f7;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.config-item {
+  margin-bottom: 16px;
+}
+
+.config-item:last-child {
+  margin-bottom: 0;
+}
+
+.config-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #f7f7f7;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.config-input-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.config-input-group input[type="range"] {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #2a2f4a;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.config-input-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2bd4c5;
+  cursor: pointer;
+}
+
+.config-input-group input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2bd4c5;
+  cursor: pointer;
+  border: none;
+}
+
+.config-value {
+  font-size: 12px;
+  color: #f7f7f7;
+  opacity: 0.7;
+  min-width: 32px;
+  text-align: right;
+}
+
 /* Tutorial panel */
 .panel { max-width: 520px; pointer-events: auto; background: rgba(10, 13, 30, 0.85); padding: 14px 18px; border-radius: 14px; margin: 0 auto; }
 .panel h2 { margin: 6px 0 6px; }
