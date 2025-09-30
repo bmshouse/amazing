@@ -1,4 +1,6 @@
 // modules/I18nManager.js - Internationalization manager for multi-language support
+import { logger } from './Logger.js';
+
 export class I18nManager {
   constructor() {
     this.currentLanguage = 'en';
@@ -92,7 +94,7 @@ export class I18nManager {
       this.translations = translations;
       return translations;
     } catch (error) {
-      console.error(`Failed to load language ${languageCode}:`, error);
+      logger.error(`Failed to load language ${languageCode}:`, error);
       if (!isFallback) {
         // Fallback to English if loading fails
         return this.loadLanguage('en', true);
@@ -123,7 +125,7 @@ export class I18nManager {
    */
   async setLanguage(languageCode) {
     if (!this.availableLanguages.includes(languageCode)) {
-      console.warn(`Language ${languageCode} not available, falling back to English`);
+      logger.warn(`Language ${languageCode} not available, falling back to English`);
       languageCode = 'en';
     }
 
@@ -198,7 +200,7 @@ export class I18nManager {
 
     // Return key if no translation found (for debugging)
     if (translation === undefined) {
-      console.warn(`Translation missing for key: ${key}`);
+      logger.warn(`Translation missing for key: ${key}`);
       return `[${key}]`;
     }
 

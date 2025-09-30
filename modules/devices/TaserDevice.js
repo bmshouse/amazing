@@ -40,4 +40,13 @@ export class TaserDevice extends IDevice {
   getDescription() {
     return 'Short-range disruptor that stuns creatures instantly';
   }
+
+  showRangeIndicator(player, onRangeIndicator) {
+    // Show range as a short line from player position
+    const startX = player.x + Math.cos(player.a) * 0.3;
+    const startY = player.y + Math.sin(player.a) * 0.3;
+    const endX = player.x + Math.cos(player.a) * this.range;
+    const endY = player.y + Math.sin(player.a) * this.range;
+    onRangeIndicator(startX, startY, endX, endY, this.getEffectColor(), 0.6);
+  }
 }

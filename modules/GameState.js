@@ -60,7 +60,13 @@ export class GameState {
   }
 
   getFormattedTime() {
-    const t = Math.max(0, Math.floor(this.state.elapsed / 1000));
+    // When game is not started (e.g., after reset), show elapsed time (which is 0)
+    // When game is started, calculate current elapsed time
+    const currentElapsed = this.state.started ?
+      (performance.now() - this.state.startTime) :
+      this.state.elapsed;
+
+    const t = Math.max(0, Math.floor(currentElapsed / 1000));
     const m = (t / 60) | 0;
     const s = (t % 60) | 0;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;

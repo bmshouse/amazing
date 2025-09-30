@@ -31,6 +31,11 @@ export class StunDevice extends IDevice {
     projectileSystem.addProjectile(projectile);
     audio.beep('sine', 600, 0.06, 0.05);
 
+    // Activation effect showing launch point
+    const fxX = player.x + Math.cos(player.a) * 0.3;
+    const fxY = player.y + Math.sin(player.a) * 0.3;
+    onActivation(fxX, fxY, '#00d1ff');
+
     return true;
   }
 
@@ -46,5 +51,15 @@ export class StunDevice extends IDevice {
 
   getDescription() {
     return 'Projectile that slows down creatures on impact';
+  }
+
+  showRangeIndicator(player, onRangeIndicator) {
+    // Show projectile path as a moderate line indicating trajectory
+    const startX = player.x + Math.cos(player.a) * 0.3;
+    const startY = player.y + Math.sin(player.a) * 0.3;
+    const maxRange = 3.0; // Shorter, more reasonable range
+    const endX = player.x + Math.cos(player.a) * maxRange;
+    const endY = player.y + Math.sin(player.a) * maxRange;
+    onRangeIndicator(startX, startY, endX, endY, this.getEffectColor(), 0.5);
   }
 }

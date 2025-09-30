@@ -16,11 +16,18 @@
         <span class="label" data-i18n="game.timer.time_label">Time:</span>
         <span id="timer" aria-live="polite">00:00</span>
       </div>
-      <button id="configButton" class="config-button" title="Settings" aria-label="Open configuration">
-        <svg viewBox="0 0 24 24" width="18" height="18">
-          <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
-        </svg>
-      </button>
+      <div class="top-buttons">
+        <button id="restartButton" class="restart-button" title="Restart Game" aria-label="Restart game" style="display: none;">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4c-4.42,0 -7.99,3.58 -7.99,8s3.57,8 7.99,8c3.73,0 6.84,-2.55 7.73,-6h-2.08c-0.82,2.33 -3.04,4 -5.65,4 -3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6c1.66,0 3.14,0.69 4.22,1.78L13,11h7V4L17.65,6.35z"/>
+          </svg>
+        </button>
+        <button id="configButton" class="config-button" title="Settings" aria-label="Open configuration">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Configuration Panel -->
@@ -47,8 +54,22 @@
           <div class="config-item">
             <label for="sensitivity" class="config-label" data-i18n="config.sensitivity.label">Mouse Sensitivity</label>
             <div class="config-input-group">
-              <input id="sensitivity" type="range" min="0.1" max="1.5" value="0.5" step="0.05" aria-label="Mouse sensitivity">
-              <span id="sensitivityValue" class="config-value">0.5</span>
+              <input id="sensitivity" type="range" min="0.1" max="2.0" value="0.4" step="0.1" aria-label="Mouse sensitivity">
+              <span id="sensitivityValue" class="config-value">0.4</span>
+            </div>
+          </div>
+          <div class="config-item" id="touchSensitivityGroup" style="display: none;">
+            <label for="touchJoystickSensitivity" class="config-label" data-i18n="config.touch.joystick_sensitivity">Touch Joystick Sensitivity</label>
+            <div class="config-input-group">
+              <input id="touchJoystickSensitivity" type="range" min="0.5" max="2.0" value="1.0" step="0.1" aria-label="Touch joystick sensitivity">
+              <span id="touchJoystickSensitivityValue" class="config-value">1.0</span>
+            </div>
+          </div>
+          <div class="config-item" id="touchLookSensitivityGroup" style="display: none;">
+            <label for="touchLookSensitivity" class="config-label" data-i18n="config.touch.look_sensitivity">Touch Look Sensitivity</label>
+            <div class="config-input-group">
+              <input id="touchLookSensitivity" type="range" min="0.001" max="0.008" value="0.003" step="0.0005" aria-label="Touch look sensitivity">
+              <span id="touchLookSensitivityValue" class="config-value">0.003</span>
             </div>
           </div>
           <div class="config-item">
@@ -181,7 +202,8 @@
 
     <div id="tutorial" class="panel" role="dialog" aria-modal="false" aria-live="polite">
       <h2 data-i18n="ui.tutorial.welcome">Welcome!</h2>
-      <ol>
+      <!-- Desktop instructions (default) -->
+      <ol id="desktopInstructions">
         <li data-i18n-html="ui.tutorial.instruction_1">W/A/S/D or arrow keys to move. Hold <strong>Shift</strong> to glide faster.</li>
         <li data-i18n-html="ui.tutorial.instruction_2">Move mouse to look. Keyboard-only? Use <strong>Q/E</strong> to turn.</li>
         <li data-i18n="ui.tutorial.instruction_3">Find the glowing exit before the timer runs out.</li>
@@ -197,6 +219,30 @@
         <li data-i18n-html="ui.tutorial.instruction_6">Click the <strong>⚙️ gear icon</strong> to customize difficulty, maze size, enemy count, and device settings!</li>
       </ol>
       <p data-i18n-html="ui.tutorial.start_prompt">Press <strong>Enter</strong> to start. Press <strong>R</strong> to restart.</p>
+      <!-- Touch instructions (hidden by default, shown on touch devices) -->
+      <ol id="touchInstructions" style="display: none;">
+        <li data-i18n-html="ui.tutorial.touch_instruction_1">Use the <strong>virtual joystick</strong> in the bottom corner to move around.</li>
+        <li data-i18n-html="ui.tutorial.touch_instruction_2">Drag on the main screen to look around and control your camera.</li>
+        <li data-i18n="ui.tutorial.instruction_3">Find the glowing exit before the timer runs out.</li>
+        <li data-i18n-html="ui.tutorial.touch_instruction_4">Friendly critters will gently boop you back. Use defensive tools with the <strong>device buttons</strong>:</li>
+        <li>
+          <ul>
+            <li data-i18n-html="ui.tutorial.touch_device_list.disruptor"><strong>D button</strong> - Disruptor (short-range stun)</li>
+            <li data-i18n-html="ui.tutorial.touch_device_list.immobilizer"><strong>I button</strong> - Immobilizer (slow orb)</li>
+            <li data-i18n-html="ui.tutorial.touch_device_list.pacifier"><strong>P button</strong> - Pacifier (sleepy dart)</li>
+          </ul>
+        </li>
+        <li data-i18n-html="ui.tutorial.touch_instruction_5">Step on recharge pads to refill device charges. <strong>Swipe left/right</strong> to quickly switch devices!</li>
+        <li data-i18n-html="ui.tutorial.touch_instruction_6">Tap the <strong>⚙️ gear icon</strong> to customize touch sensitivity and game settings!</li>
+      </ol>
+
+      <!-- Touch-friendly start button (hidden by default, shown on touch devices) -->
+      <div id="touchStartControls" class="touch-start-controls" style="display: none;">
+        <button id="touchStartButton" class="touch-start-button">
+          <span class="start-button-text" data-i18n="ui.tutorial.touch_start">🎮 Start Game</span>
+        </button>
+        <p class="touch-instructions" data-i18n="ui.tutorial.touch_controls_hint">Use virtual joystick to move, tap screen to activate devices</p>
+      </div>
     </div>
   </div>
 

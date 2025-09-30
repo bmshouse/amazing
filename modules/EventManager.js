@@ -1,151 +1,48 @@
-// modules/EventManager.js - Centralized event handling and input management
+// modules/EventManager.js - Unified interface for event and input systems
+import { InputManager } from './InputManager.js';
+import { EventSystemManager } from './EventSystemManager.js';
+import { logger } from './Logger.js';
+
 export class EventManager {
   constructor() {
-    this.eventListeners = new Map();
-    this.inputState = {
-      keys: new Set(),
-      pointerLocked: false,
-      mouse: { x: 0, y: 0, dx: 0, dy: 0 }
-    };
-    this.bindDefaultEvents();
+    // Delegate to focused classes (Composition over inheritance)
+    this.inputManager = new InputManager();
+    this.eventSystem = new EventSystemManager();
+
+    // Maintain backward compatibility by proxying methods
+    this.setupCompatibilityLayer();
   }
 
-  bindDefaultEvents() {
-    // Keyboard events
-    window.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase();
-      this.inputState.keys.add(key);
-      this.emit('keydown', { key, code: e.code, event: e });
-    });
+  setupCompatibilityLayer() {
+    // Proxy event system methods
+    this.on = this.eventSystem.on.bind(this.eventSystem);
+    this.off = this.eventSystem.off.bind(this.eventSystem);
+    this.emit = this.eventSystem.emit.bind(this.eventSystem);
 
-    window.addEventListener('keyup', (e) => {
-      const key = e.key.toLowerCase();
-      this.inputState.keys.delete(key);
-      this.emit('keyup', { key, code: e.code, event: e });
-    });
+    // Proxy input manager methods
+    this.isKeyPressed = this.inputManager.isKeyPressed.bind(this.inputManager);
+    this.isPointerLocked = this.inputManager.isPointerLocked.bind(this.inputManager);
+    this.getMousePosition = this.inputManager.getMousePosition.bind(this.inputManager);
+    this.getMovementInput = this.inputManager.getMovementInput.bind(this.inputManager);
+    this.getMouseMovement = this.inputManager.getMouseMovement.bind(this.inputManager);
+    this.getTouchMovement = this.inputManager.getTouchMovement.bind(this.inputManager);
+    this.isTouchActive = this.inputManager.isTouchActive.bind(this.inputManager);
+    this.setMovementJoystickInput = this.inputManager.setMovementJoystickInput.bind(this.inputManager);
+    this.requestPointerLock = this.inputManager.requestPointerLock.bind(this.inputManager);
+    this.clearInputState = this.inputManager.clearInputState.bind(this.inputManager);
+    this.resetTouchInput = this.inputManager.resetTouchInput.bind(this.inputManager);
 
-    // Mouse events
-    window.addEventListener('mousedown', (e) => {
-      this.emit('mousedown', { button: e.button, event: e });
-    });
-
-    window.addEventListener('mouseup', (e) => {
-      this.emit('mouseup', { button: e.button, event: e });
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      this.inputState.mouse.dx = e.movementX || 0;
-      this.inputState.mouse.dy = e.movementY || 0;
-      this.inputState.mouse.x = e.clientX;
-      this.inputState.mouse.y = e.clientY;
-      this.emit('mousemove', {
-        x: e.clientX,
-        y: e.clientY,
-        dx: e.movementX || 0,
-        dy: e.movementY || 0,
-        event: e
-      });
-    });
-
-    // Pointer lock events
-    document.addEventListener('pointerlockchange', () => {
-      this.inputState.pointerLocked = (document.pointerLockElement !== null);
-      this.emit('pointerlockchange', { locked: this.inputState.pointerLocked });
-    });
-
-    // Window events
-    window.addEventListener('resize', (e) => {
-      this.emit('resize', { event: e });
-    });
-  }
-
-  // Event emitter pattern
-  on(eventType, callback) {
-    if (!this.eventListeners.has(eventType)) {
-      this.eventListeners.set(eventType, []);
-    }
-    this.eventListeners.get(eventType).push(callback);
-  }
-
-  off(eventType, callback) {
-    if (this.eventListeners.has(eventType)) {
-      const listeners = this.eventListeners.get(eventType);
-      const index = listeners.indexOf(callback);
-      if (index > -1) {
-        listeners.splice(index, 1);
-      }
-    }
-  }
-
-  emit(eventType, data = {}) {
-    if (this.eventListeners.has(eventType)) {
-      this.eventListeners.get(eventType).forEach(callback => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error(`Error in event listener for ${eventType}:`, error);
-        }
-      });
-    }
-  }
-
-  // Input state queries
-  isKeyPressed(key) {
-    return this.inputState.keys.has(key.toLowerCase());
-  }
-
-  isPointerLocked() {
-    return this.inputState.pointerLocked;
-  }
-
-  getMouseMovement() {
-    const movement = {
-      dx: this.inputState.mouse.dx,
-      dy: this.inputState.mouse.dy
-    };
-    // Reset movement deltas after reading them
-    this.inputState.mouse.dx = 0;
-    this.inputState.mouse.dy = 0;
-    return movement;
-  }
-
-  getMousePosition() {
-    return {
-      x: this.inputState.mouse.x,
-      y: this.inputState.mouse.y
-    };
-  }
-
-  // Utility methods for common input patterns
-  getMovementInput() {
-    return {
-      forward: this.isKeyPressed('w') || this.isKeyPressed('arrowup'),
-      back: this.isKeyPressed('s') || this.isKeyPressed('arrowdown'),
-      left: this.isKeyPressed('a') || this.isKeyPressed('arrowleft'),
-      right: this.isKeyPressed('d') || this.isKeyPressed('arrowright'),
-      sprint: this.isKeyPressed('shift'),
-      turnLeft: this.isKeyPressed('q'),
-      turnRight: this.isKeyPressed('e')
-    };
-  }
-
-  // Request pointer lock
-  requestPointerLock(element) {
-    if (element.requestPointerLock) {
-      element.requestPointerLock();
-    }
-  }
-
-  // Clear input state (useful for game resets)
-  clearInputState() {
-    this.inputState.keys.clear();
-    this.inputState.mouse.dx = 0;
-    this.inputState.mouse.dy = 0;
+    // Expose inputState for backward compatibility
+    this.inputState = this.inputManager.inputState;
   }
 
   // Cleanup method
   destroy() {
-    this.eventListeners.clear();
-    this.inputState.keys.clear();
+    if (this.inputManager) {
+      this.inputManager.destroy();
+    }
+    if (this.eventSystem) {
+      this.eventSystem.destroy();
+    }
   }
 }

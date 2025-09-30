@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Joystick System Test - CalmMaze</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0f1020;
+            color: #f7f7f7;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .debug-panel {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .status { color: #2bd4c5; }
+        .error { color: #ff6b6b; }
+        .warning { color: #ffa726; }
+        .info { color: #42a5f5; }
+
+        .joystick-test-area {
+            min-height: 400px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            position: relative;
+            border: 2px dashed rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .control-btn {
+            background: rgba(43, 212, 197, 0.2);
+            border: 1px solid rgba(43, 212, 197, 0.4);
+            color: #2bd4c5;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(43, 212, 197, 0.3);
+            border-color: rgba(43, 212, 197, 0.6);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .sensitivity-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .sensitivity-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .sensitivity-group label {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .sensitivity-group input[type="range"] {
+            width: 100%;
+        }
+
+        .joystick-status {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .joystick-info {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .joystick-info h4 {
+            margin: 0 0 10px 0;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .joystick-info .movement-info h4 {
+            color: #2bd4c5;
+        }
+
+        .joystick-info .look-info h4 {
+            color: #ffa726;
+        }
+
+        .event-log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .sensitivity-controls,
+            .joystick-status {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎮 Dual Joystick System Test</h1>
+        <p>Comprehensive testing for the new dual joystick touch control system</p>
+
+        <!-- Platform Detection -->
+        <div class="test-section">
+            <h3>📱 Platform Detection</h3>
+            <div class="debug-panel" id="platformInfo">
+                Loading platform information...
+            </div>
+        </div>
+
+        <!-- Touch Capabilities -->
+        <div class="test-section">
+            <h3>✋ Touch Capabilities</h3>
+            <div class="debug-panel" id="touchCapabilities">
+                Loading touch capabilities...
+            </div>
+        </div>
+
+        <!-- Dual Joystick Test Area -->
+        <div class="test-section">
+            <h3>🕹️ Dual Joystick Test</h3>
+
+            <div class="controls-row">
+                <button class="control-btn" onclick="initializeDualJoysticks()">Initialize Dual Joysticks</button>
+                <button class="control-btn" onclick="destroyJoysticks()">Destroy Joysticks</button>
+                <button class="control-btn" onclick="toggleVisibility()">Toggle Visibility</button>
+                <button class="control-btn" onclick="resetJoysticks()">Reset Position</button>
+            </div>
+
+            <div class="sensitivity-controls">
+                <div class="sensitivity-group">
+                    <label>Movement Joystick Sensitivity:</label>
+                    <input type="range" id="movementSensitivity" min="0.5" max="3.0" value="1.0" step="0.1"
+                           onchange="updateMovementSensitivity()">
+                    <span class="status" id="movementSensitivityValue">1.0</span>
+                </div>
+                <div class="sensitivity-group">
+                    <label>Look Joystick Sensitivity:</label>
+                    <input type="range" id="lookSensitivity" min="0.001" max="0.01" value="0.003" step="0.0005"
+                           onchange="updateLookSensitivity()">
+                    <span class="status" id="lookSensitivityValue">0.003</span>
+                </div>
+            </div>
+
+            <div class="joystick-test-area" id="joystickTestArea">
+                <h4>Touch Test Area</h4>
+                <p>Dual joysticks will appear here when initialized</p>
+                <div class="status" id="testAreaStatus">Ready for testing</div>
+            </div>
+
+            <div class="joystick-status">
+                <div class="joystick-info movement-info">
+                    <h4>🕹️ Movement Joystick (Cyan)</h4>
+                    <div id="movementJoystickStatus">Inactive</div>
+                </div>
+                <div class="joystick-info look-info">
+                    <h4>🎯 Look Joystick (Orange)</h4>
+                    <div id="lookJoystickStatus">Inactive</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Button Test -->
+        <div class="test-section">
+            <h3>🛡️ Device Buttons Test</h3>
+            <div class="controls-row">
+                <button class="control-btn" onclick="testDeviceButtons()">Initialize Device Buttons</button>
+                <button class="control-btn" onclick="simulateDeviceActivation()">Simulate Device Use</button>
+            </div>
+            <div class="debug-panel" id="deviceButtonStatus">
+                Device buttons not initialized
+            </div>
+        </div>
+
+        <!-- Integration Test -->
+        <div class="test-section">
+            <h3>🔗 EventManager Integration</h3>
+            <div class="controls-row">
+                <button class="control-btn" onclick="testEventManagerIntegration()">Test Integration</button>
+                <button class="control-btn" onclick="clearEventLog()">Clear Log</button>
+            </div>
+            <div class="debug-panel" id="eventManagerStatus">
+                Integration not tested
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="test-section">
+            <h3>📝 Event Log</h3>
+            <div class="event-log" id="eventLog">
+                System ready for testing...
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { PlatformDetector } from './modules/platforms/PlatformDetector.js';
+        import { TouchManager } from './modules/input/TouchManager.js';
+        import { VirtualJoystick } from './modules/input/VirtualJoystick.js';
+        import { TouchHUD } from './modules/ui/TouchHUD.js';
+        import { EventManager } from './modules/EventManager.js';
+
+        // Global test state
+        let platformDetector, touchManager, eventManager, touchHUD;
+        let movementJoystick, lookJoystick;
+        let eventLog = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            eventLog.push(logEntry);
+
+            if (eventLog.length > 100) eventLog.shift();
+
+            const logElement = document.getElementById('eventLog');
+            logElement.innerHTML = eventLog.map(entry =>
+                `<div class="${type}">${entry}</div>`
+            ).join('');
+            logElement.scrollTop = logElement.scrollHeight;
+
+            console.log(logEntry);
+        }
+
+        function initializePlatformDetection() {
+            try {
+                platformDetector = new PlatformDetector();
+                const info = platformDetector.getDebugInfo();
+
+                document.getElementById('platformInfo').innerHTML = `
+                    <div class="status">Device Type: ${info.deviceType}</div>
+                    <div class="status">Primary Input: ${info.primaryInput}</div>
+                    <div class="status">Screen Category: ${info.screenCategory}</div>
+                    <div class="status">Layout Mode: ${info.layoutMode}</div>
+                    <div class="status">Performance Tier: ${info.performanceTier}</div>
+                    <div class="status">Orientation: ${info.orientation}</div>
+                `;
+
+                log('Platform detection initialized successfully', 'status');
+                return true;
+            } catch (error) {
+                document.getElementById('platformInfo').innerHTML =
+                    `<div class="error">Error: ${error.message}</div>`;
+                log(`Platform detection failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        function initializeTouchCapabilities() {
+            try {
+                touchManager = new TouchManager();
+
+                document.getElementById('touchCapabilities').innerHTML = `
+                    <div class="status">Has Touch: ${touchManager.hasTouch()}</div>
+                    <div class="status">Max Touch Points: ${touchManager.capabilities.maxTouchPoints}</div>
+                    <div class="status">Screen Resolution: ${touchManager.capabilities.screenWidth}x${touchManager.capabilities.screenHeight}</div>
+                    <div class="status">Pixel Ratio: ${touchManager.capabilities.pixelRatio}</div>
+                    <div class="status">Supports Pointer Events: ${touchManager.capabilities.supportsPointerEvents}</div>
+                `;
+
+                log('Touch capabilities detected successfully', 'status');
+                return true;
+            } catch (error) {
+                document.getElementById('touchCapabilities').innerHTML =
+                    `<div class="error">Error: ${error.message}</div>`;
+                log(`Touch capabilities detection failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        function initializeEventManager() {
+            try {
+                eventManager = new EventManager();
+
+                // Set up touch event logging
+                eventManager.on('touchstart', (data) => {
+                    log(`EventManager: Touch start - ${data.touchCount} touches`, 'status');
+                });
+
+                eventManager.on('touchend', (data) => {
+                    log(`EventManager: Touch end - ${data.touchCount} touches remaining`, 'status');
+                });
+
+                log('EventManager initialized successfully', 'status');
+                return true;
+            } catch (error) {
+                log(`EventManager initialization failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        window.initializeDualJoysticks = function() {
+            try {
+                if (!platformDetector && !initializePlatformDetection()) {
+                    throw new Error('Platform detection required for joystick configuration');
+                }
+
+                const testArea = document.getElementById('joystickTestArea');
+                const config = platformDetector.getVirtualControlConfig();
+
+                // Clean up existing joysticks
+                if (movementJoystick) {
+                    movementJoystick.destroy();
+                }
+                if (lookJoystick) {
+                    lookJoystick.destroy();
+                }
+
+                // Create movement joystick (left, cyan)
+                movementJoystick = new VirtualJoystick(testArea, {
+                    ...config.joystick,
+                    positioning: 'bottom-left',
+                    baseColor: 'rgba(43, 212, 197, 0.15)',
+                    knobColor: 'rgba(43, 212, 197, 0.9)',
+                    onMove: (x, y) => {
+                        document.getElementById('movementJoystickStatus').innerHTML = `
+                            <div class="status">Active: X=${x.toFixed(2)}, Y=${y.toFixed(2)}</div>
+                            <div class="info">Direction: ${getDirection(x, y)}</div>
+                        `;
+
+                        // Update EventManager if available
+                        if (eventManager) {
+                            eventManager.setMovementJoystickInput(x, y, true);
+                        }
+                    },
+                    onStart: () => {
+                        log('Movement joystick activated', 'status');
+                        document.getElementById('movementJoystickStatus').innerHTML =
+                            '<div class="status">Movement joystick started</div>';
+                    },
+                    onEnd: () => {
+                        log('Movement joystick deactivated', 'status');
+                        document.getElementById('movementJoystickStatus').innerHTML =
+                            '<div class="info">Movement joystick inactive</div>';
+
+                        if (eventManager) {
+                            eventManager.setMovementJoystickInput(0, 0, false);
+                        }
+                    }
+                });
+
+                // Create look joystick (right, orange)
+                lookJoystick = new VirtualJoystick(testArea, {
+                    ...config.joystick,
+                    positioning: 'bottom-right',
+                    baseColor: 'rgba(255, 165, 0, 0.15)',
+                    knobColor: 'rgba(255, 165, 0, 0.9)',
+                    onMove: (x, y) => {
+                        document.getElementById('lookJoystickStatus').innerHTML = `
+                            <div class="status">Active: X=${x.toFixed(2)}, Y=${y.toFixed(2)}</div>
+                            <div class="info">Look: ${getLookDirection(x, y)}</div>
+                        `;
+
+                        // Update EventManager touch look input if available
+                        if (eventManager) {
+                            const lookSensitivity = parseFloat(document.getElementById('lookSensitivity').value) || 0.003;
+                            eventManager.inputState.touch.lookInput.dx = x * lookSensitivity * 2000;
+                            eventManager.inputState.touch.lookInput.dy = y * lookSensitivity * 2000;
+                        }
+                    },
+                    onStart: () => {
+                        log('Look joystick activated', 'status');
+                        document.getElementById('lookJoystickStatus').innerHTML =
+                            '<div class="status">Look joystick started</div>';
+                    },
+                    onEnd: () => {
+                        log('Look joystick deactivated', 'status');
+                        document.getElementById('lookJoystickStatus').innerHTML =
+                            '<div class="info">Look joystick inactive</div>';
+                    }
+                });
+
+                document.getElementById('testAreaStatus').innerHTML =
+                    '<div class="status">✅ Dual joysticks initialized successfully!</div>';
+
+                log('Dual joystick system initialized successfully', 'status');
+
+            } catch (error) {
+                document.getElementById('testAreaStatus').innerHTML =
+                    `<div class="error">❌ Failed to initialize: ${error.message}</div>`;
+                log(`Dual joystick initialization failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.destroyJoysticks = function() {
+            if (movementJoystick) {
+                movementJoystick.destroy();
+                movementJoystick = null;
+            }
+            if (lookJoystick) {
+                lookJoystick.destroy();
+                lookJoystick = null;
+            }
+
+            document.getElementById('movementJoystickStatus').innerHTML = 'Destroyed';
+            document.getElementById('lookJoystickStatus').innerHTML = 'Destroyed';
+            document.getElementById('testAreaStatus').innerHTML =
+                '<div class="warning">Joysticks destroyed</div>';
+
+            log('Joysticks destroyed', 'warning');
+        };
+
+        window.toggleVisibility = function() {
+            const opacity = Math.random() * 0.8 + 0.2; // Random opacity between 0.2-1.0
+
+            if (movementJoystick) {
+                movementJoystick.setOpacity(opacity);
+            }
+            if (lookJoystick) {
+                lookJoystick.setOpacity(opacity);
+            }
+
+            log(`Visibility toggled - opacity set to ${opacity.toFixed(2)}`, 'info');
+        };
+
+        window.resetJoysticks = function() {
+            window.destroyJoysticks();
+            setTimeout(() => {
+                window.initializeDualJoysticks();
+            }, 100);
+        };
+
+        window.updateMovementSensitivity = function() {
+            const value = document.getElementById('movementSensitivity').value;
+            document.getElementById('movementSensitivityValue').textContent = value;
+
+            if (movementJoystick) {
+                movementJoystick.setSensitivity(parseFloat(value));
+            }
+
+            log(`Movement sensitivity updated to ${value}`, 'info');
+        };
+
+        window.updateLookSensitivity = function() {
+            const value = document.getElementById('lookSensitivity').value;
+            document.getElementById('lookSensitivityValue').textContent = value;
+
+            if (lookJoystick) {
+                lookJoystick.setSensitivity(parseFloat(value));
+            }
+
+            log(`Look sensitivity updated to ${value}`, 'info');
+        };
+
+        window.testDeviceButtons = function() {
+            try {
+                if (!eventManager && !initializeEventManager()) {
+                    throw new Error('EventManager required for device buttons');
+                }
+
+                const testArea = document.getElementById('joystickTestArea');
+                const config = platformDetector ? platformDetector.getVirtualControlConfig() : {
+                    deviceButtons: { size: 50, spacing: 10 }
+                };
+
+                // Initialize TouchHUD for device buttons
+                touchHUD = new TouchHUD(config);
+                touchHUD.setEventManager(eventManager);
+
+                document.getElementById('deviceButtonStatus').innerHTML =
+                    '<div class="status">✅ Device buttons initialized</div>';
+
+                log('Device buttons test initialized', 'status');
+
+            } catch (error) {
+                document.getElementById('deviceButtonStatus').innerHTML =
+                    `<div class="error">❌ Device buttons failed: ${error.message}</div>`;
+                log(`Device buttons test failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.simulateDeviceActivation = function() {
+            log('Simulating device activation (visual feedback only)', 'info');
+            document.getElementById('deviceButtonStatus').innerHTML +=
+                '<div class="info">🛡️ Device activation simulated</div>';
+        };
+
+        window.testEventManagerIntegration = function() {
+            try {
+                if (!eventManager && !initializeEventManager()) {
+                    throw new Error('EventManager initialization failed');
+                }
+
+                // Test movement input integration
+                eventManager.setMovementJoystickInput(0.5, -0.3, true);
+                const movementInput = eventManager.getMovementInput();
+
+                // Test touch movement
+                eventManager.inputState.touch.lookInput = { dx: 10, dy: -5 };
+                const touchMovement = eventManager.getTouchMovement();
+
+                document.getElementById('eventManagerStatus').innerHTML = `
+                    <div class="status">✅ EventManager integration working</div>
+                    <div class="info">Movement Input: right=${movementInput.right}, forward=${movementInput.forward}</div>
+                    <div class="info">Touch Movement: dx=${touchMovement.dx}, dy=${touchMovement.dy}</div>
+                `;
+
+                log('EventManager integration test passed', 'status');
+
+            } catch (error) {
+                document.getElementById('eventManagerStatus').innerHTML =
+                    `<div class="error">❌ Integration test failed: ${error.message}</div>`;
+                log(`EventManager integration test failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.clearEventLog = function() {
+            eventLog = [];
+            document.getElementById('eventLog').innerHTML = 'Event log cleared...';
+            log('Event log cleared', 'info');
+        };
+
+        // Helper functions
+        function getDirection(x, y) {
+            if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) return 'Center';
+
+            let direction = '';
+            if (y < -0.3) direction += 'Up';
+            if (y > 0.3) direction += 'Down';
+            if (x < -0.3) direction += 'Left';
+            if (x > 0.3) direction += 'Right';
+
+            return direction || 'Center';
+        }
+
+        function getLookDirection(x, y) {
+            if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) return 'Neutral';
+
+            let direction = '';
+            if (y < -0.3) direction += 'Look Up';
+            if (y > 0.3) direction += 'Look Down';
+            if (x < -0.3) direction += ' Look Left';
+            if (x > 0.3) direction += ' Look Right';
+
+            return direction.trim() || 'Neutral';
+        }
+
+        // Auto-initialize basic systems
+        log('Initializing dual joystick test system...', 'status');
+        initializePlatformDetection();
+        initializeTouchCapabilities();
+        initializeEventManager();
+
+        log('✅ Dual joystick test system ready!', 'status');
+        log('Use the controls above to test the dual joystick implementation', 'info');
+    </script>
+</body>
+</html>

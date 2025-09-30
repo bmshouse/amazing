@@ -1,5 +1,6 @@
 // modules/DifficultyConfig.js - Centralized difficulty configuration management
 import { GameConfig } from './GameConfig.js';
+import { logger } from './Logger.js';
 
 export class DifficultyConfig {
   constructor() {
@@ -254,7 +255,7 @@ export class DifficultyConfig {
     try {
       localStorage.setItem('calmmaze_difficulty', JSON.stringify(this.config));
     } catch (e) {
-      console.warn('Could not save difficulty config to localStorage:', e);
+      logger.warn('Could not save difficulty config to localStorage:', e);
     }
   }
 
@@ -269,7 +270,7 @@ export class DifficultyConfig {
         this.validateConfig();
       }
     } catch (e) {
-      console.warn('Could not load difficulty config from localStorage:', e);
+      logger.warn('Could not load difficulty config from localStorage:', e);
       this.config = this.getDefaultConfig();
     }
   }
@@ -295,7 +296,7 @@ export class DifficultyConfig {
       this.saveToStorage();
       return true;
     } catch (e) {
-      console.error('Invalid configuration string:', e);
+      logger.error('Invalid configuration string:', e);
       return false;
     }
   }

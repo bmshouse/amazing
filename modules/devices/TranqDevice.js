@@ -30,6 +30,11 @@ export class TranqDevice extends IDevice {
     projectileSystem.addProjectile(projectile);
     audio.beep('sine', 420, 0.06, 0.05);
 
+    // Activation effect showing launch point
+    const fxX = player.x + Math.cos(player.a) * 0.2;
+    const fxY = player.y + Math.sin(player.a) * 0.2;
+    onActivation(fxX, fxY, '#a29bfe');
+
     return true;
   }
 
@@ -45,5 +50,15 @@ export class TranqDevice extends IDevice {
 
   getDescription() {
     return 'Fast dart that completely immobilizes creatures';
+  }
+
+  showRangeIndicator(player, onRangeIndicator) {
+    // Show projectile path as a precise line for fast dart
+    const startX = player.x + Math.cos(player.a) * 0.3;
+    const startY = player.y + Math.sin(player.a) * 0.3;
+    const maxRange = 4.0; // Longer but still reasonable range
+    const endX = player.x + Math.cos(player.a) * maxRange;
+    const endY = player.y + Math.sin(player.a) * maxRange;
+    onRangeIndicator(startX, startY, endX, endY, this.getEffectColor(), 0.5);
   }
 }
