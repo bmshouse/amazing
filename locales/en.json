@@ -12,7 +12,9 @@
       "reset": "Reset to Defaults",
       "apply": "Apply Changes",
       "settings": "Settings",
-      "close": "Close"
+      "close": "Close",
+      "play_again": "Play Again",
+      "try_again": "Try Again"
     },
     "tabs": {
       "basic": "Basic",
@@ -32,7 +34,51 @@
         "disruptor": "<strong>1</strong> Disruptor (short-range stun)",
         "immobilizer": "<strong>2</strong> Immobilizer (slow orb)",
         "pacifier": "<strong>3</strong> Pacifier (sleepy dart)"
-      }
+      },
+      "touch_instruction_1": "Use the <strong>virtual joystick</strong> in the bottom corner to move around.",
+      "touch_instruction_2": "Drag on the main screen to look around and control your camera.",
+      "touch_instruction_4": "Friendly critters will gently boop you back. Use defensive tools with the <strong>device buttons</strong>:",
+      "touch_instruction_5": "Step on recharge pads to refill device charges. <strong>Swipe left/right</strong> to quickly switch devices!",
+      "touch_instruction_6": "Tap the <strong>⚙️ gear icon</strong> to customize touch sensitivity and game settings!",
+      "touch_device_list": {
+        "disruptor": "<strong>D button</strong> - Disruptor (short-range stun)",
+        "immobilizer": "<strong>I button</strong> - Immobilizer (slow orb)",
+        "pacifier": "<strong>P button</strong> - Pacifier (sleepy dart)"
+      },
+      "touch_start": "🎮 Start Game",
+      "touch_controls_hint": "Use virtual joystick to move, tap screen to activate devices"
+    },
+    "share": {
+      "title": "Share Challenge",
+      "challenge_info": "Challenge Information",
+      "maze_size": "Maze Size",
+      "completion_time": "Your Time",
+      "your_time": "Your Time",
+      "target_time": "Target Time",
+      "difficulty": "Difficulty",
+      "enemies": "Enemies",
+      "share_url": "Challenge URL",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "share_native": "Share",
+      "play_again": "Play Again",
+      "share_challenge": "Share Challenge"
+    },
+    "errors": {
+      "copy_failed": "Failed to copy URL to clipboard",
+      "copy_failed_short": "Failed to copy URL",
+      "share_prepare_failed": "Failed to prepare challenge for sharing",
+      "challenge_load_failed": "Failed to load challenge data"
+    },
+    "challenge": {
+      "loading_title": "Challenge Mode",
+      "exit": "Exit Challenge",
+      "target_time_label": "Target:",
+      "beat_time": "Beat: {{time}}",
+      "challenge_from": "Challenge from {{name}}",
+      "time_diff_second": "{{seconds}} second",
+      "time_diff_seconds": "{{seconds}} seconds",
+      "share_victory": "Share Your Victory"
     }
   },
   "game": {
@@ -50,7 +96,16 @@
       "found_exit": "Great job! Press Enter to play again.",
       "device_disabled": "Device disabled",
       "ready_again": "Ready to go again!",
-      "you_found_exit": "You found the exit! 🎉"
+      "you_found_exit": "You found the exit! 🎉",
+      "victory_title": "🎉 Victory!",
+      "victory_details": "Maze: {{mazeSize}} | Time: {{completionTime}} | Difficulty: {{difficulty}}",
+      "victory_cta": "Challenge your friends! Press <strong>S</strong> to share or click the share button.",
+      "victory_keyboard_hint": "Keyboard: Press <strong>S</strong> to share, <strong>R</strong> or <strong>Enter</strong> to restart",
+      "victory_beat_record_title": "🏆 New Record!",
+      "victory_beat_record": "Amazing! You beat the target time by {{diff}}! Click Share Your Victory to challenge others.",
+      "victory_close_title": "🎉 So Close!",
+      "victory_close": "Just {{diff}} behind! One more try?",
+      "victory_missed": "You finished {{diff}} after the target time. Think you can do better? Try again!"
     },
     "difficulty": {
       "presets": {
@@ -59,6 +114,10 @@
         "hard": "Hard",
         "custom": "Custom",
         "teensafe": "Teen-Safe"
+      },
+      "fallback": {
+        "custom": "Custom",
+        "normal": "Normal"
       },
       "descriptions": {
         "easy": "Relaxed pace with generous resources",
@@ -87,6 +146,10 @@
       "label": "Mouse Sensitivity",
       "description": "Adjust mouse look sensitivity"
     },
+    "touch": {
+      "joystick_sensitivity": "Joystick Sensitivity",
+      "look_sensitivity": "Look Sensitivity"
+    },
     "preset_section": {
       "title": "Difficulty Preset"
     },
@@ -104,6 +167,7 @@
         "0.5": "Slow",
         "0.8": "Easy",
         "1.0": "Normal",
+        "1": "Normal",
         "1.2": "Fast",
         "1.5": "Frantic",
         "2.0": "Insane"

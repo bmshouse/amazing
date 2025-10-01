@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CalmMaze Share System Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #0f1020;
+      color: #f7f7f7;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .test-section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .test-result {
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    .test-result.pass {
+      background: rgba(126, 224, 129, 0.2);
+      border-left: 4px solid #7ee081;
+    }
+    .test-result.fail {
+      background: rgba(240, 19, 74, 0.2);
+      border-left: 4px solid #f0134a;
+    }
+    .url-output {
+      background: rgba(0,0,0,0.3);
+      padding: 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-all;
+      margin: 10px 0;
+    }
+    button {
+      background: #2bd4c5;
+      color: #0f1020;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #26c4b5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 CalmMaze Share System Test</h1>
+
+    <div class="test-section">
+      <h2>Test Controls</h2>
+      <button onclick="runAllTests()">Run All Tests</button>
+      <button onclick="generateSampleURL()">Generate Sample Share URL</button>
+      <button onclick="testURLFromClipboard()">Test URL from Clipboard</button>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Results</h2>
+      <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Sample Generated URL</h2>
+      <div id="urlOutput" class="url-output">Click "Generate Sample Share URL" to create a test URL</div>
+      <button onclick="copyURL()" id="copyButton" style="display: none;">Copy URL</button>
+      <button onclick="loadURL()" id="loadButton" style="display: none;">Load This Challenge</button>
+    </div>
+
+    <div class="test-section">
+      <h2>Challenge Information</h2>
+      <div id="challengeInfo">No challenge loaded</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { MazeEncoder } from './modules/MazeEncoder.js';
+    import { ChallengeManager } from './modules/ChallengeManager.js';
+    import { Maze } from './modules/maze.js';
+    import { GameConfig } from './modules/GameConfig.js';
+
+    // Make modules available globally for the test functions
+    window.MazeEncoder = MazeEncoder;
+    window.ChallengeManager = ChallengeManager;
+    window.Maze = Maze;
+    window.GameConfig = GameConfig;
+
+    window.encoder = new MazeEncoder();
+    window.challengeManager = new ChallengeManager();
+    window.lastGeneratedURL = null;
+
+    // Test functions
+    window.runAllTests = async function() {
+      const results = document.getElementById('testResults');
+      results.innerHTML = '<h3>Running Tests...</h3>';
+
+      const tests = [
+        testMazeGeneration,
+        testDataSerialization,
+        testURLEncoding,
+        testURLDecoding,
+        testChallengeValidation,
+        testSeededGeneration,
+        testChallengeManager
+      ];
+
+      let passCount = 0;
+      let totalTests = tests.length;
+
+      for (const test of tests) {
+        try {
+          const result = await test();
+          if (result.pass) passCount++;
+          addTestResult(result);
+        } catch (error) {
+          addTestResult({
+            name: test.name,
+            pass: false,
+            message: `Test failed with error: ${error.message}`
+          });
+        }
+      }
+
+      results.innerHTML += `<h3>Tests Complete: ${passCount}/${totalTests} passed</h3>`;
+    };
+
+    window.generateSampleURL = function() {
+      try {
+        // Create sample game data
+        const maze = new Maze(21, 21, 3);
+        maze.generate();
+
+        const sampleGameData = {
+          maze: maze,
+          enemies: {
+            entities: [
+              { x: 3.5, y: 3.5 },
+              { x: 7.5, y: 9.5 },
+              { x: 15.5, y: 15.5 }
+            ]
+          },
+          config: {
+            difficultyPreset: 'normal',
+            enemyCount: 3,
+            enemySpeed: 1.0,
+            devices: {
+              taserCharges: 8,
+              stunCharges: 6,
+              tranqCharges: 4
+            }
+          },
+          completionTime: 125000, // 2:05
+          playerName: 'TestPlayer'
+        };
+
+        const url = encoder.generateShareableURL(sampleGameData);
+        lastGeneratedURL = url;
+
+        document.getElementById('urlOutput').textContent = url;
+        document.getElementById('copyButton').style.display = 'inline-block';
+        document.getElementById('loadButton').style.display = 'inline-block';
+
+        console.debug('Generated URL:', url);
+        console.debug('URL length:', url.length);
+      } catch (error) {
+        document.getElementById('urlOutput').textContent = `Error: ${error.message}`;
+        console.error('Error generating URL:', error);
+      }
+    };
+
+    window.copyURL = async function() {
+      if (!lastGeneratedURL) return;
+
+      try {
+        await navigator.clipboard.writeText(lastGeneratedURL);
+        const button = document.getElementById('copyButton');
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+          button.textContent = originalText;
+        }, 2000);
+      } catch (error) {
+        console.error('Failed to copy:', error);
+      }
+    };
+
+    window.loadURL = function() {
+      if (!lastGeneratedURL) return;
+
+      try {
+        const encodedData = encoder.parseShareableURL(lastGeneratedURL);
+        if (encodedData) {
+          const challengeData = encoder.decodeFromURL(encodedData);
+          displayChallengeInfo(challengeData);
+        }
+      } catch (error) {
+        document.getElementById('challengeInfo').textContent = `Error loading challenge: ${error.message}`;
+      }
+    };
+
+    window.testURLFromClipboard = async function() {
+      try {
+        const url = await navigator.clipboard.readText();
+        if (url.includes('#/challenge/')) {
+          const encodedData = encoder.parseShareableURL(url);
+          if (encodedData) {
+            const challengeData = encoder.decodeFromURL(encodedData);
+            displayChallengeInfo(challengeData);
+            addTestResult({
+              name: 'Clipboard URL Test',
+              pass: true,
+              message: 'Successfully loaded challenge from clipboard'
+            });
+          } else {
+            throw new Error('Invalid challenge URL format');
+          }
+        } else {
+          throw new Error('No challenge URL found in clipboard');
+        }
+      } catch (error) {
+        addTestResult({
+          name: 'Clipboard URL Test',
+          pass: false,
+          message: error.message
+        });
+      }
+    };
+
+    function displayChallengeInfo(challengeData) {
+      const info = document.getElementById('challengeInfo');
+      const summary = encoder.getChallengeSummary(challengeData);
+
+      info.innerHTML = `
+        <h4>Challenge Loaded Successfully</h4>
+        <p><strong>Summary:</strong> ${summary}</p>
+        <p><strong>Maze Size:</strong> ${challengeData.maze.size}x${challengeData.maze.size}</p>
+        <p><strong>Enemies:</strong> ${challengeData.enemies.count} at ${challengeData.enemies.speed}x speed</p>
+        <p><strong>Devices:</strong> ${challengeData.devices.taserCharges}/${challengeData.devices.stunCharges}/${challengeData.devices.tranqCharges} charges</p>
+        <p><strong>Creator:</strong> ${challengeData.challenge.createdBy}</p>
+        <p><strong>Timestamp:</strong> ${new Date(challengeData.timestamp).toLocaleString()}</p>
+      `;
+    }
+
+    function addTestResult(result) {
+      const results = document.getElementById('testResults');
+      const div = document.createElement('div');
+      div.className = `test-result ${result.pass ? 'pass' : 'fail'}`;
+      div.innerHTML = `
+        <strong>${result.name}:</strong> ${result.pass ? '✅ PASS' : '❌ FAIL'}
+        <br><small>${result.message}</small>
+      `;
+      results.appendChild(div);
+    }
+
+    // Individual test functions
+    async function testMazeGeneration() {
+      const maze = new Maze(21, 21, 3);
+      maze.generate();
+
+      return {
+        name: 'Maze Generation',
+        pass: maze.w === 21 && maze.h === 21 && maze.pads.length === 3 && maze.exit,
+        message: `Generated ${maze.w}x${maze.h} maze with ${maze.pads.length} pads and exit at (${maze.exit.x}, ${maze.exit.y})`
+      };
+    }
+
+    async function testDataSerialization() {
+      const maze = new Maze(15, 15, 2);
+      maze.generate();
+
+      const gameData = {
+        maze: maze,
+        enemies: { entities: [{ x: 3.5, y: 3.5 }] },
+        config: { difficultyPreset: 'normal', enemyCount: 1, enemySpeed: 1.0, devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 } },
+        completionTime: 60000,
+        playerName: 'TestPlayer'
+      };
+
+      const serialized = encoder.serializeGameState(gameData);
+
+      return {
+        name: 'Data Serialization',
+        pass: serialized && serialized.version && serialized.maze && serialized.enemies,
+        message: `Serialized game state with version ${serialized.version}, seed ${serialized.seed}`
+      };
+    }
+
+    async function testURLEncoding() {
+      const testData = {
+        version: 1,
+        seed: 12345,
+        maze: { size: 21, rechargePadCount: 3, exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
+        enemies: { count: 3, speed: 1.0, spawns: [] },
+        devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
+        challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
+        timestamp: Date.now()
+      };
+
+      const encoded = encoder.encodeForURL(testData);
+
+      return {
+        name: 'URL Encoding',
+        pass: encoded && typeof encoded === 'string' && encoded.length > 0,
+        message: `Encoded to ${encoded.length} character string`
+      };
+    }
+
+    async function testURLDecoding() {
+      const testData = {
+        version: 1,
+        seed: 12345,
+        maze: { size: 21, rechargePadCount: 3, exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
+        enemies: { count: 3, speed: 1.0, spawns: [] },
+        devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
+        challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
+        timestamp: Date.now()
+      };
+
+      const encoded = encoder.encodeForURL(testData);
+      const decoded = encoder.decodeFromURL(encoded);
+
+      return {
+        name: 'URL Decoding',
+        pass: decoded && decoded.version === testData.version && decoded.seed === testData.seed,
+        message: `Successfully round-trip encoded/decoded data`
+      };
+    }
+
+    async function testChallengeValidation() {
+      const validData = {
+        version: 1,
+        seed: 12345,
+        maze: { size: 21, rechargePadCount: 3, exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
+        enemies: { count: 3, speed: 1.0, spawns: [] },
+        devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
+        challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
+        timestamp: Date.now()
+      };
+
+      const invalidData = { version: 1, incomplete: true };
+
+      const validResult = encoder.validateGameState(validData);
+      const invalidResult = encoder.validateGameState(invalidData);
+
+      return {
+        name: 'Challenge Validation',
+        pass: validResult === true && invalidResult === false,
+        message: `Valid data: ${validResult}, Invalid data: ${invalidResult}`
+      };
+    }
+
+    async function testSeededGeneration() {
+      const seed = 12345;
+
+      // Generate two mazes with the same seed
+      challengeManager.seedRandom(seed);
+      const maze1 = new Maze(15, 15, 2);
+      maze1.generate();
+      challengeManager.restoreRandom();
+
+      challengeManager.seedRandom(seed);
+      const maze2 = new Maze(15, 15, 2);
+      maze2.generate();
+      challengeManager.restoreRandom();
+
+      // Check if they're identical
+      const exit1 = maze1.exit;
+      const exit2 = maze2.exit;
+      const exitsMatch = exit1.x === exit2.x && exit1.y === exit2.y;
+
+      return {
+        name: 'Seeded Generation',
+        pass: exitsMatch && maze1.pads.length === maze2.pads.length,
+        message: `Generated identical mazes with same seed. Exit: (${exit1.x}, ${exit1.y}), Pads: ${maze1.pads.length}`
+      };
+    }
+
+    async function testChallengeManager() {
+      const maze = new Maze(15, 15, 2);
+      maze.generate();
+
+      const gameData = {
+        maze: maze,
+        enemies: { entities: [{ x: 3.5, y: 3.5 }] },
+        config: { difficultyPreset: 'normal', enemyCount: 1, enemySpeed: 1.0, devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 } },
+        completionTime: 60000,
+        playerName: 'TestPlayer'
+      };
+
+      const url = challengeManager.createChallenge(gameData);
+      const encodedData = challengeManager.encoder.parseShareableURL(url);
+      const decodedData = challengeManager.loadChallengeFromURL(encodedData);
+
+      return {
+        name: 'Challenge Manager',
+        pass: decodedData && decodedData.maze && decodedData.enemies,
+        message: `Successfully created and loaded challenge via ChallengeManager`
+      };
+    }
+
+    console.info('Share System Test Page Loaded');
+    console.info('Available functions: runAllTests(), generateSampleURL(), testURLFromClipboard()');
+  </script>
+</body>
+</html>

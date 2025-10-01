@@ -12,7 +12,9 @@
       "reset": "Restablecer por Defecto",
       "apply": "Aplicar Cambios",
       "settings": "Configuración",
-      "close": "Cerrar"
+      "close": "Cerrar",
+      "play_again": "Jugar de Nuevo",
+      "try_again": "Intentar de Nuevo"
     },
     "tabs": {
       "basic": "Básico",
@@ -32,7 +34,51 @@
         "disruptor": "<strong>1</strong> Disruptor (aturdimiento de corto alcance)",
         "immobilizer": "<strong>2</strong> Inmovilizador (orbe lento)",
         "pacifier": "<strong>3</strong> Pacificador (dardo somnífero)"
-      }
+      },
+      "touch_instruction_1": "Usa el <strong>joystick virtual</strong> en la esquina inferior para moverte.",
+      "touch_instruction_2": "Arrastra en la pantalla principal para mirar alrededor y controlar tu cámara.",
+      "touch_instruction_4": "Las criaturas amigables te empujarán suavemente. Usa herramientas defensivas con los <strong>botones de dispositivo</strong>:",
+      "touch_instruction_5": "Pisa las plataformas de recarga para rellenar las cargas de los dispositivos. ¡<strong>Desliza izquierda/derecha</strong> para cambiar dispositivos rápidamente!",
+      "touch_instruction_6": "¡Toca el <strong>⚙️ icono de engranaje</strong> para personalizar la sensibilidad táctil y la configuración del juego!",
+      "touch_device_list": {
+        "disruptor": "<strong>Botón D</strong> - Disruptor (aturdimiento de corto alcance)",
+        "immobilizer": "<strong>Botón I</strong> - Inmovilizador (orbe lento)",
+        "pacifier": "<strong>Botón P</strong> - Pacificador (dardo somnífero)"
+      },
+      "touch_start": "🎮 Iniciar Juego",
+      "touch_controls_hint": "Usa el joystick virtual para moverte, toca la pantalla para activar dispositivos"
+    },
+    "share": {
+      "title": "Compartir Desafío",
+      "challenge_info": "Información del Desafío",
+      "maze_size": "Tamaño del Laberinto",
+      "completion_time": "Tu Tiempo",
+      "your_time": "Tu Tiempo",
+      "target_time": "Tiempo Objetivo",
+      "difficulty": "Dificultad",
+      "enemies": "Enemigos",
+      "share_url": "URL del Desafío",
+      "copy": "Copiar",
+      "copied": "¡Copiado!",
+      "share_native": "Compartir",
+      "play_again": "Jugar de Nuevo",
+      "share_challenge": "Compartir Desafío"
+    },
+    "errors": {
+      "copy_failed": "Error al copiar URL al portapapeles",
+      "copy_failed_short": "Error al copiar URL",
+      "share_prepare_failed": "Error al preparar desafío para compartir",
+      "challenge_load_failed": "Error al cargar datos del desafío"
+    },
+    "challenge": {
+      "loading_title": "Modo Desafío",
+      "exit": "Salir del Desafío",
+      "target_time_label": "Objetivo:",
+      "beat_time": "Superar: {{time}}",
+      "challenge_from": "Desafío de {{name}}",
+      "time_diff_second": "{{seconds}} segundo",
+      "time_diff_seconds": "{{seconds}} segundos",
+      "share_victory": "Comparte Tu Victoria"
     }
   },
   "game": {
@@ -50,7 +96,16 @@
       "found_exit": "¡Buen trabajo! Presiona Enter para jugar de nuevo.",
       "device_disabled": "Dispositivo deshabilitado",
       "ready_again": "¡Listo para volver a jugar!",
-      "you_found_exit": "¡Encontraste la salida! 🎉"
+      "you_found_exit": "¡Encontraste la salida! 🎉",
+      "victory_title": "🎉 ¡Victoria!",
+      "victory_details": "Laberinto: {{mazeSize}} | Tiempo: {{completionTime}} | Dificultad: {{difficulty}}",
+      "victory_cta": "¡Desafía a tus amigos! Presiona <strong>S</strong> para compartir o haz clic en el botón de compartir.",
+      "victory_keyboard_hint": "Teclado: Presiona <strong>S</strong> para compartir, <strong>R</strong> o <strong>Enter</strong> para reiniciar",
+      "victory_beat_record_title": "🏆 ¡Nuevo Récord!",
+      "victory_beat_record": "¡Increíble! Superaste el tiempo objetivo por {{diff}}! Haz clic en Comparte Tu Victoria para desafiar a otros.",
+      "victory_close_title": "🎉 ¡Tan Cerca!",
+      "victory_close": "¡Solo {{diff}} detrás! ¿Un intento más?",
+      "victory_missed": "Terminaste {{diff}} después del tiempo objetivo. ¿Crees que puedes hacerlo mejor? ¡Inténtalo de nuevo!"
     },
     "difficulty": {
       "presets": {
@@ -59,6 +114,10 @@
         "hard": "Difícil",
         "custom": "Personalizado",
         "teensafe": "Adolescente-Seguro"
+      },
+      "fallback": {
+        "custom": "Personalizado",
+        "normal": "Normal"
       },
       "descriptions": {
         "easy": "Ritmo relajado con recursos generosos",
@@ -86,6 +145,10 @@
     "sensitivity": {
       "label": "Sensibilidad del Ratón",
       "description": "Ajustar sensibilidad de vista del ratón"
+    },
+    "touch": {
+      "joystick_sensitivity": "Sensibilidad del Joystick",
+      "look_sensitivity": "Sensibilidad de Vista"
     },
     "preset_section": {
       "title": "Preconfiguración de Dificultad"

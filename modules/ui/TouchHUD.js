@@ -190,7 +190,7 @@ export class TouchHUD {
         // Convert joystick movement to look input
         if (this.eventManager && !this.eventManager.isPointerLocked()) {
           // Scale the joystick values to appropriate look sensitivity
-          const lookSensitivity = this.lookState.sensitivity * 2000; // Scale factor for smooth look
+          const lookSensitivity = this.lookState.sensitivity * 4000; // Scale factor for smooth look (doubled from 2000)
           this.eventManager.inputState.touch.lookInput.dx = x * lookSensitivity;
           this.eventManager.inputState.touch.lookInput.dy = y * lookSensitivity;
         }
