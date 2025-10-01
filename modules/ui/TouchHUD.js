@@ -24,6 +24,9 @@ export class TouchHUD {
     // Initialize gesture detector
     this.gestureDetector = null;
 
+    // Always initialize look state (used even when touch controls are hidden)
+    this.initializeLookState();
+
     // Check if we should show touch controls
     if (this.shouldShowTouchControls()) {
       this.createTouchControls();
@@ -56,9 +59,6 @@ export class TouchHUD {
       z-index: 999;
       display: none;
     `;
-
-    // Initialize look state for dual joystick system
-    this.initializeLookState();
 
     // Create dual joystick system
     this.createMovementJoystick(controlConfig);
@@ -190,7 +190,7 @@ export class TouchHUD {
         // Convert joystick movement to look input
         if (this.eventManager && !this.eventManager.isPointerLocked()) {
           // Scale the joystick values to appropriate look sensitivity
-          const lookSensitivity = this.lookState.sensitivity * 2000; // Scale factor for smooth look
+          const lookSensitivity = this.lookState.sensitivity * 4000; // Scale factor for smooth look (doubled from 2000)
           this.eventManager.inputState.touch.lookInput.dx = x * lookSensitivity;
           this.eventManager.inputState.touch.lookInput.dy = y * lookSensitivity;
         }

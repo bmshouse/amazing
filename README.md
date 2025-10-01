@@ -32,10 +32,13 @@ No installation, build step, or server required!
 - **Smart Enemy AI** - Pathfinding creatures that gently push you back when touched
 - **Recharge Pads** - Blue circular stations that refill all device charges
 - **Teen-Safe Design** - No violence or damage, just friendly stunning effects
+- **Touch Screen Support** - Full mobile/tablet compatibility with dual joystick controls
+- **Internationalization** - Multi-language support (English, Spanish, French)
 - **Accessibility** - Color-blind safe palette, keyboard-only controls available
 
 ## Controls
 
+### Desktop Controls
 - **WASD / Arrow Keys** - Move around
 - **Mouse** - Look around (click canvas first for pointer lock)
 - **Q/E** - Turn left/right (keyboard-only alternative)
@@ -43,6 +46,12 @@ No installation, build step, or server required!
 - **1/2/3** - Switch between devices
 - **Space / Left Click** - Activate device
 - **R** - Restart current maze
+
+### Touch Controls (Mobile/Tablet)
+- **Left Joystick (Cyan)** - Move around the maze
+- **Right Joystick (Orange)** - Look around/camera control
+- **D/I/P Buttons** - Activate Disruptor/Immobilizer/Pacifier devices
+- **Settings Icon** - Access configuration and sensitivity controls
 
 ## Development
 
@@ -74,6 +83,53 @@ Works in all modern browsers including Chrome, Firefox, Safari, and Edge. Requir
 - Canvas 2D rendering context
 - Pointer Lock API (for mouse look)
 - Performance API (for timing)
+
+## Touch Screen Support
+
+CalmMaze FPS features comprehensive touch screen support for mobile and tablet devices:
+
+### Features
+- **Dual Joystick System** - Separate movement (left, cyan) and look (right, orange) controls
+- **Touch-Friendly Device Buttons** - Large D/I/P buttons for defense system activation
+- **Responsive Design** - Mobile-optimized HUD with adaptive layouts
+- **Platform Detection** - Automatic mobile/tablet detection with optimized UI
+- **Configurable Sensitivity** - Customizable joystick and look sensitivity settings
+- **Cross-Platform** - Works alongside desktop controls without conflicts
+
+### Architecture
+- **TouchManager** - Touch capability detection and event handling
+- **VirtualJoystick** - Configurable joystick components with visual themes
+- **TouchHUD** - Complete dual joystick interface integration
+- **EventManager** - Unified input processing for touch and traditional inputs
+
+### Testing
+Touch support is validated through comprehensive unit tests and an interactive browser test suite (`touch-test.html`) for real device validation.
+
+## Internationalization (i18n)
+
+Multi-language support with automatic language detection and seamless switching:
+
+### Supported Languages
+- **English** 🇺🇸 (Default)
+- **Spanish** 🇪🇸 (Español)
+- **French** 🇫🇷 (Français)
+
+### Features
+- **Automatic Language Detection** - Browser language preference detection
+- **Persistent Settings** - Language preference saved locally
+- **Real-Time Switching** - Change language without page reload
+- **Complete Translation** - UI, game messages, and configuration text
+- **RTL Support** - Ready for right-to-left languages
+- **Fallback System** - Graceful fallback to English for missing translations
+
+### Architecture
+- **I18nManager** - Centralized translation management
+- **JSON Translation Files** - Structured locale files in `/locales/`
+- **Interpolation Support** - Dynamic text with parameter replacement
+- **DOM Integration** - Automatic translation of `data-i18n` attributes
+- **Format Support** - Locale-specific number and date formatting
+
+Access language settings through the configuration panel (⚙️ gear icon).
 
 ---
 

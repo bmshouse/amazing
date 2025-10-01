@@ -68,6 +68,7 @@ export class VirtualJoystick {
       box-shadow: ${this.glowEffect ? '0 0 20px rgba(43, 212, 197, 0.3), inset 0 0 20px rgba(43, 212, 197, 0.1)' : 'none'};
       backdrop-filter: blur(4px);
       transition: all 0.2s ease;
+      box-sizing: border-box;
     `;
 
     // Knob (inner circle)
@@ -88,13 +89,14 @@ export class VirtualJoystick {
       box-shadow: ${this.glowEffect ? '0 0 15px rgba(43, 212, 197, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.2)'};
     `;
 
-    // Add directional indicators if enabled
+    // Assemble elements - add knob first
+    this.baseElement.appendChild(this.knobElement);
+
+    // Add directional indicators if enabled (after knob so they appear on top)
     if (this.showDirectional) {
       this.createDirectionalIndicators();
     }
 
-    // Assemble elements
-    this.baseElement.appendChild(this.knobElement);
     this.element.appendChild(this.baseElement);
 
     // Add to container
@@ -106,33 +108,44 @@ export class VirtualJoystick {
   }
 
   createDirectionalIndicators() {
+    // Clear any existing indicators first
+    const existingIndicators = this.baseElement.querySelectorAll('.joystick-indicator');
+    existingIndicators.forEach(el => el.remove());
+
     const directions = [
-      { name: 'up', angle: 0, symbol: '↑' },
-      { name: 'right', angle: 90, symbol: '→' },
-      { name: 'down', angle: 180, symbol: '↓' },
-      { name: 'left', angle: 270, symbol: '←' }
+      { name: 'up', angle: 0, symbol: '↑', x: 0, y: -1 },
+      { name: 'right', angle: 90, symbol: '→', x: 1, y: 0 },
+      { name: 'down', angle: 180, symbol: '↓', x: 0, y: 1 },
+      { name: 'left', angle: 270, symbol: '←', x: -1, y: 0 }
     ];
+
+    // Distance from center as percentage (40% of base element size, which is 80% of radius from center)
+    // Since baseElement is radius*2 in size, 40% of that equals 80% of radius
+    const distancePercent = 40; // 40% of base element width/height from center
 
     directions.forEach(dir => {
       const indicator = document.createElement('div');
       indicator.className = `joystick-indicator joystick-${dir.name}`;
       indicator.textContent = dir.symbol;
+
+      // Calculate position as percentage from center
+      // 50% is center, +/- distancePercent positions the indicators
+      const leftPercent = 50 + (dir.x * distancePercent);
+      const topPercent = 50 + (dir.y * distancePercent);
+
       indicator.style.cssText = `
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        color: rgba(43, 212, 197, 0.6);
-        font-weight: bold;
-        pointer-events: none;
-        transition: color 0.2s ease, transform 0.2s ease;
-        transform: rotate(${dir.angle}deg) translateY(-${this.radius * 0.8}px) rotate(-${dir.angle}deg);
-        top: 50%;
-        left: 50%;
-        transform-origin: 0 0;
+        position: absolute !important;
+        width: 20px !important;
+        height: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 14px !important;
+        color: rgba(43, 212, 197, 0.8) !important;
+        font-weight: bold !important;
+        pointer-events: none !important;
+        left: calc(${leftPercent}% - 10px) !important;
+        top: calc(${topPercent}% - 10px) !important;
       `;
       this.baseElement.appendChild(indicator);
     });
@@ -352,10 +365,10 @@ export class VirtualJoystick {
         if (indicator) {
           if (index === dominantIndex) {
             indicator.style.color = `rgba(43, 212, 197, ${0.8 + intensity * 0.2})`;
-            indicator.style.transform = indicator.style.transform.replace(/scale\([^)]*\)/, '') + ` scale(${1 + intensity * 0.2})`;
+            indicator.style.transform = `scale(${1 + intensity * 0.2})`;
           } else {
             indicator.style.color = 'rgba(43, 212, 197, 0.4)';
-            indicator.style.transform = indicator.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(1)';
+            indicator.style.transform = 'scale(1)';
           }
         }
       });
@@ -365,7 +378,7 @@ export class VirtualJoystick {
         const indicator = this.baseElement.querySelector(`.joystick-${dir}`);
         if (indicator) {
           indicator.style.color = 'rgba(43, 212, 197, 0.6)';
-          indicator.style.transform = indicator.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(1)';
+          indicator.style.transform = 'scale(1)';
         }
       });
     }

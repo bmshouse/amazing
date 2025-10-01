@@ -150,17 +150,17 @@ export class PlatformDetector {
     const touchSize = this.getRecommendedTouchSize();
     const screenCategory = this.getScreenCategory();
 
-    let joystickSize = 80;
+    let joystickSize = 100;
     let buttonSize = touchSize.recommended;
     let opacity = 0.7;
 
     // Adjust for screen size
     if (screenCategory === 'small') {
-      joystickSize = 70;
+      joystickSize = 87.5;
       buttonSize = touchSize.minimum;
       opacity = 0.6;
     } else if (screenCategory === 'large' || screenCategory === 'xlarge') {
-      joystickSize = 100;
+      joystickSize = 125;
       buttonSize = touchSize.large;
       opacity = 0.8;
     }

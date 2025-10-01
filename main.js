@@ -12,12 +12,16 @@ import { ProjectileSystem } from './modules/ProjectileSystem.js';
 import { GameConfig } from './modules/GameConfig.js';
 import { DifficultyConfig } from './modules/DifficultyConfig.js';
 import { I18nManager } from './modules/I18nManager.js';
+import { ShareManager } from './modules/ShareManager.js';
+import { TouchHUD } from './modules/ui/TouchHUD.js';
+import { logger } from './modules/Logger.js';
 
 export function bootstrap({ dev=false } = {}) {
   // ═══════════════════════════════════════════════════════════════
   // I18N INITIALIZATION
   // ═══════════════════════════════════════════════════════════════
   const i18n = new I18nManager();
+  logger.debug('I18nManager created');
 
   // ═══════════════════════════════════════════════════════════════
   // DIFFICULTY CONFIGURATION SETUP
@@ -32,12 +36,27 @@ export function bootstrap({ dev=false } = {}) {
   const ctx = canvas.getContext('2d');
   const hud = {
     timer: document.getElementById('timer'),
+    targetTimeDisplay: document.getElementById('targetTimeDisplay'),
+    targetTime: document.getElementById('targetTime'),
     sensitivity: document.getElementById('sensitivity'),
     sensitivityValue: document.getElementById('sensitivityValue'),
     audioToggle: document.getElementById('audioToggle'),
     subtitles: document.getElementById('subtitles'),
     tutorial: document.getElementById('tutorial'),
+    victoryPanel: document.getElementById('victoryPanel'),
+    victoryTitle: document.getElementById('victoryTitle'),
+    victoryMazeSize: document.getElementById('victoryMazeSize'),
+    victoryTime: document.getElementById('victoryTime'),
+    victoryTimeItem: document.getElementById('victoryTimeItem'),
+    victoryTargetTime: document.getElementById('victoryTargetTime'),
+    victoryTargetTimeItem: document.getElementById('victoryTargetTimeItem'),
+    victoryDifficulty: document.getElementById('victoryDifficulty'),
+    victoryCta: document.getElementById('victoryCta'),
+    victoryShareButton: document.getElementById('victoryShareButton'),
+    victoryRestartButton: document.getElementById('victoryRestartButton'),
+    restartButton: document.getElementById('restartButton'),
     configButton: document.getElementById('configButton'),
+    fullscreenButton: document.getElementById('fullscreenButton'),
     configPanel: document.getElementById('configPanel'),
     languageSelect: document.getElementById('languageSelect'),
     // Difficulty UI elements
@@ -65,15 +84,112 @@ export function bootstrap({ dev=false } = {}) {
   const eventManager = new EventManager();
   gameState.initialize({ dev });
 
+  // ═══════════════════════════════════════════════════════════════
+  // SHARING SYSTEM INITIALIZATION
+  // ═══════════════════════════════════════════════════════════════
+  logger.debug('Creating ShareManager');
+  const shareManager = new ShareManager(i18n);
+  logger.info('ShareManager created successfully');
+
+  // Add basic test functions immediately (outside of i18n promise)
+  window.testShare = () => {
+    logger.info('Manual share test triggered');
+    if (!shareManager) {
+      logger.error('ShareManager not available');
+      return;
+    }
+    logger.debug('ShareManager available, testing...');
+    // Add more test logic here
+  };
+
+  window.checkShareSystem = () => {
+    logger.info('Checking share system status');
+    logger.debug('ShareManager:', shareManager ? 'Available' : 'Not available');
+    logger.debug('Share button element:', document.getElementById('shareButton') ? 'Found' : 'Not found');
+    logger.debug('Share panel element:', document.getElementById('sharePanel') ? 'Found' : 'Not found');
+  };
+
   // Initialize i18n system
+  logger.debug('Starting i18n initialization');
   i18n.init().then(() => {
-    console.log('I18n initialized with language:', i18n.getCurrentLanguage());
+    logger.info('I18n initialized with language: ' + i18n.getCurrentLanguage());
     hud.languageSelect.value = i18n.getCurrentLanguage();
     i18n.updateDOM(); // Update all data-i18n elements
     updateDifficultyUI(); // Initial update with translations
 
     // Set initial config button tooltip
     hud.configButton.title = i18n.t('ui.common.settings');
+
+    // Set up share manager callbacks BEFORE initializing
+    shareManager.onPlayAgain = () => {
+      restart();
+    };
+
+    // Set up callback to close config panel from ShareManager
+    shareManager.onCloseConfigPanel = () => {
+      closeConfigPanel();
+    };
+
+    // Set up challenge loaded callback BEFORE ShareManager initializes
+    // This needs to be set first so it's available during initialize()
+    shareManager.getChallengeManager().onChallengeLoaded = (challengeData) => {
+      // Show the challenge banner (normally done by ShareManager)
+      shareManager.showChallengeBanner(challengeData);
+      // Load the challenge data
+      loadChallengeData(challengeData);
+    };
+
+    // Initialize sharing system after i18n is ready
+    logger.debug('Initializing ShareManager');
+    shareManager.initialize();
+
+    // Debug function - expose to global scope for testing
+    window.testShare = () => {
+      logger.info('Manual share test triggered');
+      const testGameData = {
+        maze: maze,
+        enemies: enemies,
+        config: {
+          difficultyPreset: currentDifficulty.name,
+          enemyCount: enemies.entities.length, // Use actual enemy count from game state
+          enemySpeed: currentDifficulty.enemies.speed,
+          devices: {
+            taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
+            stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
+            tranqCharges: defenses.devices.tranq.maxCharges // Use actual starting charges from game state
+          }
+        },
+        completionTime: 120000, // 2 minutes test time
+        playerName: 'TestPlayer'
+      };
+      shareManager.prepareShare(testGameData);
+    };
+
+    // Debug function to manually trigger win condition
+    window.triggerWin = () => {
+      logger.info('Manual win triggered');
+      gameState.updateElapsed();
+      const completionTime = gameState.state.elapsed;
+      gameState.winGame();
+
+      const gameData = {
+        maze: maze,
+        enemies: enemies,
+        config: {
+          difficultyPreset: currentDifficulty.name,
+          enemyCount: enemies.entities.length, // Use actual enemy count from game state
+          enemySpeed: currentDifficulty.enemies.speed,
+          devices: {
+            taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
+            stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
+            tranqCharges: defenses.devices.tranq.maxCharges // Use actual starting charges from game state
+          }
+        },
+        completionTime: completionTime,
+        playerName: 'TestPlayer'
+      };
+      shareManager.prepareShare(gameData);
+    };
   }).catch(error => {
     console.error('Failed to initialize i18n:', error);
   });
@@ -165,6 +281,64 @@ export function bootstrap({ dev=false } = {}) {
   player.setEventManager(eventManager);
   defenses.setEventManager(eventManager);
 
+  // Initialize TouchHUD for touch devices
+  const touchHUD = new TouchHUD(defenses, eventManager, GameConfig);
+  logger.info('TouchHUD initialized');
+
+  // ═════════════════════════════════════════════════════════════════
+  // TOUCH DEVICE TUTORIAL SETUP
+  // ═════════════════════════════════════════════════════════════════
+  const isTouchDevice = touchHUD.shouldShowTouchControls();
+  if (isTouchDevice) {
+    // Hide desktop instructions and show touch instructions
+    const desktopInstructions = document.getElementById('desktopInstructions');
+    const touchInstructions = document.getElementById('touchInstructions');
+    const desktopStartPrompt = hud.tutorial.querySelector('[data-i18n="ui.tutorial.start_prompt"]');
+    const touchStartControls = document.getElementById('touchStartControls');
+    const touchStartButton = document.getElementById('touchStartButton');
+
+    if (desktopInstructions) desktopInstructions.style.display = 'none';
+    if (touchInstructions) touchInstructions.style.display = '';
+    if (desktopStartPrompt) desktopStartPrompt.style.display = 'none';
+    if (touchStartControls) touchStartControls.style.display = '';
+
+    // Add touch start button handler
+    if (touchStartButton) {
+      touchStartButton.addEventListener('click', () => {
+        startGame();
+      });
+    }
+
+    // Move charges display below timer for touch devices
+    const chargesElement = document.querySelector('.hud-group.charges');
+    const topRow = document.querySelector('#hud .row.top');
+    const timerElement = topRow?.querySelector('.hud-group:first-child');
+
+    if (chargesElement && topRow && timerElement) {
+      // Create a wrapper for timer and charges to stack them vertically
+      const leftGroup = document.createElement('div');
+      leftGroup.style.display = 'flex';
+      leftGroup.style.flexDirection = 'column';
+      leftGroup.style.gap = '8px';
+      leftGroup.style.alignItems = 'flex-start';
+
+      // Replace timer with the wrapper, then add timer and charges inside
+      timerElement.parentNode.insertBefore(leftGroup, timerElement);
+      leftGroup.appendChild(timerElement);
+      leftGroup.appendChild(chargesElement);
+
+      // Make charges wider and more usable on touch
+      chargesElement.style.minWidth = '280px';
+      chargesElement.style.maxWidth = '360px';
+      chargesElement.style.width = 'auto';
+      chargesElement.style.fontSize = '12px';
+
+      logger.info('Moved charges display below timer for touch device');
+    }
+
+    logger.info('Touch device detected - showing touch tutorial');
+  }
+
   // ═════════════════════════════════════════════════════════════════
   // CONFIGURATION PANEL SETUP
   // ═════════════════════════════════════════════════════════════════
@@ -173,6 +347,10 @@ export function bootstrap({ dev=false } = {}) {
   function toggleConfigPanel() {
     configPanelOpen = !configPanelOpen;
     if (configPanelOpen) {
+      // Close challenge panel if open
+      if (shareManager) {
+        shareManager.hideChallengePanel();
+      }
       hud.configPanel.style.display = 'block';
       setTimeout(() => hud.configPanel.classList.add('show'), 10);
     } else {
@@ -203,6 +381,96 @@ export function bootstrap({ dev=false } = {}) {
   });
 
   // ═════════════════════════════════════════════════════════════════
+  // VICTORY PANEL BUTTON HANDLERS
+  // ═════════════════════════════════════════════════════════════════
+  // Victory share button
+  if (hud.victoryShareButton) {
+    hud.victoryShareButton.addEventListener('click', () => {
+      if (shareManager && shareManager.currentGameData) {
+        shareManager.openSharePanel();
+        document.exitPointerLock();
+      }
+    });
+  }
+
+  // Victory restart button
+  if (hud.victoryRestartButton) {
+    hud.victoryRestartButton.addEventListener('click', () => {
+      restart(true); // Auto-start after clicking restart button
+    });
+  }
+
+  // In-game restart button (for touch devices)
+  if (hud.restartButton) {
+    hud.restartButton.addEventListener('click', () => {
+      restart(); // Show tutorial before restarting
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // FULLSCREEN FUNCTIONALITY
+  // ═════════════════════════════════════════════════════════════════
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+              document.mozFullScreenElement || document.msFullscreenElement);
+  }
+
+  function updateFullscreenIcon() {
+    const icon = document.getElementById('fullscreenIcon');
+    if (isFullscreen()) {
+      // Exit fullscreen icon (four corners pointing inward)
+      icon.setAttribute('d', 'M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z');
+      hud.fullscreenButton.title = 'Exit Fullscreen';
+    } else {
+      // Enter fullscreen icon (four corners pointing outward)
+      icon.setAttribute('d', 'M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z');
+      hud.fullscreenButton.title = 'Toggle Fullscreen';
+    }
+  }
+
+  function toggleFullscreen() {
+    if (isFullscreen()) {
+      // Exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    } else {
+      // Enter fullscreen
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      } else if (elem.mozRequestFullScreen) {
+        elem.mozRequestFullScreen();
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+      }
+    }
+  }
+
+  // Fullscreen button click handler
+  if (hud.fullscreenButton) {
+    hud.fullscreenButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFullscreen();
+    });
+  }
+
+  // Listen for fullscreen changes to update icon
+  document.addEventListener('fullscreenchange', updateFullscreenIcon);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+  document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
+  document.addEventListener('msfullscreenchange', updateFullscreenIcon);
+
+  // ═════════════════════════════════════════════════════════════════
   // DIFFICULTY CONFIGURATION UI SETUP
   // ═════════════════════════════════════════════════════════════════
 
@@ -223,7 +491,7 @@ export function bootstrap({ dev=false } = {}) {
     hud.enemySpeed.value = currentDifficulty.enemies.speedMultiplier;
     const speedKey = `config.enemies.speed_values.${currentDifficulty.enemies.speedMultiplier}`;
     hud.enemySpeedValue.textContent = i18n.getTranslation(speedKey) !== `[${speedKey}]` ?
-      i18n.t(speedKey) : 'Custom';
+      i18n.t(speedKey) : i18n.t('game.difficulty.fallback.custom');
 
     // Update device settings
     document.getElementById('enableDisruptor').checked = currentDifficulty.devices.disruptor.enabled;
@@ -369,7 +637,7 @@ export function bootstrap({ dev=false } = {}) {
       // Update config button tooltip
       hud.configButton.title = i18n.t('ui.common.settings');
 
-      console.log('Language changed to:', selectedLanguage, 'DOM updated');
+      logger.debug('Language changed to:', selectedLanguage, 'DOM updated');
     }, 10);
   });
 
@@ -377,8 +645,21 @@ export function bootstrap({ dev=false } = {}) {
 
   eventManager.on('keydown', (data)=>{
     if (data.code === 'Escape') closeConfigPanel();
-    if (data.code === 'Enter' && !gameState.isStarted()) startGame();
+    if (data.code === 'Enter') {
+      if (gameState.isWon()) {
+        restart(true); // Auto-start after victory
+      } else if (!gameState.isStarted()) {
+        startGame();
+      }
+    }
     if (data.code === 'KeyR') restart();
+    if (data.code === 'KeyS' && gameState.isWon()) {
+      // Open share panel and unlock pointer
+      if (shareManager && shareManager.currentGameData) {
+        shareManager.openSharePanel();
+        document.exitPointerLock();
+      }
+    }
     if (['Digit1','Digit2','Digit3'].includes(data.code)) {
       const deviceMapping = { Digit1:'taser', Digit2:'stun', Digit3:'tranq' };
       const difficultyMapping = { taser: 'disruptor', stun: 'immobilizer', tranq: 'pacifier' };
@@ -415,10 +696,23 @@ export function bootstrap({ dev=false } = {}) {
   function startGame() {
     gameState.startGame();
     hud.tutorial.style.display = 'none';
+    hud.restartButton.style.display = 'block';
     audio.beep('sine', GameConfig.AUDIO.FREQ_GAME_START, 0.1, 0.06);
+
+    // Emit gamestart event for TouchHUD and other systems
+    eventManager.emit('gamestart');
   }
 
-  function restart() {
+  function restart(autoStart = false) {
+    // Check if we're in challenge mode
+    if (shareManager.isInChallengeMode()) {
+      const challengeData = shareManager.getCurrentChallenge();
+      if (challengeData) {
+        loadChallengeData(challengeData);
+        return;
+      }
+    }
+
     // Apply current difficulty configuration
     currentDifficulty = difficultyConfig.getConfig();
 
@@ -432,11 +726,97 @@ export function bootstrap({ dev=false } = {}) {
     defenses.reset();
     applyDifficultyToDevices();
     projectileSystem.clear();
-    gameState.resetForRestart();
-    hud.tutorial.style.display = '';
-    hud.tutorial.querySelector('h2').textContent = i18n.t('game.messages.ready_again');
-    speak(i18n.t('game.messages.restarted'));
-    audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
+
+    // Hide victory panel and share button
+    hud.victoryPanel.style.display = 'none';
+    shareManager.hideShareButton();
+
+    if (autoStart) {
+      // Auto-start the game immediately
+      gameState.restartGame();
+      hud.tutorial.style.display = 'none';
+      hud.restartButton.style.display = 'block';
+      audio.beep('sine', GameConfig.AUDIO.FREQ_GAME_START, 0.1, 0.06);
+    } else {
+      // Show tutorial and wait for Enter to start
+      gameState.resetForRestart();
+      hud.tutorial.style.display = '';
+      hud.restartButton.style.display = 'none';
+      hud.timer.textContent = gameState.getFormattedTime(); // Reset timer display immediately
+      hud.tutorial.querySelector('h2').textContent = i18n.t('game.messages.ready_again');
+      speak(i18n.t('game.messages.restarted'));
+      audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
+
+      // Hide touch controls when showing tutorial
+      eventManager.emit('gameend');
+    }
+  }
+
+  function loadChallengeData(challengeData) {
+    try {
+      // Generate maze from challenge data
+      const challengeResult = shareManager.getChallengeManager().generateMazeFromChallenge(challengeData);
+
+      // Update maze and configuration
+      maze = challengeResult.maze;
+      currentDifficulty = {
+        ...difficultyConfig.getConfig(), // Start with current defaults
+        name: challengeResult.config.difficultyPreset,
+        enemies: {
+          count: challengeResult.config.enemyCount,
+          speed: challengeResult.config.enemySpeed,
+          speedMultiplier: challengeResult.config.enemySpeed / GameConfig.ENEMIES.SPEED
+        },
+        devices: {
+          disruptor: { charges: challengeResult.config.devices.taserCharges },
+          immobilizer: { charges: challengeResult.config.devices.stunCharges },
+          pacifier: { charges: challengeResult.config.devices.tranqCharges }
+        }
+      };
+
+      // Reset game entities with challenge settings
+      player.reset(maze);
+      enemies.reset(maze);
+
+      // Set enemy spawn positions from challenge data
+      if (challengeResult.enemySpawns && challengeResult.enemySpawns.length > 0) {
+        challengeResult.enemySpawns.forEach((spawn, index) => {
+          if (index < enemies.entities.length) {
+            enemies.entities[index].x = spawn.x;
+            enemies.entities[index].y = spawn.y;
+          }
+        });
+      }
+
+      applyDifficultyToEnemies();
+      defenses.reset();
+      applyDifficultyToDevices();
+      projectileSystem.clear();
+      gameState.resetForRestart();
+
+      // Update UI for challenge mode
+      hud.victoryPanel.style.display = 'none';
+      shareManager.hideShareButton();
+      hud.tutorial.style.display = '';
+      hud.tutorial.querySelector('h2').textContent = i18n.t('game.messages.ready_again');
+
+      // Show target time in HUD if challenge has a completion time
+      if (challengeData.challenge && challengeData.challenge.completionTime) {
+        hud.targetTimeDisplay.style.display = '';
+        hud.targetTime.textContent = fmtTime(challengeData.challenge.completionTime);
+      }
+
+      speak(i18n.t('game.messages.restarted'));
+      audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
+
+      logger.info('Challenge loaded successfully:', shareManager.getChallengeManager().getCurrentChallengeSummary());
+    } catch (error) {
+      logger.error('Failed to load challenge:', error);
+      shareManager.showError(i18n.t('ui.errors.challenge_load_failed'));
+
+      // Fall back to normal restart
+      restart();
+    }
   }
 
   function applyDifficultyToEnemies() {
@@ -494,8 +874,12 @@ export function bootstrap({ dev=false } = {}) {
   }
   function speak(text) {
     hud.subtitles.textContent = text;
+    hud.subtitles.style.display = ''; // Show the subtitles container
     clearTimeout(speak._t);
-    speak._t = setTimeout(()=>{ hud.subtitles.textContent=''; }, 1200);
+    speak._t = setTimeout(()=>{
+      hud.subtitles.textContent='';
+      hud.subtitles.style.display = 'none'; // Hide the empty container
+    }, 1200);
   }
 
   // ═════════════════════════════════════════════════════════════════
@@ -505,9 +889,9 @@ export function bootstrap({ dev=false } = {}) {
     const t0 = performance.now();
     const testMaze = new Maze(31,31); testMaze.generate();
     const genTime = performance.now() - t0;
-    console.log('[SMOKE] Maze gen ms:', genTime.toFixed(2));
-    if (genTime > GameConfig.PERFORMANCE.MAX_MAZE_GEN_TIME) console.warn('Maze gen too slow!');
-    if (!testMaze.exit) console.error('Exit missing!');
+    logger.debug('[SMOKE] Maze gen ms:', genTime.toFixed(2));
+    if (genTime > GameConfig.PERFORMANCE.MAX_MAZE_GEN_TIME) logger.warn('Maze gen too slow!');
+    if (!testMaze.exit) logger.error('Exit missing!');
   }
 
   // ═════════════════════════════════════════════════════════════════
@@ -531,8 +915,9 @@ export function bootstrap({ dev=false } = {}) {
   // MAIN GAME LOOP
   // ═════════════════════════════════════════════════════════════════
   let last = performance.now();
+  let loopId = null;
   function loop(now) {
-    requestAnimationFrame(loop);
+    loopId = window.requestAnimationFrame(loop);
     const dt = Math.min(GameConfig.PERFORMANCE.MAX_FRAME_TIME, now - last);
     last = now;
 
@@ -552,17 +937,121 @@ export function bootstrap({ dev=false } = {}) {
         const distanceToExitWall = Math.hypot(player.x - (exitWallX + 0.5), player.y - (exitWallY + 0.5));
 
         if (distanceToExitWall < GameConfig.BALANCE.WIN_DISTANCE_TO_EXIT) {
+          // Update elapsed time before winning
+          gameState.updateElapsed();
+          const completionTime = gameState.state.elapsed;
+
           gameState.winGame();
-          hud.tutorial.style.display = '';
-          hud.tutorial.querySelector('h2').textContent = i18n.t('game.messages.you_found_exit');
+
+          // Emit gameend event for TouchHUD and other systems
+          eventManager.emit('gameend');
+
+          // Hide tutorial and show victory panel
+          hud.tutorial.style.display = 'none';
+          hud.victoryPanel.style.display = '';
+
+          // Build victory message with details
+          const mazeSize = `${maze.w}x${maze.h}`;
+          const formattedTime = fmtTime(completionTime);
+          const difficultyName = currentDifficulty.name || currentDifficulty.preset || i18n.t('game.difficulty.fallback.normal');
+
+          // Update victory panel with game stats
+          hud.victoryMazeSize.textContent = mazeSize;
+          hud.victoryTime.textContent = formattedTime;
+          hud.victoryDifficulty.textContent = difficultyName;
+
+          // Check if in challenge mode and handle comparison
+          const inChallengeMode = shareManager.isInChallengeMode();
+          if (inChallengeMode) {
+            const challengeData = shareManager.getCurrentChallenge();
+            const targetTime = challengeData?.challenge?.completionTime;
+
+            if (targetTime) {
+              // Show target time
+              hud.victoryTargetTimeItem.style.display = '';
+              hud.victoryTargetTime.textContent = fmtTime(targetTime);
+
+              // Calculate time difference
+              const timeDiff = completionTime - targetTime;
+              const timeDiffAbs = Math.abs(timeDiff);
+              const beatTarget = timeDiff < 0; // Negative means faster
+              const isClose = timeDiffAbs < 5000; // Within 5 seconds
+
+              // Format time difference
+              const diffSeconds = Math.abs(Math.floor(timeDiffAbs / 1000));
+              const diffText = diffSeconds === 1
+                ? i18n.t('ui.challenge.time_diff_second', { seconds: diffSeconds })
+                : i18n.t('ui.challenge.time_diff_seconds', { seconds: diffSeconds });
+
+              // Update victory message based on performance
+              if (beatTarget) {
+                // Beat the target!
+                hud.victoryTitle.textContent = i18n.t('game.messages.victory_beat_record_title');
+                hud.victoryCta.innerHTML = i18n.t('game.messages.victory_beat_record', {
+                  diff: diffText
+                });
+                hud.victoryTimeItem.classList.add('stat-beat-target');
+                hud.victoryShareButton.querySelector('span').textContent = i18n.t('ui.challenge.share_victory');
+              } else if (isClose) {
+                // Close but didn't beat
+                hud.victoryTitle.textContent = i18n.t('game.messages.victory_close_title');
+                hud.victoryCta.innerHTML = i18n.t('game.messages.victory_close', {
+                  diff: diffText
+                });
+                hud.victoryTimeItem.classList.add('stat-close');
+              } else {
+                // Didn't beat, not close
+                hud.victoryTitle.textContent = i18n.t('game.messages.victory_title');
+                hud.victoryCta.innerHTML = i18n.t('game.messages.victory_missed', {
+                  diff: diffText
+                });
+              }
+
+              // Change button text to "Try Again" for challenge mode
+              hud.victoryRestartButton.querySelector('span').textContent = i18n.t('ui.common.try_again');
+            }
+          } else {
+            // Normal mode - hide target time, reset classes
+            hud.victoryTargetTimeItem.style.display = 'none';
+            hud.victoryTimeItem.classList.remove('stat-beat-target', 'stat-close');
+            hud.victoryTitle.textContent = i18n.t('game.messages.victory_title');
+            hud.victoryCta.innerHTML = i18n.t('game.messages.victory_cta');
+            hud.victoryShareButton.querySelector('span').textContent = i18n.t('ui.share.share_challenge');
+            hud.victoryRestartButton.querySelector('span').textContent = i18n.t('ui.common.play_again');
+          }
+
           speak(i18n.t('game.messages.found_exit'));
           audio.beep('triangle', GameConfig.AUDIO.FREQ_WIN, 0.12, 0.07);
+
+          // Prepare sharing data
+          const gameData = {
+            maze: maze,
+            enemies: enemies,
+            config: {
+              difficultyPreset: currentDifficulty.preset || currentDifficulty.name || i18n.t('game.difficulty.fallback.normal'),
+              enemyCount: enemies.entities.length, // Use actual enemy count from game state
+              enemySpeed: currentDifficulty.enemies.speed,
+              devices: {
+                taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
+                stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
+                tranqCharges: defenses.devices.tranq.maxCharges // Use actual starting charges from game state
+              }
+            },
+            completionTime: completionTime,
+            playerName: 'Player' // Could be enhanced with actual player name input
+          };
+
+          logger.info('Win detected! Preparing share data');
+          logger.debug('Game completion data', { completionTime, mazeSize: `${maze.w}x${maze.h}` });
+
+          // Prepare sharing
+          shareManager.prepareShare(gameData);
         }
       }
     }
     render();
   }
-  requestAnimationFrame(loop);
+  loopId = window.requestAnimationFrame(loop);
 
   // ═════════════════════════════════════════════════════════════════
   // RENDERING FUNCTIONS
@@ -583,7 +1072,7 @@ export function bootstrap({ dev=false } = {}) {
     hud.bars.stun.style.transform = `scaleX(${defenses.stunChargeRatio()})`;
     hud.bars.tranq.style.transform = `scaleX(${defenses.tranqChargeRatio()})`;
   }
-  setInterval(updateBars, GameConfig.PERFORMANCE.AMMO_BAR_UPDATE_INTERVAL);
+  const barsIntervalId = setInterval(updateBars, GameConfig.PERFORMANCE.AMMO_BAR_UPDATE_INTERVAL);
 
   // ═════════════════════════════════════════════════════════════════
   // GAME EVENT CALLBACKS
@@ -610,6 +1099,22 @@ export function bootstrap({ dev=false } = {}) {
   // Pre-warm controls to avoid initial stutter
   player.reset(maze);
   enemies.reset(maze);
+  applyDifficultyToEnemies();
+  applyDifficultyToDevices();
   updateBars();
+
+  // Return cleanup function for tests
+  return function cleanup() {
+    if (loopId !== null) {
+      window.cancelAnimationFrame(loopId);
+      loopId = null;
+    }
+    if (barsIntervalId) {
+      clearInterval(barsIntervalId);
+    }
+    if (touchHUD) {
+      touchHUD.destroy();
+    }
+  };
 }
 
