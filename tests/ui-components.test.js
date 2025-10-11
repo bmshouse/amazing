@@ -53,11 +53,20 @@ const createMockElement = (tagName = 'div') => ({
 const mockDocument = {
   createElement: vi.fn((tagName) => createMockElement(tagName)),
   body: createMockElement('body'),
+  documentElement: {
+    style: {},
+    lang: 'en',
+    setAttribute: vi.fn(),
+    getAttribute: vi.fn(() => 'en'),
+    requestPointerLock: vi.fn()
+  },
   getElementById: vi.fn(() => createMockElement()),
   querySelector: vi.fn(() => createMockElement()),
   querySelectorAll: vi.fn(() => []),
   addEventListener: vi.fn(),
-  removeEventListener: vi.fn()
+  removeEventListener: vi.fn(),
+  pointerLockElement: null,
+  exitPointerLock: vi.fn()
 };
 
 global.document = mockDocument;
@@ -69,10 +78,28 @@ global.window = {
   devicePixelRatio: 1,
   innerWidth: 1024,
   innerHeight: 768,
+  screen: {
+    width: 1920,
+    height: 1080,
+    orientation: {
+      type: 'landscape-primary',
+      addEventListener: vi.fn()
+    }
+  },
   navigator: {
-    userAgent: 'test',
-    maxTouchPoints: 0
-  }
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    maxTouchPoints: 0,
+    platform: 'Win32',
+    vendor: 'Google Inc.',
+    hardwareConcurrency: 8,
+    deviceMemory: 8
+  },
+  matchMedia: vi.fn((query) => ({
+    matches: false,
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }))
 };
 
 describe('TouchHUD', () => {

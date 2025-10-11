@@ -22,9 +22,22 @@
             <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4c-4.42,0 -7.99,3.58 -7.99,8s3.57,8 7.99,8c3.73,0 6.84,-2.55 7.73,-6h-2.08c-0.82,2.33 -3.04,4 -5.65,4 -3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6c1.66,0 3.14,0.69 4.22,1.78L13,11h7V4L17.65,6.35z"/>
           </svg>
         </button>
+        <button id="shareButton" class="share-button" title="Share Challenge" aria-label="Share current challenge" style="display: none;">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92Z"/>
+          </svg>
+        </button>
+        <button id="challengeButton" class="challenge-button" title="Challenge Mode" aria-label="View challenge details" style="display: none;">
+          🎯
+        </button>
         <button id="configButton" class="config-button" title="Settings" aria-label="Open configuration">
           <svg viewBox="0 0 24 24" width="18" height="18">
             <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+          </svg>
+        </button>
+        <button id="fullscreenButton" class="fullscreen-button" title="Toggle Fullscreen" aria-label="Toggle fullscreen mode">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path id="fullscreenIcon" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
           </svg>
         </button>
       </div>
@@ -182,6 +195,120 @@
       </div>
     </div>
 
+    <!-- Share Panel -->
+    <div id="sharePanel" class="share-panel" style="display: none;">
+      <div class="share-content">
+        <div class="share-header">
+          <h3 data-i18n="ui.share.title">Share Challenge</h3>
+          <button id="shareCloseButton" class="share-close" aria-label="Close share panel">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="share-body">
+          <div class="challenge-info">
+            <h4 data-i18n="ui.share.challenge_info">Challenge Information</h4>
+            <div class="challenge-details">
+              <div class="detail-item">
+                <span class="detail-label" data-i18n="ui.share.maze_size">Maze Size:</span>
+                <span id="shareMazeSize" class="detail-value">21x21</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label" data-i18n="ui.share.completion_time">Your Time:</span>
+                <span id="shareCompletionTime" class="detail-value">02:45</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label" data-i18n="ui.share.difficulty">Difficulty:</span>
+                <span id="shareDifficulty" class="detail-value">Normal</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label" data-i18n="ui.share.enemies">Enemies:</span>
+                <span id="shareEnemies" class="detail-value">10</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="share-url-section">
+            <h4 data-i18n="ui.share.share_url">Challenge URL</h4>
+            <div class="url-input-group">
+              <input id="shareUrlInput" type="text" readonly aria-label="Challenge URL" placeholder="Generating...">
+              <button id="copyUrlButton" class="copy-button" data-i18n="ui.share.copy">Copy</button>
+            </div>
+          </div>
+
+          <div class="share-actions">
+            <button id="webShareButton" class="share-action-button primary" style="display: none;">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92Z"/>
+              </svg>
+              <span data-i18n="ui.share.share_native">Share</span>
+            </button>
+            <button id="playAgainButton" class="share-action-button secondary">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4c-4.42,0 -7.99,3.58 -7.99,8s3.57,8 7.99,8c3.73,0 6.84,-2.55 7.73,-6h-2.08c-0.82,2.33 -3.04,4 -5.65,4 -3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6c1.66,0 3.14,0.69 4.22,1.78L13,11h7V4L17.65,6.35z"/>
+              </svg>
+              <span data-i18n="ui.share.play_again">Play Again</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenge Panel -->
+    <div id="challengePanel" class="challenge-panel" style="display: none;">
+      <div class="challenge-content">
+        <h3>🎯 <span data-i18n="ui.challenge.loading_title">Challenge Mode</span></h3>
+        <div class="challenge-info">
+          <div class="challenge-detail">
+            <span class="detail-label" data-i18n="ui.share.maze_size">Maze Size</span>
+            <span id="challengeMazeSize" class="detail-value">-</span>
+          </div>
+          <div class="challenge-detail">
+            <span class="detail-label" data-i18n="ui.share.difficulty">Difficulty</span>
+            <span id="challengeDifficulty" class="detail-value">-</span>
+          </div>
+          <div class="challenge-detail">
+            <span class="detail-label" data-i18n="ui.share.enemies">Enemies</span>
+            <span id="challengeEnemies" class="detail-value">-</span>
+          </div>
+          <div class="challenge-detail">
+            <span class="detail-label" data-i18n="config.maze.recharge_pads">Recharge Pads</span>
+            <span id="challengeRechargePads" class="detail-value">-</span>
+          </div>
+          <div class="challenge-detail">
+            <span class="detail-label" data-i18n="ui.share.target_time">Target Time</span>
+            <span id="challengeTargetTime" class="detail-value">-</span>
+          </div>
+          <div class="challenge-detail-group">
+            <div class="detail-group-label" data-i18n="config.devices.title">🛡️ Device Configuration</div>
+            <div class="detail-subitem">
+              <span class="detail-label" data-i18n="game.devices.disruptor">Disruptor</span>
+              <span id="challengeDisruptorCharges" class="detail-value">-</span>
+            </div>
+            <div class="detail-subitem">
+              <span class="detail-label" data-i18n="game.devices.immobilizer">Immobilizer</span>
+              <span id="challengeImmobilizerCharges" class="detail-value">-</span>
+            </div>
+            <div class="detail-subitem">
+              <span class="detail-label" data-i18n="game.devices.pacifier">Pacifier</span>
+              <span id="challengePacifierCharges" class="detail-value">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="challenge-actions">
+          <button id="exitChallengeButton" class="exit-challenge-button" data-i18n="ui.challenge.exit">Exit Challenge</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenge Target Time Display (shown in HUD during challenge) -->
+    <div id="targetTimeDisplay" class="target-time-display" style="display: none;">
+      <span class="target-label" data-i18n="ui.challenge.target_time_label">Target:</span>
+      <span id="targetTime" class="target-value">00:00</span>
+    </div>
+
     <div class="row bottom">
       <div class="hud-group charges">
         <div class="charges-row">
@@ -243,6 +370,45 @@
         </button>
         <p class="touch-instructions" data-i18n="ui.tutorial.touch_controls_hint">Use virtual joystick to move, tap screen to activate devices</p>
       </div>
+    </div>
+
+    <!-- Victory Panel -->
+    <div id="victoryPanel" class="panel victory-panel" style="display: none;" role="dialog" aria-modal="false" aria-live="polite">
+      <h2 id="victoryTitle" data-i18n="game.messages.victory_title">🎉 Victory!</h2>
+      <div class="victory-stats">
+        <div class="stat-item">
+          <span class="stat-label" data-i18n="ui.share.maze_size">Maze Size</span>
+          <span id="victoryMazeSize" class="stat-value">21x21</span>
+        </div>
+        <div class="stat-item" id="victoryTimeItem">
+          <span class="stat-label" data-i18n="ui.share.your_time">Your Time</span>
+          <span id="victoryTime" class="stat-value">02:45</span>
+        </div>
+        <div class="stat-item" id="victoryTargetTimeItem" style="display: none;">
+          <span class="stat-label" data-i18n="ui.share.target_time">Target Time</span>
+          <span id="victoryTargetTime" class="stat-value">02:45</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label" data-i18n="ui.share.difficulty">Difficulty</span>
+          <span id="victoryDifficulty" class="stat-value">Normal</span>
+        </div>
+      </div>
+      <p id="victoryCta" class="victory-cta" data-i18n-html="game.messages.victory_cta">Challenge your friends! Press <strong>S</strong> to share or click the share button.</p>
+      <div class="victory-actions">
+        <button id="victoryShareButton" class="victory-button share">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92Z"/>
+          </svg>
+          <span data-i18n="ui.share.share_challenge">Share Challenge</span>
+        </button>
+        <button id="victoryRestartButton" class="victory-button restart">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4c-4.42,0 -7.99,3.58 -7.99,8s3.57,8 7.99,8c3.73,0 6.84,-2.55 7.73,-6h-2.08c-0.82,2.33 -3.04,4 -5.65,4 -3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6c1.66,0 3.14,0.69 4.22,1.78L13,11h7V4L17.65,6.35z"/>
+          </svg>
+          <span data-i18n="ui.common.play_again">Play Again</span>
+        </button>
+      </div>
+      <p class="victory-keyboard-hint" data-i18n-html="game.messages.victory_keyboard_hint">Keyboard: Press <strong>S</strong> to share, <strong>R</strong> or <strong>Enter</strong> to restart</p>
     </div>
   </div>
 

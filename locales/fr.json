@@ -12,7 +12,9 @@
       "reset": "Rétablir par Défaut",
       "apply": "Appliquer les Modifications",
       "settings": "Paramètres",
-      "close": "Fermer"
+      "close": "Fermer",
+      "play_again": "Rejouer",
+      "try_again": "Réessayer"
     },
     "tabs": {
       "basic": "Basique",
@@ -32,7 +34,51 @@
         "disruptor": "<strong>1</strong> Perturbateur (étourdissement courte portée)",
         "immobilizer": "<strong>2</strong> Immobilisateur (orbe lent)",
         "pacifier": "<strong>3</strong> Pacificateur (fléchette somnifère)"
-      }
+      },
+      "touch_instruction_1": "Utilisez le <strong>joystick virtuel</strong> dans le coin inférieur pour vous déplacer.",
+      "touch_instruction_2": "Faites glisser sur l'écran principal pour regarder autour et contrôler votre caméra.",
+      "touch_instruction_4": "Les créatures amicales vous pousseront gentiment. Utilisez des outils défensifs avec les <strong>boutons d'appareil</strong> :",
+      "touch_instruction_5": "Marchez sur les plateformes de recharge pour remplir les charges des appareils. <strong>Glissez gauche/droite</strong> pour changer rapidement d'appareil !",
+      "touch_instruction_6": "Touchez l'<strong>⚙️ icône d'engrenage</strong> pour personnaliser la sensibilité tactile et les paramètres du jeu !",
+      "touch_device_list": {
+        "disruptor": "<strong>Bouton D</strong> - Perturbateur (étourdissement courte portée)",
+        "immobilizer": "<strong>Bouton I</strong> - Immobilisateur (orbe lent)",
+        "pacifier": "<strong>Bouton P</strong> - Pacificateur (fléchette somnifère)"
+      },
+      "touch_start": "🎮 Démarrer le Jeu",
+      "touch_controls_hint": "Utilisez le joystick virtuel pour vous déplacer, touchez l'écran pour activer les appareils"
+    },
+    "share": {
+      "title": "Partager le Défi",
+      "challenge_info": "Informations du Défi",
+      "maze_size": "Taille du Labyrinthe",
+      "completion_time": "Votre Temps",
+      "your_time": "Votre Temps",
+      "target_time": "Temps Cible",
+      "difficulty": "Difficulté",
+      "enemies": "Ennemis",
+      "share_url": "URL du Défi",
+      "copy": "Copier",
+      "copied": "Copié !",
+      "share_native": "Partager",
+      "play_again": "Rejouer",
+      "share_challenge": "Partager le Défi"
+    },
+    "errors": {
+      "copy_failed": "Échec de la copie de l'URL dans le presse-papiers",
+      "copy_failed_short": "Échec de la copie de l'URL",
+      "share_prepare_failed": "Échec de la préparation du défi à partager",
+      "challenge_load_failed": "Échec du chargement des données du défi"
+    },
+    "challenge": {
+      "loading_title": "Mode Défi",
+      "exit": "Quitter le Défi",
+      "target_time_label": "Cible :",
+      "beat_time": "Battre : {{time}}",
+      "challenge_from": "Défi de {{name}}",
+      "time_diff_second": "{{seconds}} seconde",
+      "time_diff_seconds": "{{seconds}} secondes",
+      "share_victory": "Partager Votre Victoire"
     }
   },
   "game": {
@@ -50,7 +96,16 @@
       "found_exit": "Excellent travail ! Appuyez sur Entrée pour rejouer.",
       "device_disabled": "Appareil désactivé",
       "ready_again": "Prêt à rejouer !",
-      "you_found_exit": "Vous avez trouvé la sortie ! 🎉"
+      "you_found_exit": "Vous avez trouvé la sortie ! 🎉",
+      "victory_title": "🎉 Victoire !",
+      "victory_details": "Labyrinthe : {{mazeSize}} | Temps : {{completionTime}} | Difficulté : {{difficulty}}",
+      "victory_cta": "Défiez vos amis ! Appuyez sur <strong>S</strong> pour partager ou cliquez sur le bouton de partage.",
+      "victory_keyboard_hint": "Clavier : Appuyez sur <strong>S</strong> pour partager, <strong>R</strong> ou <strong>Entrée</strong> pour redémarrer",
+      "victory_beat_record_title": "🏆 Nouveau Record !",
+      "victory_beat_record": "Incroyable ! Vous avez battu le temps cible de {{diff}} ! Cliquez sur Partager Votre Victoire pour défier les autres.",
+      "victory_close_title": "🎉 Si Proche !",
+      "victory_close": "Seulement {{diff}} derrière ! Un dernier essai ?",
+      "victory_missed": "Vous avez terminé {{diff}} après le temps cible. Pensez-vous pouvoir faire mieux ? Réessayez !"
     },
     "difficulty": {
       "presets": {
@@ -59,6 +114,10 @@
         "hard": "Difficile",
         "custom": "Personnalisé",
         "teensafe": "Ado-Sécurisé"
+      },
+      "fallback": {
+        "custom": "Personnalisé",
+        "normal": "Normal"
       },
       "descriptions": {
         "easy": "Rythme détendu avec des ressources généreuses",
@@ -87,6 +146,10 @@
       "label": "Sensibilité de la Souris",
       "description": "Ajuster la sensibilité de vue de la souris"
     },
+    "touch": {
+      "joystick_sensitivity": "Sensibilité du Joystick",
+      "look_sensitivity": "Sensibilité de Vue"
+    },
     "preset_section": {
       "title": "Préréglage de Difficulté"
     },
@@ -104,6 +167,7 @@
         "0.5": "Lent",
         "0.8": "Facile",
         "1.0": "Normal",
+        "1": "Normal",
         "1.2": "Rapide",
         "1.5": "Frénétique",
         "2.0": "Dément"
