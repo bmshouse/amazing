@@ -25,13 +25,16 @@ No installation, build step, or server required!
 - **Raycasting 3D Renderer** - Real-time 3D world rendering using classic raycasting techniques
 - **Procedural Maze Generation** - Infinite variety using recursive backtracking algorithm
 - **Optimized Performance** - Internal low-res buffer upscaled for 60 FPS on mid-range devices
-- **Modular Architecture** - 17 clean ES6 modules with event-driven design
+- **Modular Architecture** - 30+ clean ES6 modules with event-driven design
+- **Comprehensive Testing** - 81 unit and integration tests with 50%+ code coverage
 
 ### Gameplay
 - **Three Device Types** - Disruptor (short range), Immobilizer (projectile), Pacifier (precise)
 - **Smart Enemy AI** - Pathfinding creatures that gently push you back when touched
 - **Recharge Pads** - Blue circular stations that refill all device charges
 - **Teen-Safe Design** - No violence or damage, just friendly stunning effects
+- **Difficulty System** - Dynamic difficulty with presets (Easy/Normal/Hard/Teen-Safe) and custom configuration
+- **Challenge Sharing** - Share your maze completions via URL with encoded maze data and target times
 - **Touch Screen Support** - Full mobile/tablet compatibility with dual joystick controls
 - **Internationalization** - Multi-language support (English, Spanish, French)
 - **Accessibility** - Color-blind safe palette, keyboard-only controls available
@@ -46,12 +49,17 @@ No installation, build step, or server required!
 - **1/2/3** - Switch between devices
 - **Space / Left Click** - Activate device
 - **R** - Restart current maze
+- **Enter** - Start game / Play again after victory
+- **S** - Share challenge after completing a maze
+- **⚙️ Settings Icon** - Access configuration panel for difficulty, language, and controls
 
 ### Touch Controls (Mobile/Tablet)
 - **Left Joystick (Cyan)** - Move around the maze
 - **Right Joystick (Orange)** - Look around/camera control
 - **D/I/P Buttons** - Activate Disruptor/Immobilizer/Pacifier devices
-- **Settings Icon** - Access configuration and sensitivity controls
+- **Swipe Left/Right** - Quick device switching
+- **Tap Game Area** - Activate current device
+- **⚙️ Settings Icon** - Access configuration and sensitivity controls
 
 ## Development
 
@@ -69,6 +77,11 @@ The game uses a modular event-driven architecture with:
 - **State Management** (`GameState.js`) for game lifecycle
 - **Event System** (`EventManager.js`) for decoupled module communication
 - **Rendering Pipeline** split between raycasting (`RaycastRenderer.js`) and sprite rendering (`SpriteRenderer.js`)
+- **Difficulty System** (`DifficultyConfig.js`) for dynamic difficulty scaling
+- **Share System** (`ShareManager.js`, `ChallengeManager.js`, `MazeEncoder.js`) for challenge sharing
+- **Touch System** (`TouchManager.js`, `VirtualJoystick.js`, `TouchHUD.js`) for mobile controls
+- **Platform Detection** (`PlatformDetector.js`) for device-specific optimizations
+- **Internationalization** (`I18nManager.js`) for multi-language support
 
 ### Performance
 - Ray marching optimized for quality/performance balance
@@ -130,6 +143,50 @@ Multi-language support with automatic language detection and seamless switching:
 - **Format Support** - Locale-specific number and date formatting
 
 Access language settings through the configuration panel (⚙️ gear icon).
+
+## Difficulty System
+
+Comprehensive difficulty configuration with dynamic presets and custom tuning:
+
+### Difficulty Presets
+- **Teen-Safe** - Minimal challenge, quick completion (5x5 maze, 0 enemies)
+- **Easy** - Relaxed pace with generous resources (10x10 maze, 3 enemies)
+- **Normal** - Balanced challenge for most players (15x15 maze, 5 enemies)
+- **Hard** - Challenging maze with limited resources (20x20 maze, 8 enemies)
+- **Custom** - Fully customizable settings for personalized difficulty
+
+### Customizable Parameters
+- **Maze Size** - From 5×5 to 50×50 cells
+- **Enemy Count** - 0 to 20 friendly creatures
+- **Enemy Speed** - From slow (0.5x) to insane (2.0x)
+- **Time Limit** - Dynamically calculated based on maze complexity
+- **Device Charges** - Adjust starting charges for each defense device
+- **Recharge Pads** - Configure number of recharge stations
+
+### Difficulty Rating
+Each configuration receives a calculated difficulty rating (1-10) based on maze complexity, enemy count/speed, and available resources.
+
+## Challenge Sharing
+
+Share your maze completions with friends via shareable URLs:
+
+### Features
+- **URL Encoding** - Maze configuration and target time encoded in compact URLs
+- **Challenge Mode** - Play shared mazes with target time to beat
+- **Victory Sharing** - Share your victories when beating challenge times
+- **Persistent Challenges** - Challenges work across sessions via URL parameters
+
+### How to Share
+1. Complete a maze
+2. Press **S** or click the **Share Challenge** button
+3. Copy the generated URL or use native sharing
+4. Share with friends to challenge them to beat your time!
+
+### Testing
+Interactive test pages are included for development:
+- `touch-test.html` - Touch screen controls validation
+- `dual-joystick-test.html` - Dual joystick system testing
+- `share-test.html` - Challenge sharing functionality testing
 
 ---
 
