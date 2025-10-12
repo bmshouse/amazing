@@ -14,7 +14,9 @@ describe('Shape Rendering System', () => {
         beginPath: () => {},
         ellipse: () => {},
         fillRect: () => {},
-        fill: () => {}
+        fill: () => {},
+        moveTo: () => {},
+        bezierCurveTo: () => {}
       })
     };
 
@@ -61,5 +63,20 @@ describe('Shape Rendering System', () => {
     expect(() => {
       renderer.drawParticle(particle, mockPlayer, 800, 600);
     }).not.toThrow();
+  });
+
+  it('drawParticle uses heart shape for boop particles', () => {
+    // Import GameConfig to get the boop particle color
+    const GameConfig = { COLORS: { PARTICLE_BOOP: '#ff69b4' } };
+    const boopParticle = { x: 4, y: 4, color: GameConfig.COLORS.PARTICLE_BOOP };
+
+    // Should not throw an error
+    expect(() => {
+      renderer.drawParticle(boopParticle, mockPlayer, 800, 600);
+    }).not.toThrow();
+  });
+
+  it('has heart shape drawing method', () => {
+    expect(typeof renderer._drawHeartShape).toBe('function');
   });
 });

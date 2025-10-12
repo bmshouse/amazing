@@ -28,7 +28,7 @@ export const GameConfig = {
     // Sprite rendering
     EXIT_DOOR_SIZE: 0.6,
     RECHARGE_PAD_SIZE: 0.4,
-    ENEMY_SIZE: 0.6,
+    ENEMY_SIZE: 0.15, // Match 3D snowman bottom sphere radius
     PARTICLE_SIZE: 0.05,
     BILLBOARD_HEIGHT_MULTIPLIER: 1.2,
 
@@ -37,7 +37,13 @@ export const GameConfig = {
     CROSSHAIR_OPACITY: 0.9,
     CROSSHAIR_SIZE: 12,
     CROSSHAIR_THICKNESS: 2,
-    CROSSHAIR_OFFSET: 5
+    CROSSHAIR_OFFSET: 5,
+
+    // 3D Model Rendering
+    USE_3D_MODELS: true, // Enable/disable 3D enemy models (true = 3D models, false = 2D sprites)
+    LOD_DISTANCES: [5, 10, 20], // Distance thresholds for LOD switching
+    MIN_FPS_FOR_3D: 30, // Minimum FPS to enable 3D models
+    AUTO_DETECT_3D_CAPABILITY: true // Automatically detect and enable 3D if capable
   },
 
   // Player constants
@@ -153,7 +159,7 @@ export const GameConfig = {
     TRANQ: '#a29bfe',
 
     // Particle colors
-    PARTICLE_BOOP: '#fcd34d',
+    PARTICLE_BOOP: '#ff0000', // Red hearts for boop particles
     PARTICLE_DEFAULT: '#9be7ff',
 
     // UI colors
