@@ -59,7 +59,7 @@ export class SpriteRenderer {
       case 'stunned': return colors.entityStunned;
       case 'tranq': return colors.entityTranq;
       case 'slowed': return colors.entitySlowed;
-      default: return colors.entity;
+      default: return '#ffffff'; // White to match 3D snowmen
     }
   }
 
@@ -110,7 +110,7 @@ export class SpriteRenderer {
 
   /**
    * Private method to draw different shapes based on shape type
-   * @param {string} shapeType - Type of shape to draw ('ellipse', 'rectangle', 'snowman')
+   * @param {string} shapeType - Type of shape to draw ('ellipse', 'rectangle', 'snowman', 'heart')
    * @param {number} x - Screen X position
    * @param {number} y - Screen Y position
    * @param {number} size - Projected size on screen
@@ -128,6 +128,9 @@ export class SpriteRenderer {
         break;
       case 'recharge_pad':
         this._drawRechargePadShape(x, y, size, color, alpha);
+        break;
+      case 'heart':
+        this._drawHeartShape(x, y, size);
         break;
       case 'ellipse':
       default:
@@ -226,6 +229,66 @@ export class SpriteRenderer {
   }
 
   /**
+   * Draws a heart shape for particles
+   * @param {number} x - Screen X position
+   * @param {number} y - Screen Y position
+   * @param {number} size - Projected size on screen
+   * @private
+   */
+  _drawHeartShape(x, y, size) {
+    // Heart shape using bezier curves
+    const scale = size * 2; // Make hearts a bit bigger
+
+    // Create the heart path (used for both fill and stroke)
+    const drawHeartPath = () => {
+      this.ctx.beginPath();
+
+      // Start at the bottom point of the heart
+      this.ctx.moveTo(x, y + scale * 0.3);
+
+      // Left side - curve from bottom point to left top lobe
+      this.ctx.bezierCurveTo(
+        x - scale * 0.5, y + scale * 0.1,  // Control point 1 (outward from bottom)
+        x - scale * 0.5, y - scale * 0.2,  // Control point 2 (side of left lobe)
+        x - scale * 0.25, y - scale * 0.4  // End at top of left lobe
+      );
+
+      // Left top lobe - curve to center dip (wider dip)
+      this.ctx.bezierCurveTo(
+        x - scale * 0.15, y - scale * 0.5, // Control point 1 (peak of left lobe)
+        x - scale * 0.05, y - scale * 0.3, // Control point 2 (toward center dip)
+        x, y - scale * 0.15                // End at center dip (much lower/wider)
+      );
+
+      // Right top lobe - curve from center dip to right (wider dip)
+      this.ctx.bezierCurveTo(
+        x + scale * 0.05, y - scale * 0.3, // Control point 1 (from center dip)
+        x + scale * 0.15, y - scale * 0.5, // Control point 2 (peak of right lobe)
+        x + scale * 0.25, y - scale * 0.4  // End at top of right lobe
+      );
+
+      // Right side - curve from right top lobe to bottom point
+      this.ctx.bezierCurveTo(
+        x + scale * 0.5, y - scale * 0.2,  // Control point 1 (side of right lobe)
+        x + scale * 0.5, y + scale * 0.1,  // Control point 2 (outward from bottom)
+        x, y + scale * 0.3                 // End at bottom point
+      );
+
+      this.ctx.closePath();
+    };
+
+    // Draw black outline first
+    drawHeartPath();
+    this.ctx.strokeStyle = '#000000';
+    this.ctx.lineWidth = Math.max(2, scale * 0.2); // Scale outline with size
+    this.ctx.stroke();
+
+    // Draw filled heart on top
+    drawHeartPath();
+    this.ctx.fill();
+  }
+
+  /**
    * Draws the exit door billboard - always visible, no occlusion
    * @param {Object} exitData - Exit data with wallX and wallY coordinates
    * @param {Object} player - Player object with position and angle
@@ -290,6 +353,10 @@ export class SpriteRenderer {
    * @param {number} H - Screen height in pixels
    */
   drawParticle(particle, player, W, H) {
+    // Use heart shape for boop particles, ellipse for others
+    const isBoopParticle = particle.color === GameConfig.COLORS.PARTICLE_BOOP;
+    const shape = isBoopParticle ? 'heart' : 'ellipse';
+
     return this._drawBillboard(
       particle.x,
       particle.y,
@@ -300,7 +367,7 @@ export class SpriteRenderer {
       H,
       {
         checkOcclusion: false,  // Particles are always visible
-        shape: 'ellipse'        // Particles remain elliptical
+        shape: shape            // Hearts for boop particles, ellipses for others
       }
     );
   }
