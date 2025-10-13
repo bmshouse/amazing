@@ -112,6 +112,7 @@ export class EnemyController {
 
           if (applied) break; // Found a valid push distance
         }
+
         this.onBoop(e.x, e.y, isPull);
       }
     }
