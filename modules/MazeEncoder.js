@@ -9,12 +9,13 @@ export class MazeEncoder {
 
   /**
    * Generate a deterministic seed from maze configuration
-   * @param {Object} config - Maze configuration
+   * @param {Object} config - Maze configuration (must include timestamp for uniqueness)
    * @returns {number} Deterministic seed
    */
   generateSeed(config) {
-    // Create a simple hash from configuration parameters
-    const str = `${config.size}-${config.rechargePadCount}-${config.enemyCount}-${config.enemySpeed}`;
+    // Create a simple hash from configuration parameters including timestamp
+    // The timestamp ensures each maze is unique while remaining reproducible from the same data
+    const str = `${config.size}-${config.rechargePadCount}-${config.enemyCount}-${config.enemySpeed}-${config.timestamp}`;
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
@@ -38,17 +39,25 @@ export class MazeEncoder {
       playerName = 'Anonymous'
     } = gameData;
 
+    // Generate timestamp for this challenge (ensures unique seed)
+    const timestamp = Date.now();
+
     // Generate deterministic seed for maze recreation
     const mazeConfig = {
       size: maze.w,
       rechargePadCount: maze.rechargePadCount,
       enemyCount: enemies?.entities?.length || GameConfig.ENEMIES.COUNT,
-      enemySpeed: config?.enemySpeed || GameConfig.ENEMIES.SPEED
+      enemySpeed: config?.enemySpeed || GameConfig.ENEMIES.SPEED,
+      timestamp: timestamp
     };
 
     const seed = this.generateSeed(mazeConfig);
 
-    // Serialize recharge pad positions (deterministic from seed)
+    // Serialize maze grid using run-length encoding for compactness
+    // Grid is flattened row by row: [0,0,1,1,1,0,...] -> "2,0,3,1,1,0,..."
+    const gridData = this.encodeMazeGrid(maze.grid);
+
+    // Serialize recharge pad positions
     const rechargePads = maze.pads.map(pad => ({
       x: pad.x,
       y: pad.y
@@ -69,11 +78,12 @@ export class MazeEncoder {
 
     return {
       version: this.version,
-      timestamp: Date.now(),
+      timestamp: timestamp,
       seed,
       maze: {
         size: maze.w,
         rechargePadCount: maze.rechargePadCount,
+        grid: gridData,
         exit: {
           x: maze.exit.x,
           y: maze.exit.y,
@@ -195,6 +205,7 @@ export class MazeEncoder {
       if (!maze.size || !maze.exit || !Array.isArray(maze.pads)) {
         return false;
       }
+      // Grid is optional (for backward compatibility with old shares)
 
       // Check enemy data
       const enemies = gameState.enemies;
@@ -233,5 +244,71 @@ export class MazeEncoder {
       : 'Not completed';
 
     return `${maze.size}x${maze.size} maze by ${challenge.createdBy} • ${enemies.count} enemies • ${challenge.difficulty} difficulty • Time: ${completionTime}`;
+  }
+
+  /**
+   * Encode maze grid using bit-packing for maximum compression
+   * Each cell (0 or 1) becomes 1 bit, packed 8 cells per byte
+   * @param {Array<Array<number>>} grid - 2D maze grid
+   * @returns {string} Base64 encoded bit-packed grid
+   */
+  encodeMazeGrid(grid) {
+    // Flatten grid to 1D array
+    const flat = [];
+    for (let y = 0; y < grid.length; y++) {
+      for (let x = 0; x < grid[y].length; x++) {
+        flat.push(grid[y][x]);
+      }
+    }
+
+    // Pack 8 bits into each byte
+    const bytes = [];
+    for (let i = 0; i < flat.length; i += 8) {
+      let byte = 0;
+      for (let j = 0; j < 8 && i + j < flat.length; j++) {
+        if (flat[i + j] === 1 || flat[i + j] === 2) { // Support walls (1) and exit doors (2)
+          byte |= (1 << j);
+        }
+      }
+      bytes.push(byte);
+    }
+
+    // Convert to base64 using btoa
+    const binaryString = String.fromCharCode.apply(null, bytes);
+    return btoa(binaryString);
+  }
+
+  /**
+   * Decode bit-packed maze grid
+   * @param {string} encoded - Base64 encoded bit-packed grid
+   * @param {number} size - Maze size (width/height)
+   * @returns {Array<Array<number>>} 2D maze grid
+   */
+  decodeMazeGrid(encoded, size) {
+    // Decode base64 to binary string
+    const binaryString = atob(encoded);
+    const bytes = [];
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes.push(binaryString.charCodeAt(i));
+    }
+
+    // Unpack bits from bytes
+    const flat = [];
+    const totalCells = size * size;
+    for (let i = 0; i < bytes.length; i++) {
+      const byte = bytes[i];
+      for (let j = 0; j < 8 && flat.length < totalCells; j++) {
+        const bit = (byte >> j) & 1;
+        flat.push(bit);
+      }
+    }
+
+    // Convert flat array back to 2D grid
+    const grid = [];
+    for (let y = 0; y < size; y++) {
+      grid.push(flat.slice(y * size, (y + 1) * size));
+    }
+
+    return grid;
   }
 }
