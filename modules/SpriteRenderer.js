@@ -229,63 +229,60 @@ export class SpriteRenderer {
   }
 
   /**
-   * Draws a heart shape for particles
-   * @param {number} x - Screen X position
-   * @param {number} y - Screen Y position
+   * Draws a heart shape for particles using Bézier curves
+   * (Based on classic 4-curve heart technique)
+   * @param {number} x - Screen X position (center)
+   * @param {number} y - Screen Y position (center)
    * @param {number} size - Projected size on screen
    * @private
    */
   _drawHeartShape(x, y, size) {
-    // Heart shape using bezier curves
+    // Heart shape using 4 Bézier curves for smooth, flowing sides
     const scale = size * 2; // Make hearts a bit bigger
 
-    // Create the heart path (used for both fill and stroke)
-    const drawHeartPath = () => {
-      this.ctx.beginPath();
+    // Create a single continuous path for the heart
+    this.ctx.beginPath();
 
-      // Start at the bottom point of the heart
-      this.ctx.moveTo(x, y + scale * 0.3);
+    // Start at top center
+    this.ctx.moveTo(x, y);
 
-      // Left side - curve from bottom point to left top lobe
-      this.ctx.bezierCurveTo(
-        x - scale * 0.5, y + scale * 0.1,  // Control point 1 (outward from bottom)
-        x - scale * 0.5, y - scale * 0.2,  // Control point 2 (side of left lobe)
-        x - scale * 0.25, y - scale * 0.4  // End at top of left lobe
-      );
+    // Top-left curve (curves outward to form left lobe)
+    this.ctx.bezierCurveTo(
+      x, y - scale * 0.3,           // Control point 1: up from center
+      x - scale * 0.5, y - scale * 0.3,  // Control point 2: left and up
+      x - scale * 0.5, y            // End point: left at center height
+    );
 
-      // Left top lobe - curve to center dip (wider dip)
-      this.ctx.bezierCurveTo(
-        x - scale * 0.15, y - scale * 0.5, // Control point 1 (peak of left lobe)
-        x - scale * 0.05, y - scale * 0.3, // Control point 2 (toward center dip)
-        x, y - scale * 0.15                // End at center dip (much lower/wider)
-      );
+    // Bottom-left curve (curves from left lobe down to bottom point)
+    this.ctx.bezierCurveTo(
+      x - scale * 0.5, y + scale * 0.3,  // Control point 1: left and down
+      x, y + scale * 0.35,          // Control point 2: center and down
+      x, y + scale * 0.6            // End point: bottom point of heart
+    );
 
-      // Right top lobe - curve from center dip to right (wider dip)
-      this.ctx.bezierCurveTo(
-        x + scale * 0.05, y - scale * 0.3, // Control point 1 (from center dip)
-        x + scale * 0.15, y - scale * 0.5, // Control point 2 (peak of right lobe)
-        x + scale * 0.25, y - scale * 0.4  // End at top of right lobe
-      );
+    // Bottom-right curve (curves from bottom point up to right lobe)
+    this.ctx.bezierCurveTo(
+      x, y + scale * 0.35,          // Control point 1: center and down
+      x + scale * 0.5, y + scale * 0.3,  // Control point 2: right and down
+      x + scale * 0.5, y            // End point: right at center height
+    );
 
-      // Right side - curve from right top lobe to bottom point
-      this.ctx.bezierCurveTo(
-        x + scale * 0.5, y - scale * 0.2,  // Control point 1 (side of right lobe)
-        x + scale * 0.5, y + scale * 0.1,  // Control point 2 (outward from bottom)
-        x, y + scale * 0.3                 // End at bottom point
-      );
+    // Top-right curve (curves from right lobe back to top center)
+    this.ctx.bezierCurveTo(
+      x + scale * 0.5, y - scale * 0.3,  // Control point 1: right and up
+      x, y - scale * 0.3,           // Control point 2: up from center
+      x, y                          // End point: back to top center
+    );
 
-      this.ctx.closePath();
-    };
+    this.ctx.closePath();
 
-    // Draw black outline first
-    drawHeartPath();
-    this.ctx.strokeStyle = '#000000';
-    this.ctx.lineWidth = Math.max(2, scale * 0.2); // Scale outline with size
-    this.ctx.stroke();
-
-    // Draw filled heart on top
-    drawHeartPath();
+    // Fill the heart
     this.ctx.fill();
+
+    // Optional thin outline for definition
+    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
   }
 
   /**
@@ -353,9 +350,10 @@ export class SpriteRenderer {
    * @param {number} H - Screen height in pixels
    */
   drawParticle(particle, player, W, H) {
-    // Use heart shape for boop particles, ellipse for others
+    // Use heart shape for boop and huggle particles, ellipse for others
     const isBoopParticle = particle.color === GameConfig.COLORS.PARTICLE_BOOP;
-    const shape = isBoopParticle ? 'heart' : 'ellipse';
+    const isHuggleParticle = particle.color === GameConfig.COLORS.PARTICLE_HUGGLE;
+    const shape = (isBoopParticle || isHuggleParticle) ? 'heart' : 'ellipse';
 
     return this._drawBillboard(
       particle.x,
@@ -367,7 +365,7 @@ export class SpriteRenderer {
       H,
       {
         checkOcclusion: false,  // Particles are always visible
-        shape: shape            // Hearts for boop particles, ellipses for others
+        shape: shape            // Hearts for boop/huggle particles, ellipses for others
       }
     );
   }

@@ -583,6 +583,7 @@ export function bootstrap({ dev=false } = {}) {
     const speedKey = `config.enemies.speed_values.${currentDifficulty.enemies.speedMultiplier}`;
     hud.enemySpeedValue.textContent = i18n.getTranslation(speedKey) !== `[${speedKey}]` ?
       i18n.t(speedKey) : i18n.t('game.difficulty.fallback.custom');
+    document.getElementById('enableSmartPush').checked = currentDifficulty.enemies.smartPush || false;
 
     // Update device settings
     document.getElementById('enableDisruptor').checked = currentDifficulty.devices.disruptor.enabled;
@@ -659,6 +660,13 @@ export function bootstrap({ dev=false } = {}) {
   hud.enemySpeed.addEventListener('input', (e) => {
     const speed = parseFloat(e.target.value);
     difficultyConfig.updateConfig('enemies', 'speedMultiplier', speed);
+    currentDifficulty = difficultyConfig.getConfig();
+    updateDifficultyUI();
+  });
+
+  // Smart push toggle
+  document.getElementById('enableSmartPush').addEventListener('change', (e) => {
+    difficultyConfig.updateConfig('enemies', 'smartPush', e.target.checked);
     currentDifficulty = difficultyConfig.getConfig();
     updateDifficultyUI();
   });
@@ -1014,6 +1022,9 @@ export function bootstrap({ dev=false } = {}) {
     enemies.entities.forEach(enemy => {
       enemy.speed = GameConfig.ENEMIES.SPEED * speedMultiplier;
     });
+
+    // Apply smart push setting
+    GameConfig.ENEMIES.SMART_PUSH_ENABLED = currentDifficulty.enemies.smartPush || false;
   }
 
   function applyDifficultyToDevices() {
@@ -1327,12 +1338,17 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   // GAME EVENT CALLBACKS
   // ═════════════════════════════════════════════════════════════════
-  enemies.onBoop = (x,y)=>{
+  enemies.onBoop = (x,y,isPull)=>{
+    const particleColor = isPull ? GameConfig.COLORS.PARTICLE_HUGGLE : GameConfig.COLORS.PARTICLE_BOOP;
+    const messageKey = isPull ? 'game.messages.huggle' : 'game.messages.boop';
+    const audioFreq = isPull ? GameConfig.AUDIO.FREQ_HUGGLE : GameConfig.AUDIO.FREQ_BOOP;
+    const audioDuration = isPull ? 0.08 : 0.05; // Slightly longer for huggle
+
     for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_BOOP;i++) {
-      spawnParticle(x+(Math.random()-0.5)*0.2, y+(Math.random()-0.5)*0.2, GameConfig.COLORS.PARTICLE_BOOP, 300);
+      spawnParticle(x+(Math.random()-0.5)*0.2, y+(Math.random()-0.5)*0.2, particleColor, 300);
     }
-    speak(i18n.t('game.messages.boop'));
-    audio.beep('sine', GameConfig.AUDIO.FREQ_BOOP, 0.05, 0.05);
+    speak(i18n.t(messageKey));
+    audio.beep('sine', audioFreq, audioDuration, 0.05);
   };
 
   defenses.onActivation = (x,y,color)=>{

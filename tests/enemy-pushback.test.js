@@ -36,9 +36,9 @@ describe('Enemy Pushback Behavior', () => {
     it('should return true when player is closer to exit than enemy by path', () => {
       // In the 3x3 open maze, everyone at row 1-3, col 1-3 can reach any point
       // Exit at (3, 3), Player at (2, 2), Enemy at (1, 1)
+      const exit = { x: 3, y: 3 };  // Grid (3,3)
       const enemy = { x: 1.5, y: 1.5 };  // Grid (1,1) - 4 steps from (3,3)
       const testPlayer = { x: 2.5, y: 2.5 }; // Grid (2,2) - 2 steps from (3,3)
-      const exit = { x: 3, y: 3 };  // Grid (3,3)
 
       const result = enemies.isPlayerBetweenEnemyAndExit(enemy, testPlayer, exit);
       expect(result).toBe(true);
@@ -47,9 +47,9 @@ describe('Enemy Pushback Behavior', () => {
     it('should return false when enemy is closer to exit than player by path', () => {
       // Enemy at (3, 3) is 0 steps from exit
       // Player at (1, 1) is 4 steps from exit
+      const exit = { x: 3, y: 3 };  // Grid (3,3)
       const enemy = { x: 2.5, y: 2.5 };  // Grid (2,2) - 2 steps from (3,3)
       const testPlayer = { x: 1.5, y: 1.5 };  // Grid (1,1) - 4 steps from (3,3)
-      const exit = { x: 3, y: 3 };  // Grid (3,3)
 
       const result = enemies.isPlayerBetweenEnemyAndExit(enemy, testPlayer, exit);
       expect(result).toBe(false);
@@ -57,27 +57,27 @@ describe('Enemy Pushback Behavior', () => {
 
     it('should return false when player and enemy are equidistant from exit by path', () => {
       // Both at same distance from exit (3,3)
+      const exit = { x: 3, y: 3 };  // Grid (3,3)
       const enemy = { x: 1.5, y: 3.5 };  // Grid (1,3) - 2 steps from (3,3)
       const testPlayer = { x: 3.5, y: 1.5 };  // Grid (3,1) - 2 steps from (3,3)
-      const exit = { x: 3, y: 3 };  // Grid (3,3)
 
       const result = enemies.isPlayerBetweenEnemyAndExit(enemy, testPlayer, exit);
       expect(result).toBe(false);
     });
 
     it('should handle player at exit position', () => {
+      const exit = { x: 4.5, y: 4.5 };
       const enemy = { x: 1.5, y: 1.5 };
       const testPlayer = { x: 4.5, y: 4.5 };
-      const exit = { x: 4.5, y: 4.5 };
 
       const result = enemies.isPlayerBetweenEnemyAndExit(enemy, testPlayer, exit);
       expect(result).toBe(true);
     });
 
     it('should handle enemy at exit position', () => {
+      const exit = { x: 4.5, y: 4.5 };
       const enemy = { x: 4.5, y: 4.5 };
       const testPlayer = { x: 2.5, y: 2.5 };
-      const exit = { x: 4.5, y: 4.5 };
 
       const result = enemies.isPlayerBetweenEnemyAndExit(enemy, testPlayer, exit);
       expect(result).toBe(false);
@@ -96,6 +96,9 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 2.3;
       player.y = 2.3;
 
+      // Exit at (3, 3) - player is closer by path
+      maze.exit = { x: 3, y: 3, wallX: 4, wallY: 3 };
+
       // Position enemy within collision distance (< 0.6) but farther from exit by path
       const enemy = {
         x: 1.9,  // 0.4 away from player in X
@@ -106,9 +109,6 @@ describe('Enemy Pushback Behavior', () => {
         speedMul: 1
       };
       enemies.entities.push(enemy);
-
-      // Exit at (3, 3) - player is closer by path
-      maze.exit = { x: 3, y: 3, wallX: 4, wallY: 3 };
 
       const initialPlayerX = player.x;
       const initialPlayerY = player.y;
@@ -137,6 +137,9 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 1.5;
       player.y = 1.5;
 
+      // Set exit position
+      maze.exit = { x: 4.5, y: 4.5, wallX: 4, wallY: 4 };
+
       const enemy = {
         x: 3.0,
         y: 3.0,
@@ -146,9 +149,6 @@ describe('Enemy Pushback Behavior', () => {
         speedMul: 1
       };
       enemies.entities.push(enemy);
-
-      // Set exit position
-      maze.exit = { x: 4.5, y: 4.5, wallX: 4, wallY: 4 };
 
       // Position enemy close enough to trigger pushback
       enemy.x = player.x + 0.3;
@@ -172,6 +172,9 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 2.0;
       player.y = 2.0;
 
+      // Set exit to null
+      maze.exit = null;
+
       // Position enemy within collision distance, above and to the right
       const enemy = {
         x: 2.3,  // 0.3 away from player
@@ -182,9 +185,6 @@ describe('Enemy Pushback Behavior', () => {
         speedMul: 1
       };
       enemies.entities.push(enemy);
-
-      // Set exit to null
-      maze.exit = null;
 
       const initialPlayerX = player.x;
       const initialPlayerY = player.y;
@@ -208,6 +208,8 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 1.5;
       player.y = 1.5;
 
+      maze.exit = { x: 5.5, y: 5.5, wallX: 5, wallY: 5 };
+
       const enemy = {
         x: 4.5,
         y: 4.5,
@@ -217,8 +219,6 @@ describe('Enemy Pushback Behavior', () => {
         speedMul: 1
       };
       enemies.entities.push(enemy);
-
-      maze.exit = { x: 5.5, y: 5.5, wallX: 5, wallY: 5 };
 
       const initialPlayerX = player.x;
       const initialPlayerY = player.y;
@@ -238,6 +238,8 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 2.0;
       player.y = 2.0;
 
+      maze.exit = { x: 3, y: 3, wallX: 4, wallY: 3 };
+
       const enemy = {
         x: 1.5,
         y: 1.5,
@@ -246,8 +248,6 @@ describe('Enemy Pushback Behavior', () => {
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
       };
-
-      maze.exit = { x: 3, y: 3, wallX: 4, wallY: 3 };
 
       // Verify both have line of sight
       expect(enemies.hasLineOfSight(player.x, player.y, maze.exit.x, maze.exit.y, maze)).toBe(true);
@@ -280,7 +280,14 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 2.0;
       player.y = 1.5;
 
-      const enemy = { x: 2.3, y: 1.8, state: 'idle', stateTime: performance.now(), speed: 1, speedMul: 1 };
+      const enemy = {
+        x: 2.3,
+        y: 1.8,
+        state: 'idle',
+        stateTime: performance.now(),
+        speed: 1,
+        speedMul: 1
+      };
 
       // First call - will calculate and cache
       const start1 = performance.now();
@@ -317,6 +324,9 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 2.0;
       player.y = 1.5;
 
+      // Exit at (5, 4)
+      maze.exit = { x: 5, y: 4, wallX: 6, wallY: 4 };
+
       // Enemy at (2, 3) - farther by straight-line but actually on the path to exit
       const enemy = {
         x: 2.3,  // Close enough for collision
@@ -327,9 +337,6 @@ describe('Enemy Pushback Behavior', () => {
         speedMul: 1
       };
       enemies.entities.push(enemy);
-
-      // Exit at (5, 4)
-      maze.exit = { x: 5, y: 4, wallX: 6, wallY: 4 };
 
       const initialPlayerX = player.x;
       const initialPlayerY = player.y;
@@ -375,6 +382,8 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 3.0;
       player.y = 3.0;
 
+      maze.exit = { x: 4.5, y: 4.5, wallX: 4, wallY: 4 };
+
       // Enemy 1: Closer to exit (should pull)
       const enemy1 = {
         x: 2.7,
@@ -396,7 +405,6 @@ describe('Enemy Pushback Behavior', () => {
       };
 
       enemies.entities.push(enemy1, enemy2);
-      maze.exit = { x: 4.5, y: 4.5, wallX: 4, wallY: 4 };
 
       // Update should not throw errors
       expect(() => enemies.update(16, maze)).not.toThrow();
@@ -408,6 +416,8 @@ describe('Enemy Pushback Behavior', () => {
       player.x = 2.5;
       player.y = 2.5;
 
+      maze.exit = { x: 4.5, y: 4.5, wallX: 4, wallY: 4 };
+
       const enemy = {
         x: 2.3,
         y: 2.3,
@@ -418,7 +428,6 @@ describe('Enemy Pushback Behavior', () => {
       };
 
       enemies.entities.push(enemy);
-      maze.exit = { x: 4.5, y: 4.5, wallX: 4, wallY: 4 };
 
       const initialEnemyX = enemy.x;
       const initialEnemyY = enemy.y;

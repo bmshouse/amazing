@@ -92,6 +92,7 @@
     },
     "messages": {
       "boop": "Boop !",
+      "huggle": "Câlin !",
       "restarted": "Redémarré ! Appuyez sur Entrée pour commencer.",
       "found_exit": "Excellent travail ! Appuyez sur Entrée pour rejouer.",
       "device_disabled": "Appareil désactivé",
@@ -175,7 +176,9 @@
         "1.2": "Rapide",
         "1.5": "Frénétique",
         "2.0": "Dément"
-      }
+      },
+      "smart_push": "Poussée Intelligente (Progressive)",
+      "smart_push_hint": "Lorsqu'elle est activée, les ennemis vous guident vers le départ lorsque vous êtes profond dans le labyrinthe"
     },
     "devices": {
       "title": "🛡️ Configuration des Appareils",
