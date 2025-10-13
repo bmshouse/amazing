@@ -117,9 +117,6 @@ export class ChallengeManager {
       throw new Error('Invalid challenge data');
     }
 
-    // Seed the random number generator for reproducible maze generation
-    this.seedRandom(challengeData.seed);
-
     // Create maze with challenge specifications
     const maze = new Maze(
       challengeData.maze.size,
@@ -127,16 +124,21 @@ export class ChallengeManager {
       challengeData.maze.rechargePadCount
     );
 
-    // Generate maze (will use seeded randomization)
-    maze.generate();
-
-    // Restore random state after generation
-    this.restoreRandom();
-
-    // Validate that the generated maze matches the challenge
-    if (!this.validateMazeMatch(maze, challengeData.maze)) {
-      logger.warn('Generated maze does not match challenge data exactly');
+    // Restore the exact maze grid from serialized data (if available)
+    if (challengeData.maze.grid) {
+      maze.grid = this.encoder.decodeMazeGrid(challengeData.maze.grid, challengeData.maze.size);
+      logger.debug('Restored maze grid from serialized data');
+    } else {
+      // Fallback: generate maze using seeded randomization (for backward compatibility)
+      logger.warn('No grid data found, falling back to seeded generation');
+      this.seedRandom(challengeData.seed);
+      maze.generate();
+      this.restoreRandom();
     }
+
+    // Restore exit and pads
+    maze.exit = challengeData.maze.exit;
+    maze.pads = challengeData.maze.pads;
 
     return {
       maze,

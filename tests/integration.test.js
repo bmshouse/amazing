@@ -125,11 +125,39 @@ const mockCanvas = {
     scale: vi.fn(),
     rotate: vi.fn(),
     setTransform: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    closePath: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    arc: vi.fn(),
+    ellipse: vi.fn(),
+    rect: vi.fn(),
+    strokeRect: vi.fn(),
+    fillText: vi.fn(),
+    strokeText: vi.fn(),
+    measureText: vi.fn(() => ({ width: 100 })),
     createLinearGradient: vi.fn(() => ({
       addColorStop: vi.fn()
     })),
+    createRadialGradient: vi.fn(() => ({
+      addColorStop: vi.fn()
+    })),
+    getImageData: vi.fn(() => ({
+      data: new Uint8ClampedArray(800 * 600 * 4),
+      width: 800,
+      height: 600
+    })),
+    putImageData: vi.fn(),
     globalAlpha: 1,
-    globalCompositeOperation: 'source-over'
+    globalCompositeOperation: 'source-over',
+    lineWidth: 1,
+    lineCap: 'butt',
+    lineJoin: 'miter',
+    font: '10px sans-serif',
+    textAlign: 'start',
+    textBaseline: 'alphabetic'
   })),
   width: 800,
   height: 600,
@@ -289,10 +317,13 @@ describe('Main Bootstrap Integration', () => {
     global.window.requestAnimationFrame = vi.fn(cb => setTimeout(cb, 16));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     if (cleanupFn && typeof cleanupFn === 'function') {
       cleanupFn();
+      cleanupFn = null;
     }
+    // Wait a bit for any pending async operations to complete
+    await new Promise(resolve => setTimeout(resolve, 50));
   });
 
   it('should initialize the game system without errors', async () => {
@@ -421,10 +452,13 @@ describe('System Integration', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     if (cleanupFn && typeof cleanupFn === 'function') {
       cleanupFn();
+      cleanupFn = null;
     }
+    // Wait a bit for any pending async operations to complete
+    await new Promise(resolve => setTimeout(resolve, 50));
   });
 
   it('should integrate EventManager with player movement', () => {
