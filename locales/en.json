@@ -92,6 +92,7 @@
     },
     "messages": {
       "boop": "Boop!",
+      "huggle": "Huggle!",
       "restarted": "Restarted! Press Enter to begin.",
       "found_exit": "Great job! Press Enter to play again.",
       "device_disabled": "Device disabled",
@@ -175,7 +176,9 @@
         "1.2": "Fast",
         "1.5": "Frantic",
         "2.0": "Insane"
-      }
+      },
+      "smart_push": "Smart Push (Progressive)",
+      "smart_push_hint": "When enabled, enemies guide you back toward the start when deep in the maze"
     },
     "devices": {
       "title": "🛡️ Device Configuration",

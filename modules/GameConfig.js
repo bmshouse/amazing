@@ -68,6 +68,10 @@ export const GameConfig = {
     PUSHBACK_FORCE: 0.4,
     WANDER_JITTER: 0.2,
 
+    // Smart push configuration (progressive difficulty)
+    SMART_PUSH_ENABLED: false,        // Default: disabled (classic radial push)
+    SMART_PUSH_THRESHOLD: 5.0,        // Path distance from start to trigger smart push
+
     // State durations (ms)
     STUNNED_DURATION: 1500,
     SLOWED_DURATION: 2500,
@@ -141,7 +145,8 @@ export const GameConfig = {
     FREQ_GAME_START: 520,
     FREQ_RESTART: 480,
     FREQ_WIN: 740,
-    FREQ_BOOP: 360
+    FREQ_BOOP: 360,
+    FREQ_HUGGLE: 280
   },
 
   // Color constants
@@ -160,6 +165,7 @@ export const GameConfig = {
 
     // Particle colors
     PARTICLE_BOOP: '#ff0000', // Red hearts for boop particles
+    PARTICLE_HUGGLE: '#ff69b4', // Pink hearts for huggle particles
     PARTICLE_DEFAULT: '#9be7ff',
 
     // UI colors

@@ -92,6 +92,7 @@
     },
     "messages": {
       "boop": "¡Boop!",
+      "huggle": "¡Abrazo!",
       "restarted": "¡Reiniciado! Presiona Enter para comenzar.",
       "found_exit": "¡Buen trabajo! Presiona Enter para jugar de nuevo.",
       "device_disabled": "Dispositivo deshabilitado",
@@ -175,7 +176,9 @@
         "1.2": "Rápido",
         "1.5": "Frenético",
         "2.0": "Demente"
-      }
+      },
+      "smart_push": "Empuje Inteligente (Progresivo)",
+      "smart_push_hint": "Cuando está habilitado, los enemigos te guían de regreso al inicio cuando estás profundo en el laberinto"
     },
     "devices": {
       "title": "🛡️ Configuración de Dispositivos",

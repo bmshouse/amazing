@@ -18,7 +18,8 @@ export class DifficultyConfig {
       },
       enemies: {
         count: GameConfig.ENEMIES.COUNT,
-        speedMultiplier: 1.0
+        speedMultiplier: 1.0,
+        smartPush: false  // Default: classic radial push behavior
       },
       devices: {
         disruptor: {
@@ -48,7 +49,7 @@ export class DifficultyConfig {
         name: 'Easy',
         description: 'Relaxed pace with generous resources',
         maze: { size: 15, rechargePads: 4 },
-        enemies: { count: 5, speedMultiplier: 0.8 },
+        enemies: { count: 5, speedMultiplier: 0.8, smartPush: false },
         devices: {
           disruptor: { enabled: true, charges: 12 },
           immobilizer: { enabled: true, charges: 9 },
@@ -60,7 +61,7 @@ export class DifficultyConfig {
         name: 'Normal',
         description: 'Balanced challenge for most players',
         maze: { size: 21, rechargePads: 3 },
-        enemies: { count: 10, speedMultiplier: 1.0 },
+        enemies: { count: 10, speedMultiplier: 1.0, smartPush: false },
         devices: {
           disruptor: { enabled: true, charges: 8 },
           immobilizer: { enabled: true, charges: 6 },
@@ -72,7 +73,7 @@ export class DifficultyConfig {
         name: 'Hard',
         description: 'Challenging maze with limited resources',
         maze: { size: 31, rechargePads: 2 },
-        enemies: { count: 15, speedMultiplier: 1.2 },
+        enemies: { count: 15, speedMultiplier: 1.2, smartPush: true },
         devices: {
           disruptor: { enabled: true, charges: 6 },
           immobilizer: { enabled: true, charges: 4 },
@@ -84,7 +85,7 @@ export class DifficultyConfig {
         name: 'Teen-Safe',
         description: 'Minimal challenge, quick completion',
         maze: { size: 13, rechargePads: 5 },
-        enemies: { count: 3, speedMultiplier: 0.6 },
+        enemies: { count: 3, speedMultiplier: 0.6, smartPush: false },
         devices: {
           disruptor: { enabled: true, charges: 15 },
           immobilizer: { enabled: true, charges: 12 },

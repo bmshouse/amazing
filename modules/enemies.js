@@ -6,7 +6,7 @@ export class EnemyController {
     this.maze = maze;
     this.player = player;
     this.entities = [];
-    this.onBoop = (_x,_y)=>{};
+    this.onBoop = (_x,_y,_isPull)=>{};
     // Cache for pathfinding distances to avoid expensive recalculations
     this.pathDistanceCache = new Map();
     this.reset(maze);
@@ -63,9 +63,11 @@ export class EnemyController {
       if (dist < GameConfig.ENEMIES.COLLISION_DISTANCE) {
         // Determine push direction based on player position relative to exit
         let pushX, pushY;
+        let isPull = false;
 
         if (this.maze.exit && this.isPlayerBetweenEnemyAndExit(e, this.player, this.maze.exit)) {
           // Player is closer to exit - PULL player toward enemy (away from exit)
+          isPull = true;
           const ax = e.x - this.player.x;  // Vector from player to enemy (reversed)
           const ay = e.y - this.player.y;
           const len = Math.hypot(ax, ay) || 1;
@@ -73,9 +75,20 @@ export class EnemyController {
           pushX = this.player.x + (ax/len)*push;
           pushY = this.player.y + (ay/len)*push;
         } else {
-          // Player is farther from exit or no exit - PUSH player away from enemy (normal behavior)
-          const ax = this.player.x - e.x;  // Vector from enemy to player (original)
-          const ay = this.player.y - e.y;
+          // Player is NOT closer to exit - PUSH behavior
+          // Determine push direction based on smart push setting and player position
+          let ax, ay;
+
+          if (GameConfig.ENEMIES.SMART_PUSH_ENABLED && !this.isPlayerNearStart(this.player)) {
+            // Smart mode enabled and player is deep in maze: push TOWARD start position
+            ax = GameConfig.PLAYER.START_X - this.player.x;
+            ay = GameConfig.PLAYER.START_Y - this.player.y;
+          } else {
+            // Classic mode OR near start: push directly away from snowman (radial)
+            ax = this.player.x - e.x;
+            ay = this.player.y - e.y;
+          }
+
           const len = Math.hypot(ax, ay) || 1;
           const push = GameConfig.ENEMIES.PUSHBACK_FORCE;
           pushX = this.player.x + (ax/len)*push;
@@ -99,7 +112,8 @@ export class EnemyController {
 
           if (applied) break; // Found a valid push distance
         }
-        this.onBoop(e.x, e.y);
+
+        this.onBoop(e.x, e.y, isPull);
       }
     }
   }
@@ -197,6 +211,21 @@ export class EnemyController {
   }
 
   /**
+   * Checks if player is near the starting position using pathfinding
+   * Only used when SMART_PUSH_ENABLED is true
+   * @param {Object} player - Player with x, y coordinates
+   * @returns {boolean} True if player is within threshold path distance of start
+   */
+  isPlayerNearStart(player) {
+    const pathDistFromStart = this.calculatePathDistance(
+      player.x, player.y,
+      GameConfig.PLAYER.START_X, GameConfig.PLAYER.START_Y,
+      this.maze
+    );
+    return pathDistFromStart < GameConfig.ENEMIES.SMART_PUSH_THRESHOLD;
+  }
+
+  /**
    * Checks if the player is closer to the exit than the enemy
    * Uses fast straight-line distance if line of sight is clear, otherwise uses pathfinding
    * @param {Object} enemy - Enemy object with x, y coordinates
@@ -205,20 +234,26 @@ export class EnemyController {
    * @returns {boolean} True if player is between enemy and exit (closer to exit)
    */
   isPlayerBetweenEnemyAndExit(enemy, player, exit) {
+    // Exit coordinates from maze are grid integers, but test data may already include .5 offset
+    // Check if coordinates are already fractional (world coords) or integers (grid coords)
+    const isFractional = exit.x % 1 !== 0 || exit.y % 1 !== 0;
+    const exitWorldX = isFractional ? exit.x : exit.x + 0.5;
+    const exitWorldY = isFractional ? exit.y : exit.y + 0.5;
+
     // Fast path: if both player and enemy have line of sight to exit, use straight-line distance
-    const playerHasLOS = this.hasLineOfSight(player.x, player.y, exit.x, exit.y, this.maze);
-    const enemyHasLOS = this.hasLineOfSight(enemy.x, enemy.y, exit.x, exit.y, this.maze);
+    const playerHasLOS = this.hasLineOfSight(player.x, player.y, exitWorldX, exitWorldY, this.maze);
+    const enemyHasLOS = this.hasLineOfSight(enemy.x, enemy.y, exitWorldX, exitWorldY, this.maze);
 
     if (playerHasLOS && enemyHasLOS) {
       // Both have clear line of sight - use fast straight-line distance
-      const playerDist = Math.hypot(player.x - exit.x, player.y - exit.y);
-      const enemyDist = Math.hypot(enemy.x - exit.x, enemy.y - exit.y);
+      const playerDist = Math.hypot(player.x - exitWorldX, player.y - exitWorldY);
+      const enemyDist = Math.hypot(enemy.x - exitWorldX, enemy.y - exitWorldY);
       return playerDist < enemyDist;
     }
 
     // Slow path: need to use actual pathfinding (cached for performance)
-    const playerPathDist = this.calculatePathDistance(player.x, player.y, exit.x, exit.y, this.maze);
-    const enemyPathDist = this.calculatePathDistance(enemy.x, enemy.y, exit.x, exit.y, this.maze);
+    const playerPathDist = this.calculatePathDistance(player.x, player.y, exitWorldX, exitWorldY, this.maze);
+    const enemyPathDist = this.calculatePathDistance(enemy.x, enemy.y, exitWorldX, exitWorldY, this.maze);
 
     return playerPathDist < enemyPathDist;
   }
