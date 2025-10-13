@@ -6,6 +6,7 @@ import { EnemyController } from './modules/enemies.js';
 import { generateWallTexture, generateBrickTexture, generateDoorTexture } from './textures/wall-texture.js';
 import { RaycastRenderer } from './modules/RaycastRenderer.js';
 import { SpriteRenderer } from './modules/SpriteRenderer.js';
+import { Model3DRenderer } from './modules/rendering/Model3DRenderer.js';
 import { GameState } from './modules/GameState.js';
 import { EventManager } from './modules/EventManager.js';
 import { ProjectileSystem } from './modules/ProjectileSystem.js';
@@ -41,6 +42,7 @@ export function bootstrap({ dev=false } = {}) {
     sensitivity: document.getElementById('sensitivity'),
     sensitivityValue: document.getElementById('sensitivityValue'),
     audioToggle: document.getElementById('audioToggle'),
+    rendering3DToggle: document.getElementById('rendering3DToggle'),
     subtitles: document.getElementById('subtitles'),
     tutorial: document.getElementById('tutorial'),
     victoryPanel: document.getElementById('victoryPanel'),
@@ -199,6 +201,44 @@ export function bootstrap({ dev=false } = {}) {
   // ═══════════════════════════════════════════════════════════════
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   let W = GameConfig.RENDERING.INTERNAL_WIDTH, H = GameConfig.RENDERING.INTERNAL_HEIGHT;
+
+  // Get WebGL canvas for 3D rendering (declare early for resize function)
+  const webglCanvas = document.getElementById('webgl-canvas');
+  let model3DRenderer = null; // Declare early, initialize later
+
+  // Get UI canvas for particles and crosshair (z-index: 2, above 3D models)
+  const uiCanvas = document.getElementById('ui-canvas');
+  const uiCtx = uiCanvas ? uiCanvas.getContext('2d') : null;
+
+  // Detect WebGL capability without creating a context
+  function detectWebGLSupport() {
+    if (!webglCanvas) {
+      logger.warn('WebGL canvas not found in DOM');
+      return false;
+    }
+
+    // Create a temporary canvas for testing to avoid conflicts
+    try {
+      const testCanvas = document.createElement('canvas');
+      const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+      if (!gl) {
+        logger.warn('WebGL not supported by this browser');
+        return false;
+      }
+      logger.info('WebGL support detected');
+      return true;
+    } catch (e) {
+      logger.error('Error detecting WebGL support:', e);
+      return false;
+    }
+  }
+
+  // Check WebGL support and disable 3D if needed
+  if (GameConfig.RENDERING.USE_3D_MODELS && !detectWebGLSupport()) {
+    logger.warn('Disabling 3D models - WebGL not available');
+    GameConfig.RENDERING.USE_3D_MODELS = false;
+  }
+
   function resize() {
     const rect = canvas.getBoundingClientRect();
     W = Math.max(GameConfig.RENDERING.MIN_WIDTH, Math.floor(rect.width / 2)) | 0;
@@ -206,6 +246,29 @@ export function bootstrap({ dev=false } = {}) {
     canvas.width = W * DPR;
     canvas.height = H * DPR;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    // Resize WebGL canvas to match (both buffer size and display size)
+    if (webglCanvas) {
+      webglCanvas.width = W * DPR;
+      webglCanvas.height = H * DPR;
+      // Also set CSS size to match the display canvas
+      webglCanvas.style.width = rect.width + 'px';
+      webglCanvas.style.height = rect.height + 'px';
+
+      if (model3DRenderer) {
+        model3DRenderer.resize(W, H);
+      }
+    }
+
+    // Resize UI canvas to match (both buffer size and display size)
+    if (uiCanvas) {
+      uiCanvas.width = W * DPR;
+      uiCanvas.height = H * DPR;
+      uiCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      // Also set CSS size to match the display canvas
+      uiCanvas.style.width = rect.width + 'px';
+      uiCanvas.style.height = rect.height + 'px';
+    }
   }
   eventManager.on('resize', resize);
   resize();
@@ -267,6 +330,34 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   const raycastRenderer = new RaycastRenderer(canvas, textures);
   const spriteRenderer = new SpriteRenderer(canvas);
+  const uiRenderer = uiCanvas ? new SpriteRenderer(uiCanvas) : null;
+
+  // Initialize 3D model renderer if WebGL is available and 3D is enabled
+  if (webglCanvas && GameConfig.RENDERING.USE_3D_MODELS) {
+    model3DRenderer = new Model3DRenderer(webglCanvas, W, H);
+    logger.info('Model3DRenderer created, initializing Three.js...');
+
+    // Initialize asynchronously (doesn't block game start)
+    model3DRenderer.initialize().then(async (success) => {
+      if (success) {
+        logger.info('Model3DRenderer initialized successfully');
+        await model3DRenderer.loadAllEnemyModels();
+        logger.info('3D enemy models loaded');
+      } else {
+        logger.warn('Model3DRenderer failed to initialize, using 2D sprites only');
+        GameConfig.RENDERING.USE_3D_MODELS = false;
+        model3DRenderer = null;
+      }
+    }).catch(error => {
+      logger.error('Failed to initialize Model3DRenderer:', error);
+      GameConfig.RENDERING.USE_3D_MODELS = false;
+      model3DRenderer = null;
+    });
+  } else if (!webglCanvas) {
+    logger.warn('WebGL canvas not found, 3D rendering disabled');
+  } else {
+    logger.info('3D rendering disabled (WebGL not supported or disabled in config)');
+  }
 
   // ═════════════════════════════════════════════════════════════════
   // GAME ENTITY INITIALIZATION
@@ -613,10 +704,100 @@ export function bootstrap({ dev=false } = {}) {
     const value = parseFloat(e.target.value);
     player.sensitivity = value;
     hud.sensitivityValue.textContent = value.toFixed(1);
+    saveUserSettings();
   });
 
   // Initialize sensitivity display
   hud.sensitivityValue.textContent = hud.sensitivity.value;
+
+  // ═════════════════════════════════════════════════════════════════
+  // SETTINGS PERSISTENCE (localStorage)
+  // ═════════════════════════════════════════════════════════════════
+  function loadUserSettings() {
+    try {
+      // Load 3D rendering preference
+      const saved3DRendering = localStorage.getItem('calmmaze_use3d');
+      if (saved3DRendering !== null) {
+        const use3D = saved3DRendering === 'true';
+        GameConfig.RENDERING.USE_3D_MODELS = use3D;
+        logger.debug('Loaded 3D rendering preference:', use3D);
+      }
+
+      // Load audio preference
+      const savedAudio = localStorage.getItem('calmmaze_audio');
+      if (savedAudio !== null) {
+        hud.audioToggle.checked = savedAudio === 'true';
+        logger.debug('Loaded audio preference:', hud.audioToggle.checked);
+      }
+
+      // Load sensitivity preference
+      const savedSensitivity = localStorage.getItem('calmmaze_sensitivity');
+      if (savedSensitivity !== null) {
+        const sensitivity = parseFloat(savedSensitivity);
+        if (!isNaN(sensitivity)) {
+          hud.sensitivity.value = sensitivity;
+          player.sensitivity = sensitivity;
+          hud.sensitivityValue.textContent = sensitivity.toFixed(1);
+          logger.debug('Loaded sensitivity preference:', sensitivity);
+        }
+      }
+    } catch (e) {
+      logger.warn('Could not load user settings from localStorage:', e);
+    }
+  }
+
+  function saveUserSettings() {
+    try {
+      localStorage.setItem('calmmaze_use3d', GameConfig.RENDERING.USE_3D_MODELS.toString());
+      localStorage.setItem('calmmaze_audio', hud.audioToggle.checked.toString());
+      localStorage.setItem('calmmaze_sensitivity', hud.sensitivity.value);
+    } catch (e) {
+      logger.warn('Could not save user settings to localStorage:', e);
+    }
+  }
+
+  // Load settings on startup
+  loadUserSettings();
+
+  // 3D Rendering toggle event handler
+  if (hud.rendering3DToggle) {
+    // Initialize toggle state from config (after loading from localStorage)
+    hud.rendering3DToggle.checked = GameConfig.RENDERING.USE_3D_MODELS;
+
+    hud.rendering3DToggle.addEventListener('change', (e) => {
+      GameConfig.RENDERING.USE_3D_MODELS = e.target.checked;
+      logger.info(`3D rendering ${e.target.checked ? 'enabled' : 'disabled'} by user`);
+
+      // Save preference
+      saveUserSettings();
+
+      // If enabling 3D and renderer isn't initialized yet, initialize it
+      if (e.target.checked && !model3DRenderer && webglCanvas) {
+        model3DRenderer = new Model3DRenderer(webglCanvas, W, H);
+        model3DRenderer.initialize().then(async (success) => {
+          if (success) {
+            await model3DRenderer.loadAllEnemyModels();
+            logger.info('3D models enabled and loaded');
+          } else {
+            logger.warn('Failed to enable 3D rendering');
+            GameConfig.RENDERING.USE_3D_MODELS = false;
+            hud.rendering3DToggle.checked = false;
+            saveUserSettings();
+          }
+        }).catch(error => {
+          logger.error('Error enabling 3D rendering:', error);
+          GameConfig.RENDERING.USE_3D_MODELS = false;
+          hud.rendering3DToggle.checked = false;
+          saveUserSettings();
+        });
+      }
+    });
+  }
+
+  // Save audio preference when changed
+  hud.audioToggle.addEventListener('change', () => {
+    saveUserSettings();
+  });
 
   // Language selector event handler
   hud.languageSelect.addEventListener('change', async (e) => {
@@ -912,6 +1093,48 @@ export function bootstrap({ dev=false } = {}) {
 
 
   // ═════════════════════════════════════════════════════════════════
+  // PERFORMANCE MONITORING FOR 3D AUTO-DETECTION
+  // ═════════════════════════════════════════════════════════════════
+  let fpsHistory = [];
+  let frameCount = 0;
+  let fpsCheckInterval = 0;
+  const FPS_CHECK_INTERVAL = 5000; // Check FPS every 5 seconds
+  const FPS_HISTORY_SIZE = 10; // Keep last 10 samples
+
+  function updateFPS(deltaTime) {
+    frameCount++;
+    fpsCheckInterval += deltaTime;
+
+    if (fpsCheckInterval >= FPS_CHECK_INTERVAL) {
+      const averageFPS = (frameCount / fpsCheckInterval) * 1000;
+      fpsHistory.push(averageFPS);
+
+      // Keep only recent history
+      if (fpsHistory.length > FPS_HISTORY_SIZE) {
+        fpsHistory.shift();
+      }
+
+      // Check if we should disable 3D models due to low FPS
+      if (GameConfig.RENDERING.AUTO_DETECT_3D_CAPABILITY &&
+          GameConfig.RENDERING.USE_3D_MODELS &&
+          fpsHistory.length >= 3) {
+
+        const recentAverageFPS = fpsHistory.reduce((a, b) => a + b) / fpsHistory.length;
+
+        if (recentAverageFPS < GameConfig.RENDERING.MIN_FPS_FOR_3D) {
+          logger.warn(`Auto-disabling 3D models due to low FPS: ${recentAverageFPS.toFixed(1)} < ${GameConfig.RENDERING.MIN_FPS_FOR_3D}`);
+          GameConfig.RENDERING.USE_3D_MODELS = false;
+          speak(i18n.t('game.messages.performance_mode') || 'Performance mode enabled');
+        }
+      }
+
+      // Reset counters
+      frameCount = 0;
+      fpsCheckInterval = 0;
+    }
+  }
+
+  // ═════════════════════════════════════════════════════════════════
   // MAIN GAME LOOP
   // ═════════════════════════════════════════════════════════════════
   let last = performance.now();
@@ -920,6 +1143,9 @@ export function bootstrap({ dev=false } = {}) {
     loopId = window.requestAnimationFrame(loop);
     const dt = Math.min(GameConfig.PERFORMANCE.MAX_FRAME_TIME, now - last);
     last = now;
+
+    // Update FPS monitoring
+    updateFPS(dt);
 
     if (gameState.isStarted()) {
       gameState.updateElapsed();
@@ -1057,11 +1283,35 @@ export function bootstrap({ dev=false } = {}) {
   // RENDERING FUNCTIONS
   // ═════════════════════════════════════════════════════════════════
   function render() {
-    // Render walls using raycast renderer
+    // Render walls using raycast renderer (2D canvas layer)
     raycastRenderer.render(player, maze, W, H);
 
-    // Render sprites using sprite renderer
-    spriteRenderer.renderSprites(player, maze, enemies, particles, W, H, colors);
+    // Check if 3D models are enabled and renderer is ready
+    const use3D = GameConfig.RENDERING.USE_3D_MODELS && model3DRenderer && model3DRenderer.enabled && model3DRenderer.modelsLoaded;
+
+    if (use3D && uiRenderer) {
+      // Sync 3D camera with player position
+      model3DRenderer.syncCamera(player);
+
+      // Update enemy 3D models (LOD selection and state)
+      model3DRenderer.updateEnemies(enemies.entities, player, 0, maze);
+
+      // Render 3D enemies (WebGL canvas layer)
+      model3DRenderer.render();
+
+      // Render sprites without enemies on base canvas (exit door, recharge pads)
+      spriteRenderer.renderSprites(player, maze, { entities: [] }, [], W, H, colors);
+
+      // Clear UI canvas before rendering
+      uiCtx.clearRect(0, 0, W, H);
+
+      // Render particles and crosshair on UI canvas (z-index: 2, above 3D models)
+      uiRenderer.renderParticles(particles, player, W, H);
+      uiRenderer.renderCrosshair(W, H);
+    } else {
+      // Fallback to 2D sprite rendering for everything
+      spriteRenderer.renderSprites(player, maze, enemies, particles, W, H, colors);
+    }
   }
 
   // ═════════════════════════════════════════════════════════════════
@@ -1114,6 +1364,9 @@ export function bootstrap({ dev=false } = {}) {
     }
     if (touchHUD) {
       touchHUD.destroy();
+    }
+    if (model3DRenderer) {
+      model3DRenderer.destroy();
     }
   };
 }

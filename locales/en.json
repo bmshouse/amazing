@@ -142,6 +142,10 @@
       "label": "Audio",
       "enabled": "Enabled"
     },
+    "rendering": {
+      "label": "3D Rendering",
+      "description": "Enable 3D models for enemies (2D sprites when disabled)"
+    },
     "sensitivity": {
       "label": "Mouse Sensitivity",
       "description": "Adjust mouse look sensitivity"

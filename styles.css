@@ -2,6 +2,8 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; background: #0f1020; color: #f7f7f7; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
 #game { width: 100vw; height: 100vh; display: block; image-rendering: pixelated; }
+#webgl-canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1; }
+#ui-canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 2; }
 
 #hud { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; }
 #hud .row { display: flex; align-items: center; gap: 12px; }

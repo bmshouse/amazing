@@ -142,6 +142,10 @@
       "label": "Audio",
       "enabled": "Habilitado"
     },
+    "rendering": {
+      "label": "Renderizado 3D",
+      "description": "Habilitar modelos 3D para enemigos (sprites 2D cuando está deshabilitado)"
+    },
     "sensitivity": {
       "label": "Sensibilidad del Ratón",
       "description": "Ajustar sensibilidad de vista del ratón"

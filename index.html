@@ -7,7 +7,14 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <canvas id="game" aria-label="Game canvas"></canvas>
+  <!-- UI Canvas (top layer for particles and crosshair) -->
+  <canvas id="ui-canvas" aria-label="UI canvas" style="position: absolute; top: 0; left: 0; pointer-events: none; z-index: 2;"></canvas>
+
+  <!-- 3D WebGL Canvas (overlay for 3D enemy models) -->
+  <canvas id="webgl-canvas" aria-label="3D models canvas" style="position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1;"></canvas>
+
+  <!-- 2D Raycasting Canvas (base layer for walls/floor) -->
+  <canvas id="game" aria-label="Game canvas" style="position: absolute; top: 0; left: 0; z-index: 0;"></canvas>
 
   <!-- HUD Overlay -->
   <div id="hud" role="region" aria-label="Heads-up display">
@@ -89,6 +96,13 @@
             <label class="config-label" data-i18n="config.audio.label">Audio</label>
             <label class="switch">
               <input id="audioToggle" type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="config-item">
+            <label class="config-label" data-i18n="config.rendering.label">3D Rendering</label>
+            <label class="switch">
+              <input id="rendering3DToggle" type="checkbox" checked>
               <span class="slider"></span>
             </label>
           </div>

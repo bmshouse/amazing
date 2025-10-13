@@ -142,6 +142,10 @@
       "label": "Audio",
       "enabled": "Activé"
     },
+    "rendering": {
+      "label": "Rendu 3D",
+      "description": "Activer les modèles 3D pour les ennemis (sprites 2D lorsque désactivé)"
+    },
     "sensitivity": {
       "label": "Sensibilité de la Souris",
       "description": "Ajuster la sensibilité de vue de la souris"
