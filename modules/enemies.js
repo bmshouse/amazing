@@ -82,9 +82,23 @@ export class EnemyController {
           pushY = this.player.y + (ay/len)*push;
         }
 
-        // Apply push with collision detection
-        if (maze.cellAt(pushX, this.player.y) === 0) this.player.x = pushX;
-        if (maze.cellAt(this.player.x, pushY) === 0) this.player.y = pushY;
+        // Apply push with collision detection, trying progressively smaller pushes if blocked
+        let applied = false;
+        for (let scale = 1.0; scale > 0.1; scale -= 0.2) {
+          const testX = this.player.x + (pushX - this.player.x) * scale;
+          const testY = this.player.y + (pushY - this.player.y) * scale;
+
+          if (maze.cellAt(testX, this.player.y) === 0) {
+            this.player.x = testX;
+            applied = true;
+          }
+          if (maze.cellAt(this.player.x, testY) === 0) {
+            this.player.y = testY;
+            applied = true;
+          }
+
+          if (applied) break; // Found a valid push distance
+        }
         this.onBoop(e.x, e.y);
       }
     }
