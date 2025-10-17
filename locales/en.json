@@ -104,6 +104,8 @@
       "victory_keyboard_hint": "Keyboard: Press <strong>S</strong> to share, <strong>R</strong> or <strong>Enter</strong> to restart",
       "victory_beat_record_title": "🏆 New Record!",
       "victory_beat_record": "Amazing! You beat the target time by {{diff}}! Click Share Your Victory to challenge others.",
+      "victory_tie_title": "🤝 Perfect Tie!",
+      "victory_tie": "You matched the target time exactly! Can you beat it on the next try?",
       "victory_close_title": "🎉 So Close!",
       "victory_close": "Just {{diff}} behind! One more try?",
       "victory_missed": "You finished {{diff}} after the target time. Think you can do better? Try again!"

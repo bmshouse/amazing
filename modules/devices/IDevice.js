@@ -6,6 +6,7 @@ export class IDevice {
     this.cooldown = cooldown;
     this.charges = maxCharges;
     this.lastActivation = 0;
+    this.enabled = true; // Devices are enabled by default
   }
 
   // Abstract methods that must be implemented by concrete devices

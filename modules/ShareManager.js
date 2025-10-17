@@ -78,6 +78,11 @@ export class ShareManager {
     this.challengePacifierCharges = document.getElementById('challengePacifierCharges');
     this.exitChallengeButton = document.getElementById('exitChallengeButton');
 
+    // Challenge device rows (parent elements to show/hide)
+    this.challengeDisruptorRow = this.challengeDisruptorCharges?.parentElement;
+    this.challengeImmobilizerRow = this.challengeImmobilizerCharges?.parentElement;
+    this.challengePacifierRow = this.challengePacifierCharges?.parentElement;
+
     // Challenge info elements
     this.shareMazeSize = document.getElementById('shareMazeSize');
     this.shareCompletionTime = document.getElementById('shareCompletionTime');
@@ -402,16 +407,33 @@ export class ShareManager {
       this.challengeTargetTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    // Populate device charges
+    // Populate device charges and show/hide based on enabled state
     if (devices) {
+      // Disruptor (Taser)
+      const taserEnabled = devices.taserEnabled ?? true; // Default to true for backwards compatibility
       if (this.challengeDisruptorCharges) {
         this.challengeDisruptorCharges.textContent = devices.taserCharges || 0;
       }
+      if (this.challengeDisruptorRow) {
+        this.challengeDisruptorRow.style.display = taserEnabled ? '' : 'none';
+      }
+
+      // Immobilizer (Stun)
+      const stunEnabled = devices.stunEnabled ?? true; // Default to true for backwards compatibility
       if (this.challengeImmobilizerCharges) {
         this.challengeImmobilizerCharges.textContent = devices.stunCharges || 0;
       }
+      if (this.challengeImmobilizerRow) {
+        this.challengeImmobilizerRow.style.display = stunEnabled ? '' : 'none';
+      }
+
+      // Pacifier (Tranq)
+      const tranqEnabled = devices.tranqEnabled ?? true; // Default to true for backwards compatibility
       if (this.challengePacifierCharges) {
         this.challengePacifierCharges.textContent = devices.tranqCharges || 0;
+      }
+      if (this.challengePacifierRow) {
+        this.challengePacifierRow.style.display = tranqEnabled ? '' : 'none';
       }
     }
 

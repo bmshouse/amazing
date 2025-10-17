@@ -104,6 +104,8 @@
       "victory_keyboard_hint": "Clavier : Appuyez sur <strong>S</strong> pour partager, <strong>R</strong> ou <strong>Entrée</strong> pour redémarrer",
       "victory_beat_record_title": "🏆 Nouveau Record !",
       "victory_beat_record": "Incroyable ! Vous avez battu le temps cible de {{diff}} ! Cliquez sur Partager Votre Victoire pour défier les autres.",
+      "victory_tie_title": "🤝 Égalité Parfaite !",
+      "victory_tie": "Vous avez égalé le temps cible exactement ! Pouvez-vous le battre au prochain essai ?",
       "victory_close_title": "🎉 Si Proche !",
       "victory_close": "Seulement {{diff}} derrière ! Un dernier essai ?",
       "victory_missed": "Vous avez terminé {{diff}} après le temps cible. Pensez-vous pouvoir faire mieux ? Réessayez !"

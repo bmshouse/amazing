@@ -97,6 +97,9 @@ export class Defenses {
     const device = this.devices[this.currentDevice];
     if (!device) return;
 
+    // Check if device is enabled
+    if (device.enabled === false) return;
+
     const result = device.activate(this.player, this.enemies, this.audio, this.onActivation, this.projectileSystem);
     return result;
   }

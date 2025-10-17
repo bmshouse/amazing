@@ -104,6 +104,8 @@
       "victory_keyboard_hint": "Teclado: Presiona <strong>S</strong> para compartir, <strong>R</strong> o <strong>Enter</strong> para reiniciar",
       "victory_beat_record_title": "🏆 ¡Nuevo Récord!",
       "victory_beat_record": "¡Increíble! Superaste el tiempo objetivo por {{diff}}! Haz clic en Comparte Tu Victoria para desafiar a otros.",
+      "victory_tie_title": "🤝 ¡Empate Perfecto!",
+      "victory_tie": "¡Igualaste el tiempo objetivo exactamente! ¿Puedes superarlo en el próximo intento?",
       "victory_close_title": "🎉 ¡Tan Cerca!",
       "victory_close": "¡Solo {{diff}} detrás! ¿Un intento más?",
       "victory_missed": "Terminaste {{diff}} después del tiempo objetivo. ¿Crees que puedes hacerlo mejor? ¡Inténtalo de nuevo!"
