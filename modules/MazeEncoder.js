@@ -71,9 +71,12 @@ export class MazeEncoder {
 
     // Device configuration
     const deviceConfig = {
-      taserCharges: config?.devices?.taser?.charges || GameConfig.DEVICES.TASER.MAX_CHARGES,
-      stunCharges: config?.devices?.stun?.charges || GameConfig.DEVICES.STUN.MAX_CHARGES,
-      tranqCharges: config?.devices?.tranq?.charges || GameConfig.DEVICES.TRANQ.MAX_CHARGES
+      taserCharges: config?.devices?.taserCharges ?? config?.devices?.taser?.charges ?? GameConfig.DEVICES.TASER.MAX_CHARGES,
+      stunCharges: config?.devices?.stunCharges ?? config?.devices?.stun?.charges ?? GameConfig.DEVICES.STUN.MAX_CHARGES,
+      tranqCharges: config?.devices?.tranqCharges ?? config?.devices?.tranq?.charges ?? GameConfig.DEVICES.TRANQ.MAX_CHARGES,
+      taserEnabled: config?.devices?.taserEnabled ?? config?.devices?.taser?.enabled ?? true,
+      stunEnabled: config?.devices?.stunEnabled ?? config?.devices?.stun?.enabled ?? true,
+      tranqEnabled: config?.devices?.tranqEnabled ?? config?.devices?.tranq?.enabled ?? true
     };
 
     return {

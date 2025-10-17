@@ -350,6 +350,11 @@ export class TouchHUD {
       this.eventManager.on('devicechange', (data) => {
         this.updateDeviceButtonStates(data.device);
       });
+
+      // Listen for device configuration changes
+      this.eventManager.on('deviceconfig', (data) => {
+        this.updateDeviceVisibility(data.devices, data.mapping);
+      });
     }
 
     // Handle orientation changes
@@ -451,31 +456,37 @@ export class TouchHUD {
     // Quick device switching with swipe gestures
     if (!this.defenses) return;
 
-    const devices = ['taser', 'stun', 'tranq'];
-    const currentIndex = devices.indexOf(this.defenses.currentDevice);
+    // Get only enabled devices
+    const allDevices = ['taser', 'stun', 'tranq'];
+    const enabledDevices = allDevices.filter(deviceId => {
+      return this.defenses.devices[deviceId] && this.defenses.devices[deviceId].enabled !== false;
+    });
 
+    if (enabledDevices.length === 0) return; // No enabled devices
+
+    const currentIndex = enabledDevices.indexOf(this.defenses.currentDevice);
     let newIndex = currentIndex;
 
     switch (data.direction) {
       case 'left':
-        newIndex = (currentIndex + 1) % devices.length;
+        newIndex = (currentIndex + 1) % enabledDevices.length;
         break;
       case 'right':
-        newIndex = (currentIndex - 1 + devices.length) % devices.length;
+        newIndex = (currentIndex - 1 + enabledDevices.length) % enabledDevices.length;
         break;
       case 'up':
-        // Cycle to first device
+        // Cycle to first enabled device
         newIndex = 0;
         break;
       case 'down':
-        // Cycle to last device
-        newIndex = devices.length - 1;
+        // Cycle to last enabled device
+        newIndex = enabledDevices.length - 1;
         break;
     }
 
     if (newIndex !== currentIndex) {
-      this.defenses.setMode(devices[newIndex]);
-      this.updateDeviceButtonStates(devices[newIndex]);
+      this.defenses.setMode(enabledDevices[newIndex]);
+      this.updateDeviceButtonStates(enabledDevices[newIndex]);
 
       // Haptic feedback for device switch
       if ('vibrate' in navigator) {
@@ -599,6 +610,23 @@ export class TouchHUD {
     });
   }
 
+  updateDeviceVisibility(devices, mapping) {
+    // Update device button visibility based on enabled state
+    Object.entries(devices).forEach(([deviceType, config]) => {
+      const gameDeviceType = mapping[deviceType];
+      const button = this.deviceButtons.get(gameDeviceType);
+
+      if (button) {
+        // Show/hide button based on enabled state
+        if (this.visible) {
+          button.style.display = config.enabled ? 'flex' : 'none';
+        } else {
+          button.style.display = 'none';
+        }
+      }
+    });
+  }
+
   handleOrientationChange(orientation) {
     // Adjust layout based on orientation
     if (orientation === 'landscape') {
@@ -667,9 +695,17 @@ export class TouchHUD {
         this.lookJoystick.show();
       }
 
-      // Show device buttons
-      this.deviceButtons.forEach(button => {
-        button.style.display = 'flex';
+      // Show device buttons (respecting enabled state)
+      // Note: Device visibility will be set by updateDeviceVisibility when config changes
+      this.deviceButtons.forEach((button, deviceId) => {
+        // Check if defenses object has device enabled status
+        if (this.defenses && this.defenses.devices[deviceId]) {
+          const enabled = this.defenses.devices[deviceId].enabled !== false;
+          button.style.display = enabled ? 'flex' : 'none';
+        } else {
+          // Default to showing all buttons if no config available yet
+          button.style.display = 'flex';
+        }
       });
     }
   }

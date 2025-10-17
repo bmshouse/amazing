@@ -77,6 +77,11 @@ export function bootstrap({ dev=false } = {}) {
       stun: document.querySelector('#charges-stun span'),
       tranq: document.querySelector('#charges-tranq span'),
     },
+    chargeRows: {
+      taser: document.querySelector('#charges-taser').parentElement,
+      stun: document.querySelector('#charges-stun').parentElement,
+      tranq: document.querySelector('#charges-tranq').parentElement,
+    },
   };
 
   // ═══════════════════════════════════════════════════════════════
@@ -158,7 +163,10 @@ export function bootstrap({ dev=false } = {}) {
           devices: {
             taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
             stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
-            tranqCharges: defenses.devices.tranq.maxCharges // Use actual starting charges from game state
+            tranqCharges: defenses.devices.tranq.maxCharges, // Use actual starting charges from game state
+            taserEnabled: defenses.devices.taser.enabled, // Include enabled state
+            stunEnabled: defenses.devices.stun.enabled, // Include enabled state
+            tranqEnabled: defenses.devices.tranq.enabled // Include enabled state
           }
         },
         completionTime: 120000, // 2 minutes test time
@@ -184,7 +192,10 @@ export function bootstrap({ dev=false } = {}) {
           devices: {
             taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
             stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
-            tranqCharges: defenses.devices.tranq.maxCharges // Use actual starting charges from game state
+            tranqCharges: defenses.devices.tranq.maxCharges, // Use actual starting charges from game state
+            taserEnabled: defenses.devices.taser.enabled, // Include enabled state
+            stunEnabled: defenses.devices.stun.enabled, // Include enabled state
+            tranqEnabled: defenses.devices.tranq.enabled // Include enabled state
           }
         },
         completionTime: completionTime,
@@ -957,9 +968,18 @@ export function bootstrap({ dev=false } = {}) {
           speedMultiplier: challengeResult.config.enemySpeed / GameConfig.ENEMIES.SPEED
         },
         devices: {
-          disruptor: { charges: challengeResult.config.devices.taserCharges },
-          immobilizer: { charges: challengeResult.config.devices.stunCharges },
-          pacifier: { charges: challengeResult.config.devices.tranqCharges }
+          disruptor: {
+            charges: challengeResult.config.devices.taserCharges,
+            enabled: challengeResult.config.devices.taserEnabled ?? true // Default to true for backwards compatibility
+          },
+          immobilizer: {
+            charges: challengeResult.config.devices.stunCharges,
+            enabled: challengeResult.config.devices.stunEnabled ?? true // Default to true for backwards compatibility
+          },
+          pacifier: {
+            charges: challengeResult.config.devices.tranqCharges,
+            enabled: challengeResult.config.devices.tranqEnabled ?? true // Default to true for backwards compatibility
+          }
         }
       };
 
@@ -982,6 +1002,13 @@ export function bootstrap({ dev=false } = {}) {
       applyDifficultyToDevices();
       projectileSystem.clear();
       gameState.resetForRestart();
+
+      // Force HUD update after a short delay to ensure DOM is ready
+      // This handles the case where challenge is loaded on initial page load
+      setTimeout(() => {
+        applyDifficultyToDevices();
+        updateDifficultyUI(); // Update config panel to reflect challenge settings
+      }, 100);
 
       // Update UI for challenge mode
       hud.victoryPanel.style.display = 'none';
@@ -1035,11 +1062,23 @@ export function bootstrap({ dev=false } = {}) {
       pacifier: 'tranq'
     };
 
+    let anyDeviceEnabled = false;
+
     Object.entries(currentDifficulty.devices).forEach(([deviceType, config]) => {
       const gameDeviceType = deviceMapping[deviceType];
       if (defenses.devices[gameDeviceType]) {
         defenses.devices[gameDeviceType].maxCharges = config.charges;
         defenses.devices[gameDeviceType].charges = config.charges;
+        defenses.devices[gameDeviceType].enabled = config.enabled;
+
+        if (config.enabled) {
+          anyDeviceEnabled = true;
+        }
+
+        // Update HUD charge row visibility
+        if (hud.chargeRows[gameDeviceType]) {
+          hud.chargeRows[gameDeviceType].style.display = config.enabled ? '' : 'none';
+        }
 
         // If device is disabled, ensure it can't be selected
         if (!config.enabled && defenses.currentDevice === gameDeviceType) {
@@ -1053,6 +1092,18 @@ export function bootstrap({ dev=false } = {}) {
           }
         }
       }
+    });
+
+    // Hide/show the entire charges container based on whether any device is enabled
+    const chargesContainer = document.querySelector('.hud-group.charges');
+    if (chargesContainer) {
+      chargesContainer.style.display = anyDeviceEnabled ? '' : 'none';
+    }
+
+    // Emit event for other systems (TouchHUD) to update
+    eventManager.emit('deviceconfig', {
+      devices: currentDifficulty.devices,
+      mapping: deviceMapping
     });
   }
 
@@ -1211,6 +1262,7 @@ export function bootstrap({ dev=false } = {}) {
               // Calculate time difference
               const timeDiff = completionTime - targetTime;
               const timeDiffAbs = Math.abs(timeDiff);
+              const isTie = timeDiff === 0; // Exact match
               const beatTarget = timeDiff < 0; // Negative means faster
               const isClose = timeDiffAbs < 5000; // Within 5 seconds
 
@@ -1221,7 +1273,12 @@ export function bootstrap({ dev=false } = {}) {
                 : i18n.t('ui.challenge.time_diff_seconds', { seconds: diffSeconds });
 
               // Update victory message based on performance
-              if (beatTarget) {
+              if (isTie) {
+                // Perfect tie!
+                hud.victoryTitle.textContent = i18n.t('game.messages.victory_tie_title');
+                hud.victoryCta.innerHTML = i18n.t('game.messages.victory_tie');
+                hud.victoryTimeItem.classList.add('stat-close');
+              } else if (beatTarget) {
                 // Beat the target!
                 hud.victoryTitle.textContent = i18n.t('game.messages.victory_beat_record_title');
                 hud.victoryCta.innerHTML = i18n.t('game.messages.victory_beat_record', {
@@ -1271,7 +1328,10 @@ export function bootstrap({ dev=false } = {}) {
               devices: {
                 taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
                 stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
-                tranqCharges: defenses.devices.tranq.maxCharges // Use actual starting charges from game state
+                tranqCharges: defenses.devices.tranq.maxCharges, // Use actual starting charges from game state
+                taserEnabled: defenses.devices.taser.enabled, // Include enabled state
+                stunEnabled: defenses.devices.stun.enabled, // Include enabled state
+                tranqEnabled: defenses.devices.tranq.enabled // Include enabled state
               }
             },
             completionTime: completionTime,
@@ -1368,6 +1428,13 @@ export function bootstrap({ dev=false } = {}) {
   applyDifficultyToEnemies();
   applyDifficultyToDevices();
   updateBars();
+
+  // Ensure HUD is updated after DOM is fully ready
+  // This handles the initial page load where difficulty settings may have disabled devices
+  setTimeout(() => {
+    applyDifficultyToDevices();
+    logger.debug('Initial HUD device visibility updated');
+  }, 0);
 
   // Return cleanup function for tests
   return function cleanup() {
