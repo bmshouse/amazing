@@ -105,7 +105,8 @@ global.window = {
 describe('TouchHUD', () => {
   let touchHUD;
   let mockDefenses;
-  let mockEventManager;
+  let mockInputManager;
+  let mockEventSystemManager;
   let mockGameConfig;
 
   beforeEach(() => {
@@ -114,8 +115,17 @@ describe('TouchHUD', () => {
       activate: vi.fn()
     };
 
-    mockEventManager = {
+    mockInputManager = {
       setMovementJoystickInput: vi.fn(),
+      isPointerLocked: vi.fn(() => false),
+      inputState: {
+        touch: {
+          lookInput: { dx: 0, dy: 0 }
+        }
+      }
+    };
+
+    mockEventSystemManager = {
       on: vi.fn()
     };
 
@@ -126,7 +136,7 @@ describe('TouchHUD', () => {
       }
     };
 
-    touchHUD = new TouchHUD(mockDefenses, mockEventManager, mockGameConfig);
+    touchHUD = new TouchHUD(mockDefenses, mockInputManager, mockGameConfig, mockEventSystemManager);
   });
 
   afterEach(() => {
@@ -137,7 +147,8 @@ describe('TouchHUD', () => {
 
   it('should initialize with correct properties', () => {
     expect(touchHUD.defenses).toBe(mockDefenses);
-    expect(touchHUD.eventManager).toBe(mockEventManager);
+    expect(touchHUD.inputManager).toBe(mockInputManager);
+    expect(touchHUD.eventSystemManager).toBe(mockEventSystemManager);
     expect(touchHUD.gameConfig).toBe(mockGameConfig);
   });
 
