@@ -428,7 +428,7 @@ export function bootstrap({ dev=false } = {}) {
   defenses.setEventManager(eventSystem);
 
   // Initialize TouchHUD for touch devices
-  const touchHUD = new TouchHUD(defenses, inputManager, GameConfig);
+  const touchHUD = new TouchHUD(defenses, inputManager, GameConfig, eventSystem);
   logger.info('TouchHUD initialized');
 
   // ═════════════════════════════════════════════════════════════════

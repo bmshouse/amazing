@@ -436,8 +436,19 @@
 
   <script type="module">
     import { bootstrap } from './main.js';
-    const params = new URLSearchParams(location.search);
-    bootstrap({ dev: params.get('dev') === '1' });
+
+    // Wait for DOM to be fully loaded before initializing
+    // This ensures touch APIs and platform detection are ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(location.search);
+        bootstrap({ dev: params.get('dev') === '1' });
+      });
+    } else {
+      // DOM already loaded (module scripts are deferred by default)
+      const params = new URLSearchParams(location.search);
+      bootstrap({ dev: params.get('dev') === '1' });
+    }
   </script>
 </body>
 </html>

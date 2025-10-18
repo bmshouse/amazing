@@ -5,9 +5,10 @@ import { TouchGestureDetector } from '../input/TouchGestureDetector.js';
 import { logger } from '../Logger.js';
 
 export class TouchHUD {
-  constructor(defenses, eventManager, gameConfig) {
+  constructor(defenses, inputManager, gameConfig, eventSystemManager = null) {
     this.defenses = defenses;
-    this.eventManager = eventManager;
+    this.inputManager = inputManager; // For touch input methods
+    this.eventSystemManager = eventSystemManager; // For game event subscriptions
     this.gameConfig = gameConfig;
     this.platformDetector = new PlatformDetector();
 
@@ -37,9 +38,29 @@ export class TouchHUD {
 
   shouldShowTouchControls() {
     const platform = this.platformDetector;
-    return platform.deviceType === 'mobile' ||
+
+    // Log detection details for debugging
+    logger.debug('TouchHUD detection:', {
+      deviceType: platform.deviceType,
+      hasTouch: platform.capabilities.hasTouch,
+      maxTouchPoints: platform.capabilities.maxTouchPoints,
+      userAgent: platform.capabilities.userAgent.substring(0, 50) + '...'
+    });
+
+    // Primary detection via PlatformDetector
+    const deviceCheck = platform.deviceType === 'mobile' ||
            platform.deviceType === 'tablet' ||
            (platform.deviceType === 'hybrid' && platform.capabilities.hasTouch);
+
+    // Fallback: Direct touch capability check for edge cases
+    // This catches devices that may not match UA patterns but have touch
+    const directTouchCheck = platform.capabilities.hasTouch &&
+                            platform.capabilities.maxTouchPoints > 0;
+
+    const shouldShow = deviceCheck || directTouchCheck;
+
+    logger.info(`Touch controls ${shouldShow ? 'ENABLED' : 'DISABLED'} for device type: ${platform.deviceType}`);
+    return shouldShow;
   }
 
   createTouchControls() {
@@ -162,16 +183,16 @@ export class TouchHUD {
       baseColor: 'rgba(43, 212, 197, 0.15)',
       knobColor: 'rgba(43, 212, 197, 0.9)',
       onMove: (x, y) => {
-        if (this.eventManager) {
-          this.eventManager.setMovementJoystickInput(x, y, true);
+        if (this.inputManager) {
+          this.inputManager.setMovementJoystickInput(x, y, true);
         }
       },
       onStart: () => {
         // Movement joystick activated
       },
       onEnd: () => {
-        if (this.eventManager) {
-          this.eventManager.setMovementJoystickInput(0, 0, false);
+        if (this.inputManager) {
+          this.inputManager.setMovementJoystickInput(0, 0, false);
         }
       }
     };
@@ -188,11 +209,11 @@ export class TouchHUD {
       sensitivity: 1.5, // Higher sensitivity for look controls
       onMove: (x, y) => {
         // Convert joystick movement to look input
-        if (this.eventManager && !this.eventManager.isPointerLocked()) {
+        if (this.inputManager && !this.inputManager.isPointerLocked()) {
           // Scale the joystick values to appropriate look sensitivity
           const lookSensitivity = this.lookState.sensitivity * 4000; // Scale factor for smooth look (doubled from 2000)
-          this.eventManager.inputState.touch.lookInput.dx = x * lookSensitivity;
-          this.eventManager.inputState.touch.lookInput.dy = y * lookSensitivity;
+          this.inputManager.inputState.touch.lookInput.dx = x * lookSensitivity;
+          this.inputManager.inputState.touch.lookInput.dy = y * lookSensitivity;
         }
       },
       onStart: () => {
@@ -200,9 +221,9 @@ export class TouchHUD {
       },
       onEnd: () => {
         // Reset look input when joystick is released
-        if (this.eventManager) {
-          this.eventManager.inputState.touch.lookInput.dx = 0;
-          this.eventManager.inputState.touch.lookInput.dy = 0;
+        if (this.inputManager) {
+          this.inputManager.inputState.touch.lookInput.dx = 0;
+          this.inputManager.inputState.touch.lookInput.dy = 0;
         }
       }
     };
@@ -337,22 +358,22 @@ export class TouchHUD {
 
   setupEventHandlers() {
     // Listen for game state changes
-    if (this.eventManager) {
-      this.eventManager.on('gamestart', () => {
+    if (this.eventSystemManager) {
+      this.eventSystemManager.on('gamestart', () => {
         this.show();
       });
 
-      this.eventManager.on('gameend', () => {
+      this.eventSystemManager.on('gameend', () => {
         this.hide();
       });
 
       // Update button states based on current device
-      this.eventManager.on('devicechange', (data) => {
+      this.eventSystemManager.on('devicechange', (data) => {
         this.updateDeviceButtonStates(data.device);
       });
 
       // Listen for device configuration changes
-      this.eventManager.on('deviceconfig', (data) => {
+      this.eventSystemManager.on('deviceconfig', (data) => {
         this.updateDeviceVisibility(data.devices, data.mapping);
       });
     }
@@ -367,11 +388,11 @@ export class TouchHUD {
   }
 
   initializeGestureDetector() {
-    if (!this.eventManager || !this.eventManager.touchManager) {
+    if (!this.inputManager || !this.inputManager.touchManager) {
       return;
     }
 
-    this.gestureDetector = new TouchGestureDetector(this.eventManager.touchManager);
+    this.gestureDetector = new TouchGestureDetector(this.inputManager.touchManager);
 
     // Set up gesture handlers
     this.setupGestureHandlers();

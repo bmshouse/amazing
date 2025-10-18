@@ -1,9 +1,21 @@
 // modules/platforms/PlatformDetector.js - Device and capability detection
+import { logger } from '../Logger.js';
+
 export class PlatformDetector {
   constructor() {
     this.capabilities = this.detectCapabilities();
     this.deviceType = this.detectDeviceType();
     this.layoutMode = this.getOptimalLayout();
+
+    // Log detection results for debugging
+    logger.debug('PlatformDetector initialized:', {
+      deviceType: this.deviceType,
+      layoutMode: this.layoutMode,
+      hasTouch: this.capabilities.hasTouch,
+      maxTouchPoints: this.capabilities.maxTouchPoints,
+      screenSize: `${this.capabilities.screenWidth}x${this.capabilities.screenHeight}`,
+      userAgent: this.capabilities.userAgent.substring(0, 60) + '...'
+    });
   }
 
   detectCapabilities() {
