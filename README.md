@@ -6,8 +6,8 @@ A browser-based 3D maze game built with vanilla JavaScript, raycasting, and opti
 
 ![Browser Compatibility](https://img.shields.io/badge/browser-Chrome%20%7C%20Firefox%20%7C%20Safari%20%7C%20Edge-brightgreen)
 ![No Build Required](https://img.shields.io/badge/build-none%20required-green)
-![Test Status](https://img.shields.io/badge/tests-90%20passing-brightgreen)
-![Code Coverage](https://img.shields.io/badge/coverage-50%25-yellow)
+![Test Status](https://img.shields.io/badge/tests-224%20passing-brightgreen)
+![Code Coverage](https://img.shields.io/badge/coverage-56.8%25-yellow)
 
 ## Quick Start
 
@@ -28,8 +28,8 @@ No installation, build step, or server required!
 - **LOD System** - Level-of-detail optimization with 3 LOD levels for 3D models
 - **Procedural Maze Generation** - Infinite variety using recursive backtracking algorithm
 - **Optimized Performance** - Internal low-res buffer upscaled for 60 FPS on mid-range devices
-- **Modular Architecture** - 30+ clean ES6 modules with event-driven design
-- **Comprehensive Testing** - 90 unit and integration tests with 50% code coverage
+- **Modular Architecture** - 32 clean ES6 modules with event-driven design
+- **Comprehensive Testing** - 224 unit and integration tests with 56.8% code coverage
 
 ### Gameplay
 - **Three Device Types** - Disruptor (short range), Immobilizer (projectile), Pacifier (precise)
@@ -83,25 +83,52 @@ npm run test
 Unit tests cover maze generation, player mechanics, device systems, and architectural integrity using Vitest with jsdom.
 
 ### Architecture
-The game uses a modular event-driven architecture with:
+The game uses a modular event-driven architecture organized into functional directories:
+
+**Core Systems** (`modules/`)
 - **Centralized Configuration** (`GameConfig.js`) for all game constants
 - **State Management** (`GameState.js`) for game lifecycle
-- **Event System** (`EventManager.js`) for decoupled module communication
-- **Hybrid Rendering Pipeline**:
-  - `RaycastRenderer.js` - 2D raycasting for walls with textured surfaces
-  - `SpriteRenderer.js` - Billboard sprite rendering for 2D entities and particles
-  - `Model3DRenderer.js` - WebGL/Three.js renderer for 3D enemy models with LOD system
+- **Event System** (`EventSystemManager.js`) for decoupled module communication
+- **Game Systems** - `maze.js`, `player.js`, `enemies.js`, `defenses.js`
+- **Projectile System** (`ProjectileSystem.js`) for immobilizer projectiles
+- **UI Management** (`HUDManager.js`, `ConfigUIManager.js`) for display and configuration
 - **Difficulty System** (`DifficultyConfig.js`) for dynamic difficulty scaling
-- **Share System** (`ShareManager.js`, `ChallengeManager.js`, `MazeEncoder.js`) for challenge sharing
-- **Touch System** (`TouchManager.js`, `VirtualJoystick.js`, `TouchHUD.js`, `TouchGestureDetector.js`) for mobile controls
-- **Platform Detection** (`PlatformDetector.js`) for device-specific optimizations
 - **Internationalization** (`I18nManager.js`) for multi-language support
-- **Settings Persistence** (localStorage) for user preferences across sessions
+- **Input Handling** (`InputManager.js`) for desktop controls
+
+**Rendering Pipeline** (`modules/rendering/`)
+- `RaycastRenderer.js` - 2D raycasting base layer for walls with textured surfaces
+- `SpriteRenderer.js` - Billboard sprite rendering for 2D entities and particles
+- `Model3DRenderer.js` - WebGL/Three.js overlay for 3D enemy models with LOD system
+
+**Device System** (`modules/devices/`)
+- `DeviceFactory.js` - Factory pattern for device instantiation
+- `IDevice.js` - Base interface for all defense devices
+- `StunDevice.js`, `TaserDevice.js`, `TranqDevice.js` - Three device implementations
+
+**Input Systems** (`modules/input/`)
+- `TouchManager.js` - Touch capability detection and event handling
+- `VirtualJoystick.js` - Configurable joystick components
+- `TouchGestureDetector.js` - Advanced gesture recognition
+
+**Platform Support** (`modules/platforms/`)
+- `PlatformDetector.js` - Device-specific optimizations and capability detection
+
+**UI Components** (`modules/ui/`)
+- `TouchHUD.js` - Complete dual joystick interface for mobile
+
+**Entity System** (`modules/entities/`)
+- `IEntity.js` - Base entity interface
+- `PlayerEntity.js` - Player entity implementation
+
+**Challenge Sharing** (`modules/`)
+- `ShareManager.js`, `ChallengeManager.js`, `MazeEncoder.js` - URL-based challenge system
 
 ### Performance
 - Ray marching optimized for quality/performance balance
 - Particle system capped at 200 particles
-- LOD system for 3D models with distance-based detail switching
+- LOD system for 3D models with distance-based detail switching (5/10/20 unit thresholds)
+- Automatic 3D rendering disable when FPS drops below 30 FPS
 - Automatic fallback to 2D sprites for distant or occluded enemies
 - WebGL capability detection with graceful degradation
 - Procedural maze generation typically completes under 200ms
