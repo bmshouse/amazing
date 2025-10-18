@@ -228,7 +228,7 @@
 
         <!-- Integration Test -->
         <div class="test-section">
-            <h3>🔗 EventManager Integration</h3>
+            <h3>🔗 InputManager Integration</h3>
             <div class="controls-row">
                 <button class="control-btn" onclick="testEventManagerIntegration()">Test Integration</button>
                 <button class="control-btn" onclick="clearEventLog()">Clear Log</button>
@@ -252,10 +252,11 @@
         import { TouchManager } from './modules/input/TouchManager.js';
         import { VirtualJoystick } from './modules/input/VirtualJoystick.js';
         import { TouchHUD } from './modules/ui/TouchHUD.js';
-        import { EventManager } from './modules/EventManager.js';
+        import { InputManager } from './modules/InputManager.js';
+        import { EventSystemManager } from './modules/EventSystemManager.js';
 
         // Global test state
-        let platformDetector, touchManager, eventManager, touchHUD;
+        let platformDetector, touchManager, inputManager, eventSystem, touchHUD;
         let movementJoystick, lookJoystick;
         let eventLog = [];
 
@@ -321,23 +322,24 @@
             }
         }
 
-        function initializeEventManager() {
+        function initializeInputManager() {
             try {
-                eventManager = new EventManager();
+                inputManager = new InputManager();
+                eventSystem = new EventSystemManager();
 
                 // Set up touch event logging
-                eventManager.on('touchstart', (data) => {
-                    log(`EventManager: Touch start - ${data.touchCount} touches`, 'status');
+                eventSystem.on('touchstart', (data) => {
+                    log(`InputManager: Touch start - ${data.touchCount} touches`, 'status');
                 });
 
-                eventManager.on('touchend', (data) => {
-                    log(`EventManager: Touch end - ${data.touchCount} touches remaining`, 'status');
+                eventSystem.on('touchend', (data) => {
+                    log(`InputManager: Touch end - ${data.touchCount} touches remaining`, 'status');
                 });
 
-                log('EventManager initialized successfully', 'status');
+                log('InputManager and EventSystem initialized successfully', 'status');
                 return true;
             } catch (error) {
-                log(`EventManager initialization failed: ${error.message}`, 'error');
+                log(`InputManager initialization failed: ${error.message}`, 'error');
                 return false;
             }
         }
@@ -371,9 +373,9 @@
                             <div class="info">Direction: ${getDirection(x, y)}</div>
                         `;
 
-                        // Update EventManager if available
-                        if (eventManager) {
-                            eventManager.setMovementJoystickInput(x, y, true);
+                        // Update InputManager if available
+                        if (inputManager) {
+                            inputManager.setMovementJoystickInput(x, y, true);
                         }
                     },
                     onStart: () => {
@@ -386,8 +388,8 @@
                         document.getElementById('movementJoystickStatus').innerHTML =
                             '<div class="info">Movement joystick inactive</div>';
 
-                        if (eventManager) {
-                            eventManager.setMovementJoystickInput(0, 0, false);
+                        if (inputManager) {
+                            inputManager.setMovementJoystickInput(0, 0, false);
                         }
                     }
                 });
@@ -404,11 +406,13 @@
                             <div class="info">Look: ${getLookDirection(x, y)}</div>
                         `;
 
-                        // Update EventManager touch look input if available
-                        if (eventManager) {
+                        // Look joystick delta calculation (for demonstration purposes)
+                        // In actual game, this would be handled by TouchHUD
+                        if (inputManager) {
                             const lookSensitivity = parseFloat(document.getElementById('lookSensitivity').value) || 0.003;
-                            eventManager.inputState.touch.lookInput.dx = x * lookSensitivity * 2000;
-                            eventManager.inputState.touch.lookInput.dy = y * lookSensitivity * 2000;
+                            // Note: Direct access to inputState is not part of the public API
+                            // This is for testing/demo purposes only
+                            log(`Look delta: dx=${(x * lookSensitivity * 2000).toFixed(2)}, dy=${(y * lookSensitivity * 2000).toFixed(2)}`, 'info');
                         }
                     },
                     onStart: () => {
@@ -497,8 +501,8 @@
 
         window.testDeviceButtons = function() {
             try {
-                if (!eventManager && !initializeEventManager()) {
-                    throw new Error('EventManager required for device buttons');
+                if (!inputManager && !initializeInputManager()) {
+                    throw new Error('InputManager required for device buttons');
                 }
 
                 const testArea = document.getElementById('joystickTestArea');
@@ -507,13 +511,13 @@
                 };
 
                 // Initialize TouchHUD for device buttons
-                touchHUD = new TouchHUD(config);
-                touchHUD.setEventManager(eventManager);
+                // Note: TouchHUD expects defenses and inputManager parameters
+                log('Device buttons test - TouchHUD initialization requires game defenses object', 'warning');
 
                 document.getElementById('deviceButtonStatus').innerHTML =
-                    '<div class="status">✅ Device buttons initialized</div>';
+                    '<div class="warning">⚠️ Device buttons require full game context (defenses object)</div>';
 
-                log('Device buttons test initialized', 'status');
+                log('Device buttons test - requires integration with game defenses', 'warning');
 
             } catch (error) {
                 document.getElementById('deviceButtonStatus').innerHTML =
@@ -530,30 +534,29 @@
 
         window.testEventManagerIntegration = function() {
             try {
-                if (!eventManager && !initializeEventManager()) {
-                    throw new Error('EventManager initialization failed');
+                if (!inputManager && !initializeInputManager()) {
+                    throw new Error('InputManager initialization failed');
                 }
 
                 // Test movement input integration
-                eventManager.setMovementJoystickInput(0.5, -0.3, true);
-                const movementInput = eventManager.getMovementInput();
+                inputManager.setMovementJoystickInput(0.5, -0.3, true);
+                const movementInput = inputManager.getMovementInput();
 
                 // Test touch movement
-                eventManager.inputState.touch.lookInput = { dx: 10, dy: -5 };
-                const touchMovement = eventManager.getTouchMovement();
+                const touchMovement = inputManager.getTouchMovement();
 
                 document.getElementById('eventManagerStatus').innerHTML = `
-                    <div class="status">✅ EventManager integration working</div>
+                    <div class="status">✅ InputManager integration working</div>
                     <div class="info">Movement Input: right=${movementInput.right}, forward=${movementInput.forward}</div>
                     <div class="info">Touch Movement: dx=${touchMovement.dx}, dy=${touchMovement.dy}</div>
                 `;
 
-                log('EventManager integration test passed', 'status');
+                log('InputManager integration test passed', 'status');
 
             } catch (error) {
                 document.getElementById('eventManagerStatus').innerHTML =
                     `<div class="error">❌ Integration test failed: ${error.message}</div>`;
-                log(`EventManager integration test failed: ${error.message}`, 'error');
+                log(`InputManager integration test failed: ${error.message}`, 'error');
             }
         };
 
@@ -592,7 +595,7 @@
         log('Initializing dual joystick test system...', 'status');
         initializePlatformDetection();
         initializeTouchCapabilities();
-        initializeEventManager();
+        initializeInputManager();
 
         log('✅ Dual joystick test system ready!', 'status');
         log('Use the controls above to test the dual joystick implementation', 'info');

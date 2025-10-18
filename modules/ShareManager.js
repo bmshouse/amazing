@@ -1,5 +1,6 @@
 // modules/ShareManager.js - Manages sharing UI and interactions
 import { ChallengeManager } from './ChallengeManager.js';
+import { DEVICE_MAPPING } from './GameConfig.js';
 import { logger } from './Logger.js';
 
 // ShareManager module loaded (using logger in class methods)
@@ -407,34 +408,24 @@ export class ShareManager {
       this.challengeTargetTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    // Populate device charges and show/hide based on enabled state
+    // Populate device charges and show/hide based on enabled state using centralized mapping
     if (devices) {
-      // Disruptor (Taser)
-      const taserEnabled = devices.taserEnabled ?? true; // Default to true for backwards compatibility
-      if (this.challengeDisruptorCharges) {
-        this.challengeDisruptorCharges.textContent = devices.taserCharges || 0;
-      }
-      if (this.challengeDisruptorRow) {
-        this.challengeDisruptorRow.style.display = taserEnabled ? '' : 'none';
-      }
+      // Map difficulty device names to DOM elements and device data
+      Object.entries(DEVICE_MAPPING.DIFFICULTY_TO_GAME).forEach(([difficultyName, gameName]) => {
+        const chargesProperty = `${gameName}Charges`;
+        const enabledProperty = `${gameName}Enabled`;
+        const chargesElement = this[`challenge${difficultyName.charAt(0).toUpperCase() + difficultyName.slice(1)}Charges`];
+        const rowElement = this[`challenge${difficultyName.charAt(0).toUpperCase() + difficultyName.slice(1)}Row`];
 
-      // Immobilizer (Stun)
-      const stunEnabled = devices.stunEnabled ?? true; // Default to true for backwards compatibility
-      if (this.challengeImmobilizerCharges) {
-        this.challengeImmobilizerCharges.textContent = devices.stunCharges || 0;
-      }
-      if (this.challengeImmobilizerRow) {
-        this.challengeImmobilizerRow.style.display = stunEnabled ? '' : 'none';
-      }
+        const deviceEnabled = devices[enabledProperty] ?? true; // Default to true for backwards compatibility
 
-      // Pacifier (Tranq)
-      const tranqEnabled = devices.tranqEnabled ?? true; // Default to true for backwards compatibility
-      if (this.challengePacifierCharges) {
-        this.challengePacifierCharges.textContent = devices.tranqCharges || 0;
-      }
-      if (this.challengePacifierRow) {
-        this.challengePacifierRow.style.display = tranqEnabled ? '' : 'none';
-      }
+        if (chargesElement) {
+          chargesElement.textContent = devices[chargesProperty] || 0;
+        }
+        if (rowElement) {
+          rowElement.style.display = deviceEnabled ? '' : 'none';
+        }
+      });
     }
 
     // Show the challenge button

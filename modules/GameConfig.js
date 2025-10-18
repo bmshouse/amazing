@@ -200,6 +200,25 @@ export const GameConfig = {
   }
 };
 
+/**
+ * Device name mapping between difficulty configuration and game code
+ * This centralized mapping eliminates duplication across the codebase
+ */
+export const DEVICE_MAPPING = {
+  // Map from difficulty config device names to internal game device names
+  DIFFICULTY_TO_GAME: {
+    disruptor: 'taser',
+    immobilizer: 'stun',
+    pacifier: 'tranq'
+  },
+  // Map from internal game device names to difficulty config names
+  GAME_TO_DIFFICULTY: {
+    taser: 'disruptor',
+    stun: 'immobilizer',
+    tranq: 'pacifier'
+  }
+};
+
 // Utility functions for accessing config values
 export const getDeviceConfig = (deviceType) => {
   return GameConfig.DEVICES[deviceType.toUpperCase()];

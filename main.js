@@ -8,14 +8,60 @@ import { RaycastRenderer } from './modules/RaycastRenderer.js';
 import { SpriteRenderer } from './modules/SpriteRenderer.js';
 import { Model3DRenderer } from './modules/rendering/Model3DRenderer.js';
 import { GameState } from './modules/GameState.js';
-import { EventManager } from './modules/EventManager.js';
+import { EventSystemManager } from './modules/EventSystemManager.js';
+import { InputManager } from './modules/InputManager.js';
 import { ProjectileSystem } from './modules/ProjectileSystem.js';
-import { GameConfig } from './modules/GameConfig.js';
+import { GameConfig, DEVICE_MAPPING } from './modules/GameConfig.js';
 import { DifficultyConfig } from './modules/DifficultyConfig.js';
 import { I18nManager } from './modules/I18nManager.js';
 import { ShareManager } from './modules/ShareManager.js';
 import { TouchHUD } from './modules/ui/TouchHUD.js';
+import { HUDManager } from './modules/HUDManager.js';
+import { ConfigUIManager } from './modules/ConfigUIManager.js';
 import { logger } from './modules/Logger.js';
+
+/**
+ * Build game data object for sharing/challenges
+ * Centralizes the construction of game data to eliminate duplication
+ * @param {Object} params - Parameters for building game data
+ * @param {Maze} params.maze - Current maze instance
+ * @param {EnemyController} params.enemies - Enemy controller instance
+ * @param {Defenses} params.defenses - Defenses instance
+ * @param {Object} params.currentDifficulty - Current difficulty configuration
+ * @param {number} params.completionTime - Game completion time in milliseconds
+ * @param {string} params.playerName - Player name
+ * @param {string} [params.fallbackDifficulty] - Fallback difficulty name for i18n
+ * @returns {Object} Game data object ready for sharing
+ */
+export function buildGameData({
+  maze,
+  enemies,
+  defenses,
+  currentDifficulty,
+  completionTime,
+  playerName,
+  fallbackDifficulty = 'Normal'
+}) {
+  return {
+    maze,
+    enemies,
+    config: {
+      difficultyPreset: currentDifficulty.preset || currentDifficulty.name || fallbackDifficulty,
+      enemyCount: enemies.entities.length, // Use actual enemy count from game state
+      enemySpeed: currentDifficulty.enemies.speed,
+      devices: {
+        taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
+        stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
+        tranqCharges: defenses.devices.tranq.maxCharges, // Use actual starting charges from game state
+        taserEnabled: defenses.devices.taser.enabled, // Include enabled state
+        stunEnabled: defenses.devices.stun.enabled, // Include enabled state
+        tranqEnabled: defenses.devices.tranq.enabled // Include enabled state
+      }
+    },
+    completionTime,
+    playerName
+  };
+}
 
 export function bootstrap({ dev=false } = {}) {
   // ═══════════════════════════════════════════════════════════════
@@ -88,8 +134,15 @@ export function bootstrap({ dev=false } = {}) {
   // CORE SYSTEMS INITIALIZATION
   // ═══════════════════════════════════════════════════════════════
   const gameState = new GameState();
-  const eventManager = new EventManager();
+  const eventSystem = new EventSystemManager();
+  const inputManager = new InputManager();
   gameState.initialize({ dev });
+
+  // ═══════════════════════════════════════════════════════════════
+  // HUD MANAGER INITIALIZATION
+  // ═══════════════════════════════════════════════════════════════
+  const hudManager = new HUDManager(hud, i18n);
+  logger.info('HUDManager created successfully');
 
   // ═══════════════════════════════════════════════════════════════
   // SHARING SYSTEM INITIALIZATION
@@ -97,6 +150,12 @@ export function bootstrap({ dev=false } = {}) {
   logger.debug('Creating ShareManager');
   const shareManager = new ShareManager(i18n);
   logger.info('ShareManager created successfully');
+
+  // ═══════════════════════════════════════════════════════════════
+  // CONFIG UI MANAGER INITIALIZATION
+  // ═══════════════════════════════════════════════════════════════
+  const configManager = new ConfigUIManager(hud, difficultyConfig, i18n, shareManager);
+  logger.info('ConfigUIManager created successfully');
 
   // Add basic test functions immediately (outside of i18n promise)
   window.testShare = () => {
@@ -122,7 +181,12 @@ export function bootstrap({ dev=false } = {}) {
     logger.info('I18n initialized with language: ' + i18n.getCurrentLanguage());
     hud.languageSelect.value = i18n.getCurrentLanguage();
     i18n.updateDOM(); // Update all data-i18n elements
-    updateDifficultyUI(); // Initial update with translations
+
+    // Initialize ConfigUIManager with event listeners and initial UI update
+    configManager.onApply = () => {
+      restart();
+    };
+    configManager.initialize();
 
     // Set initial config button tooltip
     hud.configButton.title = i18n.t('ui.common.settings');
@@ -134,7 +198,7 @@ export function bootstrap({ dev=false } = {}) {
 
     // Set up callback to close config panel from ShareManager
     shareManager.onCloseConfigPanel = () => {
-      closeConfigPanel();
+      configManager.closePanel();
     };
 
     // Set up challenge loaded callback BEFORE ShareManager initializes
@@ -153,25 +217,14 @@ export function bootstrap({ dev=false } = {}) {
     // Debug function - expose to global scope for testing
     window.testShare = () => {
       logger.info('Manual share test triggered');
-      const testGameData = {
-        maze: maze,
-        enemies: enemies,
-        config: {
-          difficultyPreset: currentDifficulty.name,
-          enemyCount: enemies.entities.length, // Use actual enemy count from game state
-          enemySpeed: currentDifficulty.enemies.speed,
-          devices: {
-            taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
-            stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
-            tranqCharges: defenses.devices.tranq.maxCharges, // Use actual starting charges from game state
-            taserEnabled: defenses.devices.taser.enabled, // Include enabled state
-            stunEnabled: defenses.devices.stun.enabled, // Include enabled state
-            tranqEnabled: defenses.devices.tranq.enabled // Include enabled state
-          }
-        },
+      const testGameData = buildGameData({
+        maze,
+        enemies,
+        defenses,
+        currentDifficulty,
         completionTime: 120000, // 2 minutes test time
         playerName: 'TestPlayer'
-      };
+      });
       shareManager.prepareShare(testGameData);
     };
 
@@ -182,25 +235,14 @@ export function bootstrap({ dev=false } = {}) {
       const completionTime = gameState.state.elapsed;
       gameState.winGame();
 
-      const gameData = {
-        maze: maze,
-        enemies: enemies,
-        config: {
-          difficultyPreset: currentDifficulty.name,
-          enemyCount: enemies.entities.length, // Use actual enemy count from game state
-          enemySpeed: currentDifficulty.enemies.speed,
-          devices: {
-            taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
-            stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
-            tranqCharges: defenses.devices.tranq.maxCharges, // Use actual starting charges from game state
-            taserEnabled: defenses.devices.taser.enabled, // Include enabled state
-            stunEnabled: defenses.devices.stun.enabled, // Include enabled state
-            tranqEnabled: defenses.devices.tranq.enabled // Include enabled state
-          }
-        },
-        completionTime: completionTime,
+      const gameData = buildGameData({
+        maze,
+        enemies,
+        defenses,
+        currentDifficulty,
+        completionTime,
         playerName: 'TestPlayer'
-      };
+      });
       shareManager.prepareShare(gameData);
     };
   }).catch(error => {
@@ -281,7 +323,7 @@ export function bootstrap({ dev=false } = {}) {
       uiCanvas.style.height = rect.height + 'px';
     }
   }
-  eventManager.on('resize', resize);
+  eventSystem.on('resize', resize);
   resize();
 
   // ═════════════════════════════════════════════════════════════════
@@ -379,12 +421,14 @@ export function bootstrap({ dev=false } = {}) {
   const defenses = new Defenses(player, enemies, audio, hud);
   defenses.setProjectileSystem(projectileSystem);
 
-  // Inject EventManager into player and defenses
-  player.setEventManager(eventManager);
-  defenses.setEventManager(eventManager);
+  // Inject InputManager into player (for movement and mouse input)
+  player.setEventManager(inputManager);
+
+  // Inject EventSystemManager into defenses (for mousedown/keydown events)
+  defenses.setEventManager(eventSystem);
 
   // Initialize TouchHUD for touch devices
-  const touchHUD = new TouchHUD(defenses, eventManager, GameConfig);
+  const touchHUD = new TouchHUD(defenses, inputManager, GameConfig);
   logger.info('TouchHUD initialized');
 
   // ═════════════════════════════════════════════════════════════════
@@ -443,44 +487,8 @@ export function bootstrap({ dev=false } = {}) {
 
   // ═════════════════════════════════════════════════════════════════
   // CONFIGURATION PANEL SETUP
-  // ═════════════════════════════════════════════════════════════════
-  let configPanelOpen = false;
-
-  function toggleConfigPanel() {
-    configPanelOpen = !configPanelOpen;
-    if (configPanelOpen) {
-      // Close challenge panel if open
-      if (shareManager) {
-        shareManager.hideChallengePanel();
-      }
-      hud.configPanel.style.display = 'block';
-      setTimeout(() => hud.configPanel.classList.add('show'), 10);
-    } else {
-      hud.configPanel.classList.remove('show');
-      setTimeout(() => hud.configPanel.style.display = 'none', 300);
-    }
-  }
-
-  function closeConfigPanel() {
-    if (configPanelOpen) {
-      configPanelOpen = false;
-      hud.configPanel.classList.remove('show');
-      setTimeout(() => hud.configPanel.style.display = 'none', 300);
-    }
-  }
-
-  // Config button click handler
-  hud.configButton.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleConfigPanel();
-  });
-
-  // Click outside to close
-  document.addEventListener('click', (e) => {
-    if (configPanelOpen && !hud.configPanel.contains(e.target) && e.target !== hud.configButton) {
-      closeConfigPanel();
-    }
-  });
+  // ═══════════════════════════════════════════════════════════════
+  // Config panel management is now handled by ConfigUIManager
 
   // ═════════════════════════════════════════════════════════════════
   // VICTORY PANEL BUTTON HANDLERS
@@ -575,146 +583,7 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   // DIFFICULTY CONFIGURATION UI SETUP
   // ═════════════════════════════════════════════════════════════════
-
-  function updateDifficultyUI() {
-    // Update difficulty rating and estimated time
-    hud.difficultyRating.textContent = i18n.t('game.difficulty.rating', { rating: difficultyConfig.getDifficultyRating() });
-    hud.estimatedTime.textContent = i18n.t('game.difficulty.estimated_time', { minutes: difficultyConfig.getEstimatedTime() });
-
-    // Update maze settings
-    hud.mazeSize.value = currentDifficulty.maze.size;
-    hud.mazeSizeValue.textContent = i18n.t('config.maze.size_value', { size: currentDifficulty.maze.size });
-    hud.rechargePads.value = currentDifficulty.maze.rechargePads;
-    hud.rechargePadsValue.textContent = currentDifficulty.maze.rechargePads;
-
-    // Update enemy settings
-    hud.enemyCount.value = currentDifficulty.enemies.count;
-    hud.enemyCountValue.textContent = currentDifficulty.enemies.count;
-    hud.enemySpeed.value = currentDifficulty.enemies.speedMultiplier;
-    const speedKey = `config.enemies.speed_values.${currentDifficulty.enemies.speedMultiplier}`;
-    hud.enemySpeedValue.textContent = i18n.getTranslation(speedKey) !== `[${speedKey}]` ?
-      i18n.t(speedKey) : i18n.t('game.difficulty.fallback.custom');
-    document.getElementById('enableSmartPush').checked = currentDifficulty.enemies.smartPush || false;
-
-    // Update device settings
-    document.getElementById('enableDisruptor').checked = currentDifficulty.devices.disruptor.enabled;
-    document.getElementById('disruptorCharges').value = currentDifficulty.devices.disruptor.charges;
-    document.getElementById('disruptorChargesValue').textContent = currentDifficulty.devices.disruptor.charges;
-
-    document.getElementById('enableImmobilizer').checked = currentDifficulty.devices.immobilizer.enabled;
-    document.getElementById('immobilizerCharges').value = currentDifficulty.devices.immobilizer.charges;
-    document.getElementById('immobilizerChargesValue').textContent = currentDifficulty.devices.immobilizer.charges;
-
-    document.getElementById('enablePacifier').checked = currentDifficulty.devices.pacifier.enabled;
-    document.getElementById('pacifierCharges').value = currentDifficulty.devices.pacifier.charges;
-    document.getElementById('pacifierChargesValue').textContent = currentDifficulty.devices.pacifier.charges;
-
-    // Update preset buttons
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.preset === currentDifficulty.preset);
-    });
-  }
-
-  // Tab switching
-  document.querySelectorAll('.config-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      const targetTab = tab.dataset.tab;
-
-      // Update tab buttons
-      document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-
-      // Update tab content
-      document.querySelectorAll('.config-tab-content').forEach(content => {
-        content.classList.remove('active');
-      });
-      document.getElementById(targetTab + 'Tab').classList.add('active');
-    });
-  });
-
-  // Preset selection
-  document.querySelectorAll('.preset-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const preset = btn.dataset.preset;
-      difficultyConfig.applyPreset(preset);
-      currentDifficulty = difficultyConfig.getConfig();
-      updateDifficultyUI();
-    });
-  });
-
-  // Maze size slider
-  hud.mazeSize.addEventListener('input', (e) => {
-    let size = parseInt(e.target.value);
-    if (size % 2 === 0) size += 1; // Ensure odd number
-    difficultyConfig.updateConfig('maze', 'size', size);
-    currentDifficulty = difficultyConfig.getConfig();
-    updateDifficultyUI();
-  });
-
-  // Recharge pads slider
-  hud.rechargePads.addEventListener('input', (e) => {
-    const count = parseInt(e.target.value);
-    difficultyConfig.updateConfig('maze', 'rechargePads', count);
-    currentDifficulty = difficultyConfig.getConfig();
-    updateDifficultyUI();
-  });
-
-  // Enemy count slider
-  hud.enemyCount.addEventListener('input', (e) => {
-    const count = parseInt(e.target.value);
-    difficultyConfig.updateConfig('enemies', 'count', count);
-    currentDifficulty = difficultyConfig.getConfig();
-    updateDifficultyUI();
-  });
-
-  // Enemy speed slider
-  hud.enemySpeed.addEventListener('input', (e) => {
-    const speed = parseFloat(e.target.value);
-    difficultyConfig.updateConfig('enemies', 'speedMultiplier', speed);
-    currentDifficulty = difficultyConfig.getConfig();
-    updateDifficultyUI();
-  });
-
-  // Smart push toggle
-  document.getElementById('enableSmartPush').addEventListener('change', (e) => {
-    difficultyConfig.updateConfig('enemies', 'smartPush', e.target.checked);
-    currentDifficulty = difficultyConfig.getConfig();
-    updateDifficultyUI();
-  });
-
-  // Device toggles and charge sliders
-  ['disruptor', 'immobilizer', 'pacifier'].forEach(deviceType => {
-    const enableCheckbox = document.getElementById(`enable${deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}`);
-    const chargeSlider = document.getElementById(`${deviceType}Charges`);
-
-    enableCheckbox.addEventListener('change', (e) => {
-      difficultyConfig.updateDevice(deviceType, 'enabled', e.target.checked);
-      currentDifficulty = difficultyConfig.getConfig();
-      updateDifficultyUI();
-    });
-
-    chargeSlider.addEventListener('input', (e) => {
-      const charges = parseInt(e.target.value);
-      difficultyConfig.updateDevice(deviceType, 'charges', charges);
-      currentDifficulty = difficultyConfig.getConfig();
-      updateDifficultyUI();
-    });
-  });
-
-  // Reset and Apply buttons
-  document.getElementById('resetDifficulty').addEventListener('click', () => {
-    difficultyConfig.reset();
-    currentDifficulty = difficultyConfig.getConfig();
-    updateDifficultyUI();
-  });
-
-  document.getElementById('applyDifficulty').addEventListener('click', () => {
-    // Apply changes and restart game
-    restart();
-    closeConfigPanel();
-  });
-
-  // Difficulty UI will be initialized in i18n.init() promise
+  // Difficulty configuration UI is now managed by ConfigUIManager
 
   // ═════════════════════════════════════════════════════════════════
   // EVENT HANDLERS SETUP
@@ -826,7 +695,7 @@ export function bootstrap({ dev=false } = {}) {
     // Small delay to ensure DOM is ready, then force update all translations
     setTimeout(() => {
       i18n.updateDOM();
-      updateDifficultyUI(); // Refresh dynamic text
+      configManager.updateUI(); // Refresh dynamic text
 
       // Update tutorial header if currently visible
       const tutorialHeader = hud.tutorial.querySelector('h2');
@@ -843,7 +712,7 @@ export function bootstrap({ dev=false } = {}) {
 
   // Language selector will be initialized in i18n.init() promise
 
-  eventManager.on('keydown', (data)=>{
+  eventSystem.on('keydown', (data)=>{
     if (data.code === 'Escape') closeConfigPanel();
     if (data.code === 'Enter') {
       if (gameState.isWon()) {
@@ -861,18 +730,17 @@ export function bootstrap({ dev=false } = {}) {
       }
     }
     if (['Digit1','Digit2','Digit3'].includes(data.code)) {
-      const deviceMapping = { Digit1:'taser', Digit2:'stun', Digit3:'tranq' };
-      const difficultyMapping = { taser: 'disruptor', stun: 'immobilizer', tranq: 'pacifier' };
-      const requestedDevice = deviceMapping[data.code];
-      const difficultyDevice = difficultyMapping[requestedDevice];
+      const keyMapping = { Digit1:'taser', Digit2:'stun', Digit3:'tranq' };
+      const requestedDevice = keyMapping[data.code];
+      const difficultyDevice = DEVICE_MAPPING.GAME_TO_DIFFICULTY[requestedDevice];
 
       // Check if device is enabled in current difficulty
       if (currentDifficulty.devices[difficultyDevice]?.enabled) {
         defenses.setMode(requestedDevice);
-        speak(requestedDevice);
+        hudManager.speak(requestedDevice);
         audio.beep('square', GameConfig.AUDIO.FREQ_WEAPON_SELECT, 0.06, 0.04);
       } else {
-        speak(i18n.t('game.messages.device_disabled'));
+        hudManager.speak(i18n.t('game.messages.device_disabled'));
         audio.beep('triangle', 200, 0.05, 0.03);
       }
     }
@@ -881,10 +749,10 @@ export function bootstrap({ dev=false } = {}) {
   // Pointer lock setup
   canvas.addEventListener('click', ()=>{
     if (!gameState.isStarted()) return;
-    eventManager.requestPointerLock(canvas);
+    inputManager.requestPointerLock(canvas);
   });
 
-  eventManager.on('pointerlockchange', (data)=>{
+  eventSystem.on('pointerlockchange', (data)=>{
     player.pointerLocked = data.locked;
   });
 
@@ -895,12 +763,12 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   function startGame() {
     gameState.startGame();
-    hud.tutorial.style.display = 'none';
-    hud.restartButton.style.display = 'block';
+    hudManager.hideTutorial();
+    hudManager.showRestartButton();
     audio.beep('sine', GameConfig.AUDIO.FREQ_GAME_START, 0.1, 0.06);
 
     // Emit gamestart event for TouchHUD and other systems
-    eventManager.emit('gamestart');
+    eventSystem.emit('gamestart');
   }
 
   function restart(autoStart = false) {
@@ -928,27 +796,27 @@ export function bootstrap({ dev=false } = {}) {
     projectileSystem.clear();
 
     // Hide victory panel and share button
-    hud.victoryPanel.style.display = 'none';
+    hudManager.hideVictoryPanel();
     shareManager.hideShareButton();
 
     if (autoStart) {
       // Auto-start the game immediately
       gameState.restartGame();
-      hud.tutorial.style.display = 'none';
-      hud.restartButton.style.display = 'block';
+      hudManager.hideTutorial();
+      hudManager.showRestartButton();
       audio.beep('sine', GameConfig.AUDIO.FREQ_GAME_START, 0.1, 0.06);
     } else {
       // Show tutorial and wait for Enter to start
       gameState.resetForRestart();
-      hud.tutorial.style.display = '';
-      hud.restartButton.style.display = 'none';
-      hud.timer.textContent = gameState.getFormattedTime(); // Reset timer display immediately
-      hud.tutorial.querySelector('h2').textContent = i18n.t('game.messages.ready_again');
-      speak(i18n.t('game.messages.restarted'));
+      hudManager.showTutorial();
+      hudManager.hideRestartButton();
+      hudManager.updateTimer(gameState.getFormattedTime()); // Reset timer display immediately
+      hudManager.updateTutorialTitle('game.messages.ready_again');
+      hudManager.speak(i18n.t('game.messages.restarted'));
       audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
 
       // Hide touch controls when showing tutorial
-      eventManager.emit('gameend');
+      eventSystem.emit('gameend');
     }
   }
 
@@ -1007,22 +875,21 @@ export function bootstrap({ dev=false } = {}) {
       // This handles the case where challenge is loaded on initial page load
       setTimeout(() => {
         applyDifficultyToDevices();
-        updateDifficultyUI(); // Update config panel to reflect challenge settings
+        configManager.updateUI(); // Update config panel to reflect challenge settings
       }, 100);
 
       // Update UI for challenge mode
-      hud.victoryPanel.style.display = 'none';
+      hudManager.hideVictoryPanel();
       shareManager.hideShareButton();
-      hud.tutorial.style.display = '';
-      hud.tutorial.querySelector('h2').textContent = i18n.t('game.messages.ready_again');
+      hudManager.showTutorial();
+      hudManager.updateTutorialTitle('game.messages.ready_again');
 
       // Show target time in HUD if challenge has a completion time
       if (challengeData.challenge && challengeData.challenge.completionTime) {
-        hud.targetTimeDisplay.style.display = '';
-        hud.targetTime.textContent = fmtTime(challengeData.challenge.completionTime);
+        hudManager.showTargetTime(hudManager.formatTime(challengeData.challenge.completionTime));
       }
 
-      speak(i18n.t('game.messages.restarted'));
+      hudManager.speak(i18n.t('game.messages.restarted'));
       audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
 
       logger.info('Challenge loaded successfully:', shareManager.getChallengeManager().getCurrentChallengeSummary());
@@ -1055,17 +922,11 @@ export function bootstrap({ dev=false } = {}) {
   }
 
   function applyDifficultyToDevices() {
-    // Update device charges and availability
-    const deviceMapping = {
-      disruptor: 'taser',
-      immobilizer: 'stun',
-      pacifier: 'tranq'
-    };
-
+    // Update device charges and availability using centralized mapping
     let anyDeviceEnabled = false;
 
     Object.entries(currentDifficulty.devices).forEach(([deviceType, config]) => {
-      const gameDeviceType = deviceMapping[deviceType];
+      const gameDeviceType = DEVICE_MAPPING.DIFFICULTY_TO_GAME[deviceType];
       if (defenses.devices[gameDeviceType]) {
         defenses.devices[gameDeviceType].maxCharges = config.charges;
         defenses.devices[gameDeviceType].charges = config.charges;
@@ -1075,17 +936,12 @@ export function bootstrap({ dev=false } = {}) {
           anyDeviceEnabled = true;
         }
 
-        // Update HUD charge row visibility
-        if (hud.chargeRows[gameDeviceType]) {
-          hud.chargeRows[gameDeviceType].style.display = config.enabled ? '' : 'none';
-        }
-
         // If device is disabled, ensure it can't be selected
         if (!config.enabled && defenses.currentDevice === gameDeviceType) {
           // Switch to first enabled device
           const enabledDevices = Object.entries(currentDifficulty.devices)
             .filter(([_, dev]) => dev.enabled)
-            .map(([type, _]) => deviceMapping[type]);
+            .map(([type, _]) => DEVICE_MAPPING.DIFFICULTY_TO_GAME[type]);
 
           if (enabledDevices.length > 0) {
             defenses.setMode(enabledDevices[0]);
@@ -1094,6 +950,9 @@ export function bootstrap({ dev=false } = {}) {
       }
     });
 
+    // Update HUD device visibility
+    hudManager.updateDeviceVisibility(defenses.devices);
+
     // Hide/show the entire charges container based on whether any device is enabled
     const chargesContainer = document.querySelector('.hud-group.charges');
     if (chargesContainer) {
@@ -1101,29 +960,16 @@ export function bootstrap({ dev=false } = {}) {
     }
 
     // Emit event for other systems (TouchHUD) to update
-    eventManager.emit('deviceconfig', {
+    eventSystem.emit('deviceconfig', {
       devices: currentDifficulty.devices,
-      mapping: deviceMapping
+      mapping: DEVICE_MAPPING.DIFFICULTY_TO_GAME
     });
   }
 
   // ═════════════════════════════════════════════════════════════════
   // UTILITY FUNCTIONS
   // ═════════════════════════════════════════════════════════════════
-  function fmtTime(ms) {
-    const t = Math.max(0, Math.floor(ms/1000));
-    const m = (t/60)|0, s = (t%60)|0;
-    return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-  }
-  function speak(text) {
-    hud.subtitles.textContent = text;
-    hud.subtitles.style.display = ''; // Show the subtitles container
-    clearTimeout(speak._t);
-    speak._t = setTimeout(()=>{
-      hud.subtitles.textContent='';
-      hud.subtitles.style.display = 'none'; // Hide the empty container
-    }, 1200);
-  }
+  // speak function replaced by hudManager.speak()
 
   // ═════════════════════════════════════════════════════════════════
   // DEVELOPMENT MODE TESTING
@@ -1186,7 +1032,7 @@ export function bootstrap({ dev=false } = {}) {
         if (recentAverageFPS < GameConfig.RENDERING.MIN_FPS_FOR_3D) {
           logger.warn(`Auto-disabling 3D models due to low FPS: ${recentAverageFPS.toFixed(1)} < ${GameConfig.RENDERING.MIN_FPS_FOR_3D}`);
           GameConfig.RENDERING.USE_3D_MODELS = false;
-          speak(i18n.t('game.messages.performance_mode') || 'Performance mode enabled');
+          hudManager.speak(i18n.t('game.messages.performance_mode') || 'Performance mode enabled');
         }
       }
 
@@ -1211,9 +1057,9 @@ export function bootstrap({ dev=false } = {}) {
 
     if (gameState.isStarted()) {
       gameState.updateElapsed();
-      hud.timer.textContent = gameState.getFormattedTime();
+      hudManager.updateTimer(gameState.getFormattedTime());
 
-      player.update(dt, { maze, eventManager });
+      player.update(dt, { maze, eventManager: inputManager });
       enemies.update(dt, maze);
       defenses.update(dt);
       projectileSystem.update(dt);
@@ -1232,33 +1078,29 @@ export function bootstrap({ dev=false } = {}) {
           gameState.winGame();
 
           // Emit gameend event for TouchHUD and other systems
-          eventManager.emit('gameend');
+          eventSystem.emit('gameend');
 
           // Hide tutorial and show victory panel
-          hud.tutorial.style.display = 'none';
-          hud.victoryPanel.style.display = '';
+          hudManager.hideTutorial();
 
           // Build victory message with details
           const mazeSize = `${maze.w}x${maze.h}`;
-          const formattedTime = fmtTime(completionTime);
+          const formattedTime = hudManager.formatTime(completionTime);
           const difficultyName = currentDifficulty.name || currentDifficulty.preset || i18n.t('game.difficulty.fallback.normal');
-
-          // Update victory panel with game stats
-          hud.victoryMazeSize.textContent = mazeSize;
-          hud.victoryTime.textContent = formattedTime;
-          hud.victoryDifficulty.textContent = difficultyName;
 
           // Check if in challenge mode and handle comparison
           const inChallengeMode = shareManager.isInChallengeMode();
+          let victoryData = {
+            mazeSize,
+            completionTime: formattedTime,
+            difficulty: difficultyName
+          };
+
           if (inChallengeMode) {
             const challengeData = shareManager.getCurrentChallenge();
             const targetTime = challengeData?.challenge?.completionTime;
 
             if (targetTime) {
-              // Show target time
-              hud.victoryTargetTimeItem.style.display = '';
-              hud.victoryTargetTime.textContent = fmtTime(targetTime);
-
               // Calculate time difference
               const timeDiff = completionTime - targetTime;
               const timeDiffAbs = Math.abs(timeDiff);
@@ -1272,71 +1114,41 @@ export function bootstrap({ dev=false } = {}) {
                 ? i18n.t('ui.challenge.time_diff_second', { seconds: diffSeconds })
                 : i18n.t('ui.challenge.time_diff_seconds', { seconds: diffSeconds });
 
-              // Update victory message based on performance
-              if (isTie) {
-                // Perfect tie!
-                hud.victoryTitle.textContent = i18n.t('game.messages.victory_tie_title');
-                hud.victoryCta.innerHTML = i18n.t('game.messages.victory_tie');
-                hud.victoryTimeItem.classList.add('stat-close');
-              } else if (beatTarget) {
-                // Beat the target!
-                hud.victoryTitle.textContent = i18n.t('game.messages.victory_beat_record_title');
-                hud.victoryCta.innerHTML = i18n.t('game.messages.victory_beat_record', {
-                  diff: diffText
-                });
-                hud.victoryTimeItem.classList.add('stat-beat-target');
-                hud.victoryShareButton.querySelector('span').textContent = i18n.t('ui.challenge.share_victory');
-              } else if (isClose) {
-                // Close but didn't beat
-                hud.victoryTitle.textContent = i18n.t('game.messages.victory_close_title');
-                hud.victoryCta.innerHTML = i18n.t('game.messages.victory_close', {
-                  diff: diffText
-                });
-                hud.victoryTimeItem.classList.add('stat-close');
-              } else {
-                // Didn't beat, not close
-                hud.victoryTitle.textContent = i18n.t('game.messages.victory_title');
-                hud.victoryCta.innerHTML = i18n.t('game.messages.victory_missed', {
-                  diff: diffText
-                });
-              }
-
-              // Change button text to "Try Again" for challenge mode
-              hud.victoryRestartButton.querySelector('span').textContent = i18n.t('ui.common.try_again');
+              victoryData = {
+                ...victoryData,
+                targetTime: hudManager.formatTime(targetTime),
+                beatTarget,
+                isClose,
+                isTie,
+                timeDiff: diffText,
+                shareButtonText: beatTarget ? i18n.t('ui.challenge.share_victory') : i18n.t('ui.share.share_challenge'),
+                restartButtonText: i18n.t('ui.common.try_again')
+              };
             }
           } else {
-            // Normal mode - hide target time, reset classes
-            hud.victoryTargetTimeItem.style.display = 'none';
-            hud.victoryTimeItem.classList.remove('stat-beat-target', 'stat-close');
-            hud.victoryTitle.textContent = i18n.t('game.messages.victory_title');
-            hud.victoryCta.innerHTML = i18n.t('game.messages.victory_cta');
-            hud.victoryShareButton.querySelector('span').textContent = i18n.t('ui.share.share_challenge');
-            hud.victoryRestartButton.querySelector('span').textContent = i18n.t('ui.common.play_again');
+            victoryData = {
+              ...victoryData,
+              shareButtonText: i18n.t('ui.share.share_challenge'),
+              restartButtonText: i18n.t('ui.common.play_again')
+            };
           }
 
-          speak(i18n.t('game.messages.found_exit'));
+          // Show victory panel with all data
+          hudManager.showVictoryPanel(victoryData);
+
+          hudManager.speak(i18n.t('game.messages.found_exit'));
           audio.beep('triangle', GameConfig.AUDIO.FREQ_WIN, 0.12, 0.07);
 
           // Prepare sharing data
-          const gameData = {
-            maze: maze,
-            enemies: enemies,
-            config: {
-              difficultyPreset: currentDifficulty.preset || currentDifficulty.name || i18n.t('game.difficulty.fallback.normal'),
-              enemyCount: enemies.entities.length, // Use actual enemy count from game state
-              enemySpeed: currentDifficulty.enemies.speed,
-              devices: {
-                taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
-                stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
-                tranqCharges: defenses.devices.tranq.maxCharges, // Use actual starting charges from game state
-                taserEnabled: defenses.devices.taser.enabled, // Include enabled state
-                stunEnabled: defenses.devices.stun.enabled, // Include enabled state
-                tranqEnabled: defenses.devices.tranq.enabled // Include enabled state
-              }
-            },
-            completionTime: completionTime,
-            playerName: 'Player' // Could be enhanced with actual player name input
-          };
+          const gameData = buildGameData({
+            maze,
+            enemies,
+            defenses,
+            currentDifficulty,
+            completionTime,
+            playerName: 'Player', // Could be enhanced with actual player name input
+            fallbackDifficulty: i18n.t('game.difficulty.fallback.normal')
+          });
 
           logger.info('Win detected! Preparing share data');
           logger.debug('Game completion data', { completionTime, mazeSize: `${maze.w}x${maze.h}` });
@@ -1389,9 +1201,11 @@ export function bootstrap({ dev=false } = {}) {
   // HUD AND UI UPDATES
   // ═════════════════════════════════════════════════════════════════
   function updateBars() {
-    hud.bars.taser.style.transform = `scaleX(${defenses.taserChargeRatio()})`;
-    hud.bars.stun.style.transform = `scaleX(${defenses.stunChargeRatio()})`;
-    hud.bars.tranq.style.transform = `scaleX(${defenses.tranqChargeRatio()})`;
+    hudManager.updateChargeBars(
+      defenses.taserChargeRatio(),
+      defenses.stunChargeRatio(),
+      defenses.tranqChargeRatio()
+    );
   }
   const barsIntervalId = setInterval(updateBars, GameConfig.PERFORMANCE.AMMO_BAR_UPDATE_INTERVAL);
 
@@ -1407,7 +1221,7 @@ export function bootstrap({ dev=false } = {}) {
     for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_BOOP;i++) {
       spawnParticle(x+(Math.random()-0.5)*0.2, y+(Math.random()-0.5)*0.2, particleColor, 300);
     }
-    speak(i18n.t(messageKey));
+    hudManager.speak(i18n.t(messageKey));
     audio.beep('sine', audioFreq, audioDuration, 0.05);
   };
 
@@ -1444,6 +1258,12 @@ export function bootstrap({ dev=false } = {}) {
     }
     if (barsIntervalId) {
       clearInterval(barsIntervalId);
+    }
+    if (hudManager) {
+      hudManager.destroy();
+    }
+    if (configManager) {
+      configManager.destroy();
     }
     if (touchHUD) {
       touchHUD.destroy();
