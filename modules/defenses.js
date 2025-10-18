@@ -14,16 +14,6 @@ export class Defenses {
     this.eventManager = null; // Will be injected
     this.onActivation = (_x,_y,_c)=>{};
     this.onRangeIndicator = (_x1,_y1,_x2,_y2,_c,_a)=>{};
-
-    // Fallback to direct event listeners
-    window.addEventListener('mousedown', (e)=>{
-      if (e.button === 0 && document.pointerLockElement && !this.isClickOnUI(e)) {
-        this.activate();
-      }
-    });
-    window.addEventListener('keydown', (e)=>{
-      if (e.code === 'Space') { e.preventDefault(); this.activate(); }
-    });
   }
 
   // Check if click is on UI elements to prevent accidental device activation
