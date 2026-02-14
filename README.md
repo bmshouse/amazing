@@ -1,4 +1,4 @@
-# CalmMaze FPS
+# Amazing FPS
 
 A browser-based 3D maze game built with vanilla JavaScript, raycasting, and optional WebGL rendering. Navigate procedurally generated mazes using classic FPS controls while avoiding friendly snowman creatures that gently boop you back with hearts.
 
