@@ -16,6 +16,9 @@
   <!-- 2D Raycasting Canvas (base layer for walls/floor) -->
   <canvas id="game" aria-label="Game canvas" style="position: absolute; top: 0; left: 0; z-index: 0;"></canvas>
 
+  <!-- Soft screen-edge flash shown when a critter boops the player -->
+  <div id="boopFlash" aria-hidden="true"></div>
+
   <!-- HUD Overlay -->
   <div id="hud" role="region" aria-label="Heads-up display">
     <div class="row top">
@@ -356,8 +359,7 @@
         <li data-i18n-html="ui.tutorial.instruction_1">W/A/S/D or arrow keys to move. Hold <strong>Shift</strong> to glide faster.</li>
         <li data-i18n-html="ui.tutorial.instruction_2">Move mouse to look. Keyboard-only? Use <strong>Q/E</strong> to turn.</li>
         <li data-i18n="ui.tutorial.instruction_3">Find the glowing exit before the timer runs out.</li>
-        <li data-i18n-html="ui.tutorial.instruction_4">Friendly critters will gently boop you back. Use defensive tools:</li>
-        <li>
+        <li><span data-i18n-html="ui.tutorial.instruction_4">Friendly critters will gently boop you back. Use defensive tools:</span>
           <ul>
             <li data-i18n-html="ui.tutorial.device_list.disruptor"><strong>1</strong> Disruptor (short-range stun)</li>
             <li data-i18n-html="ui.tutorial.device_list.immobilizer"><strong>2</strong> Immobilizer (slow orb)</li>
@@ -373,8 +375,7 @@
         <li data-i18n-html="ui.tutorial.touch_instruction_1">Use the <strong>virtual joystick</strong> in the bottom corner to move around.</li>
         <li data-i18n-html="ui.tutorial.touch_instruction_2">Drag on the main screen to look around and control your camera.</li>
         <li data-i18n="ui.tutorial.instruction_3">Find the glowing exit before the timer runs out.</li>
-        <li data-i18n-html="ui.tutorial.touch_instruction_4">Friendly critters will gently boop you back. Use defensive tools with the <strong>device buttons</strong>:</li>
-        <li>
+        <li><span data-i18n-html="ui.tutorial.touch_instruction_4">Friendly critters will gently boop you back. Use defensive tools with the <strong>device buttons</strong>:</span>
           <ul>
             <li data-i18n-html="ui.tutorial.touch_device_list.disruptor"><strong>D button</strong> - Disruptor (short-range stun)</li>
             <li data-i18n-html="ui.tutorial.touch_device_list.immobilizer"><strong>I button</strong> - Immobilizer (slow orb)</li>

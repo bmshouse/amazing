@@ -5,6 +5,12 @@ html, body { margin: 0; padding: 0; height: 100%; background: #0f1020; color: #f
 #webgl-canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1; }
 #ui-canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 2; }
 
+#boopFlash { position: fixed; inset: 0; pointer-events: none; z-index: 3; opacity: 0; --flash: 255, 70, 90; background: radial-gradient(ellipse at center, transparent 45%, rgba(var(--flash), 0.55) 100%); }
+#boopFlash.active { animation: boop-flash 380ms ease-out; }
+#boopFlash.huggle { --flash: 255, 105, 180; }
+@keyframes boop-flash { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #boopFlash.active { animation: none; } }
+
 #hud { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; }
 #hud .row { display: flex; align-items: center; gap: 12px; }
 #hud .top { justify-content: space-between; }
