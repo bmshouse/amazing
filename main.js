@@ -3,7 +3,7 @@ import { Maze } from './modules/maze.js';
 import { PlayerController } from './modules/player.js';
 import { Defenses } from './modules/defenses.js';
 import { EnemyController } from './modules/enemies.js';
-import { generateWallTexture, generateBrickTexture, generateDoorTexture } from './textures/wall-texture.js';
+import { generateWallTexture, generateBrickTexture, generateDoorTexture, generateFloorTexture, generateCeilingTexture } from './textures/wall-texture.js';
 import { RaycastRenderer } from './modules/RaycastRenderer.js';
 import { SpriteRenderer } from './modules/SpriteRenderer.js';
 import { Model3DRenderer } from './modules/rendering/Model3DRenderer.js';
@@ -332,15 +332,21 @@ export function bootstrap({ dev=false } = {}) {
   const audio = (function(){
     const enabled = () => hud.audioToggle.checked;
     let ac;
-    function beep(type='sine', freq=440, dur=0.08, vol=0.05) {
+    function beep(type='sine', freq=440, dur=0.08, vol=0.05, slideTo=null) {
       if (!enabled()) return;
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
       const t0 = ac.currentTime;
       const o = ac.createOscillator();
       const g = ac.createGain();
       o.type = type;
-      o.frequency.value = freq;
-      g.gain.value = vol;
+      o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) {
+        o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+        g.gain.setValueAtTime(vol, t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      } else {
+        g.gain.value = vol;
+      }
       o.connect(g).connect(ac.destination);
       o.start();
       o.stop(t0 + dur);
@@ -365,7 +371,9 @@ export function bootstrap({ dev=false } = {}) {
   const textures = {
     wall: generateWallTexture(64, 64),
     brick: generateBrickTexture(64, 64),
-    door: generateDoorTexture(64, 64)
+    door: generateDoorTexture(64, 64),
+    floor: generateFloorTexture(64, 64),
+    ceiling: generateCeilingTexture(64, 64)
   };
 
   // Set entity colors from config
@@ -1212,6 +1220,16 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   // GAME EVENT CALLBACKS
   // ═════════════════════════════════════════════════════════════════
+  const boopFlashEl = document.getElementById('boopFlash');
+  const BOOP_FEEDBACK_INTERVAL = 250; // ms
+  let lastBoopFeedback = 0;
+  function flashBoop(isPull) {
+    boopFlashEl.classList.toggle('huggle', isPull);
+    boopFlashEl.classList.remove('active');
+    void boopFlashEl.offsetWidth; // restart the CSS animation
+    boopFlashEl.classList.add('active');
+  }
+
   enemies.onBoop = (x,y,isPull)=>{
     const particleColor = isPull ? GameConfig.COLORS.PARTICLE_HUGGLE : GameConfig.COLORS.PARTICLE_BOOP;
     const messageKey = isPull ? 'game.messages.huggle' : 'game.messages.boop';
@@ -1222,7 +1240,14 @@ export function bootstrap({ dev=false } = {}) {
       spawnParticle(x+(Math.random()-0.5)*0.2, y+(Math.random()-0.5)*0.2, particleColor, 300);
     }
     hudManager.speak(i18n.t(messageKey));
-    audio.beep('sine', audioFreq, audioDuration, 0.05);
+
+    // Sound and flash fire at most once per boopFeedbackInterval, since a close critter boops every frame
+    const now = performance.now();
+    if (now - lastBoopFeedback < BOOP_FEEDBACK_INTERVAL) return;
+    lastBoopFeedback = now;
+    // Pitch-drop "bwoop" reads as a soft bounce; huggles slide up instead
+    audio.beep('sine', audioFreq, audioDuration * 2, 0.07, isPull ? audioFreq * 1.5 : audioFreq * 0.5);
+    flashBoop(isPull);
   };
 
   defenses.onActivation = (x,y,color)=>{

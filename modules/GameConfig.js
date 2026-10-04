@@ -24,6 +24,9 @@ export const GameConfig = {
     SHADING_GREEN_FACTOR: 40,
     SHADING_BLUE_BASE: 200,
     SHADING_BLUE_FACTOR: 20,
+    SIDE_SHADE: 0.75,         // brightness multiplier for Y-facing walls
+    FOG_STRENGTH: 0.85,       // 0-1, how strongly distant walls blend into the fog colour
+    FOG_COLOR: [17, 23, 40],  // matches COLORS.FLOOR_TOP (#111728)
 
     // Sprite rendering
     EXIT_DOOR_SIZE: 0.6,

@@ -152,3 +152,60 @@ export function generateDoorTexture(width = 64, height = 64) {
 
   return canvas;
 }
+
+// Fills a canvas with per-pixel brightness noise so tiled surfaces look less flat
+function addNoise(ctx, width, height, amount) {
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const noise = (Math.random() - 0.5) * amount;
+    data[i] = Math.max(0, Math.min(255, data[i] + noise));
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Flagstone floor, tiled once per maze cell. Grout runs along the tile edges so the pattern is seamless.
+export function generateFloorTexture(width = 64, height = 64) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#313a52'; // grout
+  ctx.fillRect(0, 0, width, height);
+
+  const tilesPerSide = 2;
+  const tileW = width / tilesPerSide;
+  const tileH = height / tilesPerSide;
+  const shades = ['#4b566e', '#445068', '#525d76', '#3f4a62'];
+  for (let ty = 0; ty < tilesPerSide; ty++) {
+    for (let tx = 0; tx < tilesPerSide; tx++) {
+      ctx.fillStyle = shades[(Math.random() * shades.length) | 0];
+      ctx.fillRect(tx * tileW + 1, ty * tileH + 1, tileW - 2, tileH - 2);
+    }
+  }
+
+  addNoise(ctx, width, height, 22);
+  return canvas;
+}
+
+// Recessed ceiling panels, darker than the floor so the corridor reads as enclosed
+export function generateCeilingTexture(width = 64, height = 64) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#1a2038'; // frame
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = '#323b5e'; // panel
+  ctx.fillRect(3, 3, width - 6, height - 6);
+  ctx.fillStyle = '#2a3354'; // inset
+  ctx.fillRect(8, 8, width - 16, height - 16);
+
+  addNoise(ctx, width, height, 14);
+  return canvas;
+}

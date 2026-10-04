@@ -1,5 +1,18 @@
-// modules/RaycastRenderer.js - Handles raycasting and wall rendering
+// modules/RaycastRenderer.js - DDA raycasting into an off-screen pixel buffer
 import { GameConfig } from './GameConfig.js';
+
+const hexToRgb = (hex) => [
+  parseInt(hex.slice(1, 3), 16),
+  parseInt(hex.slice(3, 5), 16),
+  parseInt(hex.slice(5, 7), 16)
+];
+
+const lerpColor = (a, b, t) => a.map((c, i) => c + (b[i] - c) * t);
+
+/** Packs RGB (0-255, may be fractional) into a little-endian ABGR Uint32 pixel */
+function packColor(r, g, b) {
+  return (255 << 24) | ((b > 255 ? 255 : b | 0) << 16) | ((g > 255 ? 255 : g | 0) << 8) | (r > 255 ? 255 : r | 0);
+}
 
 export class RaycastRenderer {
   /**
@@ -16,193 +29,279 @@ export class RaycastRenderer {
       maxDepth: GameConfig.RENDERING.MAX_RENDER_DEPTH,
       columnStep: GameConfig.RENDERING.COLUMN_STEP
     };
+    this.textureCache = new WeakMap(); // texture canvas -> { data, width, height }
+    this.frame = null;                 // { canvas, ctx, image, pixels, W, H, backdrop }
   }
 
   /**
    * Main render method that draws the 3D scene
-   * @param {Object} player - Player object with x, y, and angle properties
+   * @param {Object} player - Player object with x, y, and angle (a) properties
    * @param {Object} maze - Maze object with cellAt method
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    */
   render(player, maze, W, H) {
-    // Clear and draw background gradients
-    this.renderBackground(W, H);
-
-    // Render walls using raycasting
+    const frame = this.getFrame(W, H);
+    frame.pixels.set(frame.backdrop);
+    this.renderFloorAndCeiling(player, W, H);
     this.renderWalls(player, maze, W, H);
+    frame.ctx.putImageData(frame.image, 0, 0);
+    // drawImage (unlike putImageData) honours the canvas DPR transform
+    this.ctx.drawImage(frame.canvas, 0, 0, W, H);
   }
 
   /**
-   * Renders the background sky and floor gradients
+   * Returns the off-screen frame buffer for the given size, rebuilding it on resize
+   * @private
+   */
+  getFrame(W, H) {
+    if (this.frame && this.frame.W === W && this.frame.H === H) return this.frame;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const image = ctx.createImageData(W, H);
+    const pixels = new Uint32Array(image.data.buffer);
+    this.frame = { canvas, ctx, image, pixels, W, H, backdrop: this.buildBackdrop(W, H) };
+    return this.frame;
+  }
+
+  /**
+   * Pre-renders the sky and floor gradients into a pixel buffer
+   * @private
+   */
+  buildBackdrop(W, H) {
+    const { COLORS } = GameConfig;
+    const sky = [hexToRgb(COLORS.SKY_TOP), hexToRgb(COLORS.SKY_BOTTOM)];
+    const floor = [hexToRgb(COLORS.FLOOR_TOP), hexToRgb(COLORS.FLOOR_BOTTOM)];
+    const backdrop = new Uint32Array(W * H);
+    const half = H >> 1;
+
+    for (let y = 0; y < H; y++) {
+      const [from, to] = y < half ? sky : floor;
+      const t = y < half ? y / half : (y - half) / (H - half);
+      const [r, g, b] = lerpColor(from, to, t);
+      backdrop.fill(packColor(r, g, b), y * W, (y + 1) * W);
+    }
+    return backdrop;
+  }
+
+  /**
+   * Returns cached pixel data for a texture canvas
+   * @private
+   */
+  getTextureData(texture) {
+    let entry = this.textureCache.get(texture);
+    if (!entry) {
+      const ctx = texture.getContext('2d');
+      entry = {
+        data: ctx.getImageData(0, 0, texture.width, texture.height).data,
+        width: texture.width,
+        height: texture.height
+      };
+      this.textureCache.set(texture, entry);
+    }
+    return entry;
+  }
+
+  /**
+   * Perspective-correct textured floor and ceiling, one screen row at a time.
+   * Every pixel in a row sits at the same distance, so shading is computed once per row
+   * and the texture coordinate advances linearly across it. Skipped when textures are missing
+   * (the gradient backdrop is used instead).
+   * @param {Object} player - Player object with x, y, and angle (a) properties
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    */
-  renderBackground(W, H) {
-    // Clear the entire canvas with dark background color
-    this.ctx.fillStyle = '#0b0e1d';
-    this.ctx.fillRect(0, 0, W, H);
+  renderFloorAndCeiling(player, W, H) {
+    const { floor, ceiling } = this.textures;
+    if (!floor || !ceiling) return;
 
-    // Draw sky gradient in upper half of screen (ceiling area)
-    const skyGradient = this.ctx.createLinearGradient(0, 0, 0, H/2);
-    skyGradient.addColorStop(0, '#1c2050');
-    skyGradient.addColorStop(1, '#2a2f4a');
-    this.ctx.fillStyle = skyGradient;
-    this.ctx.fillRect(0, 0, W, H/2);
+    const floorTex = this.getTextureData(floor);
+    const ceilTex = this.getTextureData(ceiling);
+    const pixels = this.frame.pixels;
+    const dirX = Math.cos(player.a), dirY = Math.sin(player.a);
+    const planeScale = Math.tan(this.config.fov / 2);
+    const planeX = -dirY * planeScale, planeY = dirX * planeScale;
+    const half = H / 2;
 
-    // Draw floor gradient in lower half of screen
-    const floorGradient = this.ctx.createLinearGradient(0, H/2, 0, H);
-    floorGradient.addColorStop(0, '#111728');
-    floorGradient.addColorStop(1, '#0b0e1d');
-    this.ctx.fillStyle = floorGradient;
-    this.ctx.fillRect(0, H/2, W, H/2);
+    for (let y = H >> 1; y < H; y++) {
+      // Perpendicular distance of this row; matches wall height = H / dist
+      const rowDist = half / (y + 0.5 - half);
+      const shade = this.shadeFor(rowDist, 1);
+      const [fogR, fogG, fogB] = GameConfig.RENDERING.FOG_COLOR;
+      const keep = 1 - shade.fog;
+      const fogAddR = fogR * shade.fog, fogAddG = fogG * shade.fog, fogAddB = fogB * shade.fog;
+
+      // World position at the left edge of the row, and the step per screen pixel
+      let worldX = player.x + rowDist * (dirX - planeX);
+      let worldY = player.y + rowDist * (dirY - planeY);
+      const stepX = (rowDist * 2 * planeX) / W;
+      const stepY = (rowDist * 2 * planeY) / W;
+
+      const floorRow = y * W;
+      const ceilRow = (H - 1 - y) * W;
+      for (let x = 0; x < W; x++, worldX += stepX, worldY += stepY) {
+        const u = worldX - Math.floor(worldX);
+        const v = worldY - Math.floor(worldY);
+
+        let i = (((v * floorTex.height) | 0) * floorTex.width + ((u * floorTex.width) | 0)) * 4;
+        pixels[floorRow + x] = packColor(
+          floorTex.data[i] * shade.r * keep + fogAddR,
+          floorTex.data[i + 1] * shade.g * keep + fogAddG,
+          floorTex.data[i + 2] * shade.b * keep + fogAddB
+        );
+
+        i = (((v * ceilTex.height) | 0) * ceilTex.width + ((u * ceilTex.width) | 0)) * 4;
+        pixels[ceilRow + x] = packColor(
+          ceilTex.data[i] * shade.r * keep + fogAddR,
+          ceilTex.data[i + 1] * shade.g * keep + fogAddG,
+          ceilTex.data[i + 2] * shade.b * keep + fogAddB
+        );
+      }
+    }
   }
 
   /**
-   * Renders walls using raycasting algorithm
-   * @param {Object} player - Player object with x, y, and angle properties
+   * Distance shading shared by walls and floor: per-channel tint multipliers and a fog amount
+   * @param {number} dist - Perpendicular distance
+   * @param {number} sideShade - Extra brightness multiplier (e.g. for Y-facing walls)
+   * @returns {{r: number, g: number, b: number, fog: number}}
+   */
+  shadeFor(dist, sideShade) {
+    const R = GameConfig.RENDERING;
+    const brightness = Math.max(0, 1 - dist / this.config.maxDepth);
+    const tint = (base, factor) =>
+      (1 - R.SHADING_OPACITY + (R.SHADING_OPACITY * (base + factor * brightness)) / 255) * sideShade;
+    return {
+      r: tint(R.SHADING_RED_BASE, R.SHADING_RED_FACTOR),
+      g: tint(R.SHADING_GREEN_BASE, R.SHADING_GREEN_FACTOR),
+      b: tint(R.SHADING_BLUE_BASE, R.SHADING_BLUE_FACTOR),
+      // Fog pulls distant surfaces toward the horizon colour
+      fog: Math.min(1, R.FOG_STRENGTH * (dist / this.config.maxDepth) ** 2)
+    };
+  }
+
+  /**
+   * Renders walls column by column using DDA raycasting
+   * @param {Object} player - Player object with x, y, and angle (a) properties
    * @param {Object} maze - Maze object with cellAt method
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    */
   renderWalls(player, maze, W, H) {
-    const rayAngleStepPerPixel = this.config.fov / W;
-    let currentRayAngle = player.a - this.config.fov/2;
+    const step = this.config.columnStep;
+    const dirX = Math.cos(player.a), dirY = Math.sin(player.a);
+    // Camera plane matches the sprite projection (tan-based, not angle-linear)
+    const planeScale = Math.tan(this.config.fov / 2);
+    const planeX = -dirY * planeScale, planeY = dirX * planeScale;
 
-    for (let screenX = 0; screenX < W; screenX += this.config.columnStep, currentRayAngle += rayAngleStepPerPixel * this.config.columnStep) {
-      const wallHitInfo = this.castRay(player.x, player.y, currentRayAngle, maze);
-
-      if (wallHitInfo) {
-        this.renderWallColumn(wallHitInfo, screenX, currentRayAngle, player, W, H);
-      }
+    for (let screenX = 0; screenX < W; screenX += step) {
+      const cameraX = (2 * (screenX + step / 2)) / W - 1;
+      const hit = this.castRay(player.x, player.y, dirX + planeX * cameraX, dirY + planeY * cameraX, maze);
+      if (hit) this.renderWallColumn(hit, screenX, W, H);
     }
   }
 
   /**
-   * Casts a ray from start position in given direction until it hits a wall
+   * Casts a ray through the grid using DDA until it hits a wall or door
    * @param {number} startX - Starting X coordinate
    * @param {number} startY - Starting Y coordinate
-   * @param {number} rayAngle - Ray direction in radians
+   * @param {number} rayDirX - Ray direction X (dir + camera plane offset, so not unit length)
+   * @param {number} rayDirY - Ray direction Y
    * @param {Object} maze - Maze object with cellAt method
-   * @returns {Object|null} Wall hit information or null if no wall hit
+   * @returns {Object|null} { dist, wallU, side, cellType, mapX, mapY } or null if nothing is hit within range.
+   *   dist is the perpendicular distance (no fisheye); side is 0 for X-facing walls, 1 for Y-facing.
    */
-  castRay(startX, startY, rayAngle, maze) {
-    const rayDirectionY = Math.sin(rayAngle);
-    const rayDirectionX = Math.cos(rayAngle);
-    let currentDistanceFromStart = 0;
-    const rayMarchingStepSize = GameConfig.RENDERING.RAY_MARCHING_STEP_SIZE;
-    const maxStepsToTake = this.config.maxDepth / rayMarchingStepSize;
+  castRay(startX, startY, rayDirX, rayDirY, maze) {
+    let mapX = Math.floor(startX);
+    let mapY = Math.floor(startY);
+    const deltaDistX = rayDirX === 0 ? Infinity : Math.abs(1 / rayDirX);
+    const deltaDistY = rayDirY === 0 ? Infinity : Math.abs(1 / rayDirY);
+    const stepX = rayDirX < 0 ? -1 : 1;
+    const stepY = rayDirY < 0 ? -1 : 1;
+    let sideDistX = (rayDirX < 0 ? startX - mapX : mapX + 1 - startX) * deltaDistX;
+    let sideDistY = (rayDirY < 0 ? startY - mapY : mapY + 1 - startY) * deltaDistY;
 
-    for (let stepCount = 0; stepCount < maxStepsToTake; stepCount++) {
-      const currentRayX = startX + rayDirectionX * currentDistanceFromStart;
-      const currentRayY = startY + rayDirectionY * currentDistanceFromStart;
-      const mazeCell = maze.cellAt(currentRayX, currentRayY);
-
-      if (mazeCell === 1 || mazeCell === 2) {
-        return {
-          dist: currentDistanceFromStart,
-          nx: currentRayX,
-          ny: currentRayY,
-          cellType: mazeCell
-        };
+    let side = 0;
+    let travelled = 0;
+    while (travelled <= this.config.maxDepth) {
+      if (sideDistX < sideDistY) {
+        travelled = sideDistX;
+        sideDistX += deltaDistX;
+        mapX += stepX;
+        side = 0;
+      } else {
+        travelled = sideDistY;
+        sideDistY += deltaDistY;
+        mapY += stepY;
+        side = 1;
       }
-
-      currentDistanceFromStart += rayMarchingStepSize;
+      const cellType = maze.cellAt(mapX, mapY);
+      if (cellType === 1 || cellType === 2) {
+        // The ray parameter is already the perpendicular distance because the
+        // direction's component along the view axis is 1
+        const wallCoord = side === 0 ? startY + travelled * rayDirY : startX + travelled * rayDirX;
+        let wallU = wallCoord - Math.floor(wallCoord);
+        if ((side === 0 && rayDirX > 0) || (side === 1 && rayDirY < 0)) wallU = 1 - wallU;
+        return { dist: travelled, wallU, side, cellType, mapX, mapY };
+      }
     }
-
     return null;
   }
 
   /**
-   * Renders a single vertical wall column with texture and lighting
-   * @param {Object} wallHitInfo - Information about the wall hit (distance, position, type)
-   * @param {number} screenX - X position on screen to draw the column
-   * @param {number} currentRayAngle - Current ray angle for fisheye correction
-   * @param {Object} player - Player object with angle property
+   * Draws one wall column into the pixel buffer using the full texture height,
+   * with distance shading, fog and per-side shading
+   * @param {Object} hit - Result of castRay
+   * @param {number} screenX - X position of the column
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    */
-  renderWallColumn(wallHitInfo, screenX, currentRayAngle, player, W, H) {
-    // Fish-eye correction
-    const fishEyeCorrectedDistance = wallHitInfo.dist * Math.cos(currentRayAngle - player.a);
-    const clampedDistanceToWall = Math.max(GameConfig.RENDERING.MIN_WALL_DISTANCE, fishEyeCorrectedDistance);
+  renderWallColumn(hit, screenX, W, H) {
+    const R = GameConfig.RENDERING;
+    const dist = Math.max(R.MIN_WALL_DISTANCE, hit.dist);
+    const lineHeight = H / dist;
+    const wallTop = (H - lineHeight) / 2;
+    const yStart = Math.max(0, Math.ceil(wallTop));
+    const yEnd = Math.min(H, Math.floor(wallTop + lineHeight));
+    if (yEnd <= yStart) return;
 
-    // Wall height calculation
-    const wallHeightInPixels = Math.min(H, (H / clampedDistanceToWall) | 0);
-    const wallTopY = ((H - wallHeightInPixels) / 2) | 0;
+    const tex = this.getTextureData(this.selectTexture(hit));
+    const texX = Math.min(tex.width - 1, (hit.wallU * tex.width) | 0);
+    const texYStep = tex.height / lineHeight;
+    let texYPos = (yStart - wallTop) * texYStep;
 
-    // Lighting calculation
-    const brightnessFactor = Math.max(0, 1 - clampedDistanceToWall / this.config.maxDepth);
+    // Distance shading plus a darker Y-facing side
+    const { r: mulR, g: mulG, b: mulB, fog } = this.shadeFor(dist, hit.side === 1 ? R.SIDE_SHADE : 1);
+    const [fogR, fogG, fogB] = R.FOG_COLOR;
+    const keep = 1 - fog;
 
-    // Texture selection
-    const selectedTexture = this.selectTexture(wallHitInfo);
+    const pixels = this.frame.pixels;
+    const texData = tex.data;
+    const width = Math.min(this.config.columnStep, W - screenX);
 
-    // Texture coordinate calculation
-    const { textureSourceX, textureSourceY, textureSourceWidth, textureSourceHeight } =
-      this.calculateTextureCoordinates(wallHitInfo, selectedTexture, wallHeightInPixels);
-
-    // Render the wall column
-    this.ctx.save();
-    this.ctx.globalAlpha = 1;
-
-    this.ctx.drawImage(
-      selectedTexture,
-      textureSourceX, textureSourceY, textureSourceWidth, textureSourceHeight,
-      screenX, wallTopY, this.config.columnStep, wallHeightInPixels
-    );
-
-    // Apply distance-based shading
-    this.ctx.globalCompositeOperation = 'multiply';
-    const shadedRed = (GameConfig.RENDERING.SHADING_RED_BASE + GameConfig.RENDERING.SHADING_RED_FACTOR * brightnessFactor) | 0;
-    const shadedGreen = (GameConfig.RENDERING.SHADING_GREEN_BASE + GameConfig.RENDERING.SHADING_GREEN_FACTOR * brightnessFactor) | 0;
-    const shadedBlue = (GameConfig.RENDERING.SHADING_BLUE_BASE + GameConfig.RENDERING.SHADING_BLUE_FACTOR * brightnessFactor) | 0;
-    this.ctx.fillStyle = `rgba(${shadedRed}, ${shadedGreen}, ${shadedBlue}, ${GameConfig.RENDERING.SHADING_OPACITY})`;
-    this.ctx.fillRect(screenX, wallTopY, this.config.columnStep, wallHeightInPixels);
-
-    this.ctx.restore();
+    for (let y = yStart; y < yEnd; y++, texYPos += texYStep) {
+      const texY = Math.min(tex.height - 1, texYPos | 0);
+      const i = (texY * tex.width + texX) * 4;
+      const color = packColor(
+        texData[i] * mulR * keep + fogR * fog,
+        texData[i + 1] * mulG * keep + fogG * fog,
+        texData[i + 2] * mulB * keep + fogB * fog
+      );
+      const row = y * W + screenX;
+      for (let k = 0; k < width; k++) pixels[row + k] = color;
+    }
   }
 
   /**
    * Selects the appropriate texture based on wall type and position
-   * @param {Object} wallHitInfo - Information about the wall hit including cellType
-   * @returns {Object} The selected texture object
+   * @param {Object} hit - Hit information including cellType, mapX and mapY
+   * @returns {HTMLCanvasElement} The selected texture
    */
-  selectTexture(wallHitInfo) {
-    if (wallHitInfo.cellType === 2) {
-      return this.textures.door;
-    } else {
-      return ((Math.floor(wallHitInfo.nx) + Math.floor(wallHitInfo.ny)) % 2 === 0)
-        ? this.textures.wall : this.textures.brick;
-    }
-  }
-
-  /**
-   * Calculates texture coordinates for wall rendering
-   * @param {Object} wallHitInfo - Information about the wall hit
-   * @param {Object} selectedTexture - The texture to apply
-   * @param {number} wallHeightInPixels - Height of the wall in screen pixels
-   * @returns {Object} Texture coordinate information
-   */
-  calculateTextureCoordinates(wallHitInfo, selectedTexture, wallHeightInPixels) {
-    const hitPointX = wallHitInfo.nx;
-    const hitPointY = wallHitInfo.ny;
-    const isVerticalWall = Math.abs(hitPointX - Math.floor(hitPointX + 0.5)) < GameConfig.RENDERING.WALL_DETECTION_THRESHOLD;
-
-    let wallSurfaceU;
-    if (isVerticalWall) {
-      wallSurfaceU = hitPointY % 1;
-    } else {
-      wallSurfaceU = hitPointX % 1;
-    }
-
-    const textureSourceX = Math.floor(wallSurfaceU * selectedTexture.width) % selectedTexture.width;
-    const fixedTextureScale = GameConfig.RENDERING.FIXED_TEXTURE_SCALE;
-    const wallHeightInTexturePixels = wallHeightInPixels / fixedTextureScale;
-    const textureVerticalStart = 0;
-    const textureSourceY = Math.floor(textureVerticalStart * selectedTexture.height) % selectedTexture.height;
-    const textureSourceWidth = 1;
-    const textureSourceHeight = Math.min(selectedTexture.height, Math.ceil(wallHeightInTexturePixels));
-
-    return { textureSourceX, textureSourceY, textureSourceWidth, textureSourceHeight };
+  selectTexture(hit) {
+    if (hit.cellType === 2) return this.textures.door;
+    return (hit.mapX + hit.mapY) % 2 === 0 ? this.textures.wall : this.textures.brick;
   }
 }
