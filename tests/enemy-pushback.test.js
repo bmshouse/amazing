@@ -277,30 +277,35 @@ describe('Enemy Pushback Behavior', () => {
       maze.h = 6;
       maze.exit = { x: 5, y: 4, wallX: 6, wallY: 4 };
 
-      player.x = 2.0;
-      player.y = 1.5;
+      // Both stand in the exit's row with the wall cell (4, 4) between them and it,
+      // so the path-distance (BFS) branch runs and gets cached
+      player.x = 1.5;
+      player.y = 4.5;
 
       const enemy = {
-        x: 2.3,
-        y: 1.8,
+        x: 1.8,
+        y: 4.2,
         state: 'idle',
         stateTime: performance.now(),
         speed: 1,
         speedMul: 1
       };
 
+      // Count maze lookups instead of timing: a BFS touches many cells, a cache hit touches none
+      let lookups = 0;
+      const cellAt = maze.cellAt.bind(maze);
+      maze.cellAt = (x, y) => { lookups++; return cellAt(x, y); };
+
       // First call - will calculate and cache
-      const start1 = performance.now();
       const result1 = enemies.isPlayerBetweenEnemyAndExit(enemy, player, maze.exit);
-      const elapsed1 = performance.now() - start1;
+      const lookupsAfterFirst = lookups;
+      expect(enemies.pathDistanceCache.size).toBeGreaterThan(0);
 
-      // Second call - should use cache
-      const start2 = performance.now();
+      // Second call - path distances come from the cache (only the line-of-sight check looks at the maze)
       const result2 = enemies.isPlayerBetweenEnemyAndExit(enemy, player, maze.exit);
-      const elapsed2 = performance.now() - start2;
+      const lookupsDuringSecond = lookups - lookupsAfterFirst;
 
-      // Second call should be much faster (cached)
-      expect(elapsed2).toBeLessThan(elapsed1);
+      expect(lookupsDuringSecond).toBeLessThan(lookupsAfterFirst);
       expect(result1).toBe(result2); // Results should be identical
     });
   });

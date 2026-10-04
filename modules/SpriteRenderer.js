@@ -1,6 +1,10 @@
 // modules/SpriteRenderer.js - Handles billboard sprite rendering and particles
 import { GameConfig } from './GameConfig.js';
 
+// Distance from a snowman sprite's centre to the bottom of its base sphere, in size units
+// (the base sphere is centred 0.6 below and is 0.8 tall)
+const SNOWMAN_BASE_EXTENT = 1.4;
+
 export class SpriteRenderer {
   /**
    * Creates a new SpriteRenderer instance
@@ -28,13 +32,8 @@ export class SpriteRenderer {
   renderSprites(player, maze, enemies, particles, W, H, colors) {
     // Exit door billboard
     if (maze.exit) {
-      this.drawExitDoor(maze.exit, player, W, H, colors.exitDoor);
+      this.drawExitDoor(maze.exit, player, W, H, colors.exitDoor, maze);
     }
-
-    // Recharge pads
-    maze.pads.forEach(p => {
-      this.drawRechargePad(p.x + 0.5, p.y + 0.5, colors.rechargePad, player, W, H, maze);
-    });
 
     // Enemies
     enemies.entities.forEach(e => {
@@ -96,7 +95,11 @@ export class SpriteRenderer {
     // Perspective projection
     const projectedSizeOnScreen = (H / distanceToObject) * objectSize;
     const screenPositionX = Math.tan(angleFromPlayerToObject) / Math.tan(this.config.fov/2) * (W/2) + (W/2);
-    const screenPositionY = H/2;
+    // Objects that declare how far their base hangs below their centre (in size units) are stood on the floor,
+    // which sits EYE_HEIGHT below the horizon at this distance. Others stay centred on the horizon.
+    const screenPositionY = options.baseExtent === undefined
+      ? H/2
+      : H/2 + (GameConfig.RENDERING.EYE_HEIGHT - options.baseExtent * objectSize) * (H / distanceToObject);
 
     // Distance-based transparency
     const distanceBasedAlpha = Math.max(GameConfig.BALANCE.SPRITE_MIN_ALPHA, 1 - distanceToObject / this.config.maxDepth);
@@ -104,7 +107,7 @@ export class SpriteRenderer {
     // Render the shape based on type
     this.ctx.globalAlpha = distanceBasedAlpha;
     this.ctx.fillStyle = objectColor;
-    this._drawShape(shape, screenPositionX, screenPositionY, projectedSizeOnScreen, objectColor, distanceBasedAlpha);
+    this._drawShape(shape, screenPositionX, screenPositionY, projectedSizeOnScreen, objectColor, distanceBasedAlpha, options);
     this.ctx.globalAlpha = 1;
   }
 
@@ -116,18 +119,16 @@ export class SpriteRenderer {
    * @param {number} size - Projected size on screen
    * @param {string} color - Object color
    * @param {number} alpha - Current alpha transparency
+   * @param {Object} [options] - Billboard options; snowmen read facing and state from here
    * @private
    */
-  _drawShape(shapeType, x, y, size, color, alpha) {
+  _drawShape(shapeType, x, y, size, color, alpha, options = {}) {
     switch (shapeType) {
       case 'rectangle':
         this._drawRectangleShape(x, y, size);
         break;
       case 'snowman':
-        this._drawSnowmanShape(x, y, size, color, alpha);
-        break;
-      case 'recharge_pad':
-        this._drawRechargePadShape(x, y, size, color, alpha);
+        this._drawSnowmanShape(x, y, size, color, alpha, options);
         break;
       case 'heart':
         this._drawHeartShape(x, y, size);
@@ -166,15 +167,29 @@ export class SpriteRenderer {
   }
 
   /**
-   * Draws a snowman shape (3 stacked spheres) for enemies
+   * Fills a single ellipse in its own path
+   * @private
+   */
+  _fillEllipse(cx, cy, rx, ry) {
+    this.ctx.beginPath();
+    this.ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  /**
+   * Draws a snowman (3 stacked spheres) with a scarf and a face that turns with its heading.
+   * The face is placed on the head by longitude: facing the viewer shows both eyes and an
+   * end-on carrot, turned sideways shows one eye and a nose pointing left or right, and facing
+   * away shows a plain head with the scarf tail.
    * @param {number} x - Screen X position
    * @param {number} y - Screen Y position
    * @param {number} size - Projected size on screen
    * @param {string} color - Object color
    * @param {number} alpha - Current alpha transparency
+   * @param {Object} [options] - { facing: {side, front}, state }
    * @private
    */
-  _drawSnowmanShape(x, y, size, color, alpha) {
+  _drawSnowmanShape(x, y, size, color, alpha, options = {}) {
     // Bottom sphere (largest)
     const bottomRadius = size;
     const bottomY = y + size * 0.6;
@@ -187,44 +202,102 @@ export class SpriteRenderer {
     const topRadius = size * 0.5;
     const topY = y - size * 0.7;
 
+    const spheres = [[bottomY, bottomRadius], [middleY, middleRadius], [topY, topRadius]];
+    if (size < 4) {
+      // Too small for shading: one flat path (moveTo starts each ellipse cleanly, so no hairline is filled)
+      this.ctx.beginPath();
+      for (const [cy, radius] of spheres) {
+        this.ctx.moveTo(x + radius, cy);
+        this.ctx.ellipse(x, cy, radius, radius * 0.8, 0, 0, Math.PI * 2);
+      }
+      this.ctx.fill();
+      return;
+    }
+
+    // Bottom to top, so each upper sphere sits in front of the one below. Each sphere is a base
+    // fill, a translucent shade over all of it, and a smaller lit patch toward the upper left,
+    // which leaves a shaded crescent along the lower right. The head's crescent falls onto the
+    // torso and the torso's onto the base, which is what makes the three read as one stack.
+    for (const [cy, radius] of spheres) {
+      const ry = radius * 0.8;
+      this.ctx.fillStyle = color;
+      this._fillEllipse(x, cy, radius, ry);
+      this.ctx.fillStyle = GameConfig.COLORS.SNOWMAN_SHADE;
+      this._fillEllipse(x, cy, radius, ry);
+      this.ctx.fillStyle = color;
+      this._fillEllipse(x - radius * 0.07, cy - ry * 0.12, radius * 0.86, ry * 0.86);
+    }
+
+    // Details are sub-pixel mush when the snowman is far away
+    if (size < 4) return;
+
+    const { side = 0, front = 1 } = options.facing || {};
+    const yaw = Math.atan2(side, front); // 0 = facing the viewer, +/- PI/2 = sideways, PI = away
+    const headRx = topRadius, headRy = topRadius * 0.8;
+    const { COLORS } = GameConfig;
+
+    // Scarf: a band at the neck, with a tail that trails behind the direction it faces
+    const neckY = topY + headRy * 0.9;
+    this.ctx.fillStyle = COLORS.SNOWMAN_SCARF;
     this.ctx.beginPath();
-    // Bottom sphere
-    this.ctx.ellipse(x, bottomY, bottomRadius, bottomRadius * 0.8, 0, 0, Math.PI * 2);
-    // Middle sphere
-    this.ctx.ellipse(x, middleY, middleRadius, middleRadius * 0.8, 0, 0, Math.PI * 2);
-    // Top sphere
-    this.ctx.ellipse(x, topY, topRadius, topRadius * 0.8, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(x, neckY, size * 0.58, size * 0.12, 0, 0, Math.PI * 2);
     this.ctx.fill();
-  }
+    const tailSide = side > 0.25 ? -1 : 1;
+    this.ctx.fillRect(x + tailSide * size * 0.4 - size * 0.08, neckY, size * 0.16, size * 0.42);
 
-  /**
-   * Draws a recharge pad shape with glow effect, positioned lower on screen
-   * @param {number} x - Screen X position
-   * @param {number} y - Screen Y position
-   * @param {number} size - Projected size on screen
-   * @param {string} color - Object color
-   * @param {number} alpha - Current alpha transparency
-   * @private
-   */
-  _drawRechargePadShape(x, y, size, color, alpha) {
-    // Position lower on screen for ground-level appearance
-    const groundY = y + size * 0.8;
+    // Eyes sit either side of the face centre (longitude yaw +/- 0.5 rad) and are visible on the front hemisphere
+    const eyeY = topY - headRy * 0.2;
+    this.ctx.fillStyle = COLORS.SNOWMAN_COAL;
+    this.ctx.strokeStyle = COLORS.SNOWMAN_COAL;
+    this.ctx.lineWidth = Math.max(1, size * 0.04);
+    for (const eyeLon of [yaw - 0.5, yaw + 0.5]) {
+      const facingEye = Math.cos(eyeLon);
+      if (facingEye <= 0.05) continue;
+      const eyeX = x + headRx * 0.95 * Math.sin(eyeLon);
+      const eyeRx = size * 0.075 * (0.4 + 0.6 * facingEye);
+      const eyeRy = size * 0.075;
+      if (options.state === 'stunned') {
+        // Dazed X eyes
+        this.ctx.beginPath();
+        this.ctx.moveTo(eyeX - eyeRx, eyeY - eyeRy);
+        this.ctx.lineTo(eyeX + eyeRx, eyeY + eyeRy);
+        this.ctx.moveTo(eyeX + eyeRx, eyeY - eyeRy);
+        this.ctx.lineTo(eyeX - eyeRx, eyeY + eyeRy);
+        this.ctx.stroke();
+      } else if (options.state === 'tranq') {
+        // Sleeping: closed eyes as flat lines
+        this.ctx.fillRect(eyeX - eyeRx, eyeY, eyeRx * 2, Math.max(1, size * 0.03));
+      } else {
+        this.ctx.beginPath();
+        this.ctx.ellipse(eyeX, eyeY, eyeRx, eyeRy, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    }
 
-    // Main pad (flattened ellipse)
-    this.ctx.beginPath();
-    this.ctx.ellipse(x, groundY, size, size * 0.3, 0, 0, Math.PI * 2);
-    this.ctx.fill();
+    // Carrot nose: end-on circle when facing the viewer, a pointing triangle when turned,
+    // and just a tip peeking past the head edge as it turns away
+    if (Math.cos(yaw) > -0.3) {
+      const noseX = x + headRx * 0.97 * Math.sin(yaw);
+      const noseY = topY + headRy * 0.15;
+      const halfBase = size * 0.07;
+      const length = size * 0.36 * Math.abs(Math.sin(yaw));
+      this.ctx.fillStyle = COLORS.SNOWMAN_CARROT;
+      if (Math.cos(yaw) > 0) {
+        this.ctx.beginPath();
+        this.ctx.ellipse(noseX, noseY, halfBase * (0.6 + 0.4 * Math.cos(yaw)), halfBase, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+      if (length > 1) {
+        const dir = Math.sign(Math.sin(yaw));
+        this.ctx.beginPath();
+        this.ctx.moveTo(noseX, noseY - halfBase);
+        this.ctx.lineTo(noseX + dir * length, noseY + halfBase * 0.3);
+        this.ctx.lineTo(noseX, noseY + halfBase);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+    }
 
-    // Inner glow effect (white center)
-    const currentAlpha = this.ctx.globalAlpha;
-    this.ctx.globalAlpha = currentAlpha * 0.6;
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.beginPath();
-    this.ctx.ellipse(x, groundY, size * 0.6, size * 0.18, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Restore original color and alpha
-    this.ctx.globalAlpha = currentAlpha;
     this.ctx.fillStyle = color;
   }
 
@@ -286,16 +359,30 @@ export class SpriteRenderer {
   }
 
   /**
-   * Draws the exit door billboard - always visible, no occlusion
-   * @param {Object} exitData - Exit data with wallX and wallY coordinates
+   * Draws the through-wall exit marker. The door itself glows in the raycast pass, so this
+   * marker only appears while the door is hidden behind other walls (a navigation hint).
+   * It sits on the door's face (halfway between the exit's walkway cell and the door cell) and
+   * matches its size, so it lines up with the door when the two hand over.
+   * @param {Object} exitData - Exit data with x, y (walkway cell) and wallX, wallY (door cell)
    * @param {Object} player - Player object with position and angle
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    * @param {string} exitColor - Color for the exit door
+   * @param {Object} [maze] - Maze used to test whether the door is in view; the marker always draws without it
    */
-  drawExitDoor(exitData, player, W, H, exitColor) {
-    const exitBillboardX = exitData.wallX + 0.5;
-    const exitBillboardY = exitData.wallY + 0.5;
+  drawExitDoor(exitData, player, W, H, exitColor, maze = null) {
+    const walkX = exitData.x ?? exitData.wallX;
+    const walkY = exitData.y ?? exitData.wallY;
+    const exitBillboardX = (walkX + exitData.wallX) / 2 + 0.5;
+    const exitBillboardY = (walkY + exitData.wallY) / 2 + 0.5;
+
+    if (maze) {
+      const toDoor = Math.atan2(exitBillboardY - player.y, exitBillboardX - player.x);
+      const firstWall = this.castRayForOcclusion(player.x, player.y, toDoor, maze);
+      const doorDistance = Math.hypot(exitBillboardX - player.x, exitBillboardY - player.y);
+      // The ray reaches the door cell (or nothing blocks it): the glowing door is on screen already
+      if (!firstWall || firstWall.cellType === 2 || firstWall.dist >= doorDistance - 0.05) return;
+    }
 
     return this._drawBillboard(
       exitBillboardX,
@@ -310,6 +397,21 @@ export class SpriteRenderer {
         shape: 'rectangle'      // Exit door is rectangular
       }
     );
+  }
+
+  /**
+   * Which way a snowman faces as seen from the player.
+   * `front` is 1 when it looks straight at the player and -1 when it faces away;
+   * `side` is 1 when it looks toward the right of the screen and -1 toward the left.
+   * Snowmen without a heading look at the player.
+   * @param {Object} enemy - Enemy with x, y and optional heading (radians)
+   * @param {Object} player - Player with x, y
+   * @returns {{side: number, front: number}}
+   */
+  getSnowmanFacing(enemy, player) {
+    const viewAngle = Math.atan2(enemy.y - player.y, enemy.x - player.x); // player -> enemy
+    const heading = enemy.heading ?? viewAngle + Math.PI;
+    return { side: Math.sin(heading - viewAngle), front: -Math.cos(heading - viewAngle) };
   }
 
   /**
@@ -337,7 +439,10 @@ export class SpriteRenderer {
         checkOcclusion: true,
         maze: maze,
         exitDoorColor: exitDoorColor,
-        shape: 'snowman'        // Enemies are snowman-shaped
+        shape: 'snowman',       // Enemies are snowman-shaped
+        baseExtent: SNOWMAN_BASE_EXTENT,
+        facing: this.getSnowmanFacing(enemy, player),
+        state: enemy.state
       }
     );
   }
@@ -369,34 +474,6 @@ export class SpriteRenderer {
       }
     );
   }
-
-  /**
-   * Draws a recharge pad - ground-level, with glow effect
-   * @param {number} worldX - World X coordinate
-   * @param {number} worldY - World Y coordinate
-   * @param {string} padColor - Color of the recharge pad
-   * @param {Object} player - Player object with position and angle
-   * @param {number} W - Screen width in pixels
-   * @param {number} H - Screen height in pixels
-   * @param {Object} maze - Maze object for occlusion checking
-   */
-  drawRechargePad(worldX, worldY, padColor, player, W, H, maze) {
-    return this._drawBillboard(
-      worldX,
-      worldY,
-      GameConfig.RENDERING.RECHARGE_PAD_SIZE,
-      padColor,
-      player,
-      W,
-      H,
-      {
-        checkOcclusion: true,   // Hidden behind walls
-        maze: maze,
-        shape: 'recharge_pad'   // Special shape with glow effect
-      }
-    );
-  }
-
 
 
   /**

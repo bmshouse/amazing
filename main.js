@@ -3,7 +3,7 @@ import { Maze } from './modules/maze.js';
 import { PlayerController } from './modules/player.js';
 import { Defenses } from './modules/defenses.js';
 import { EnemyController } from './modules/enemies.js';
-import { generateWallTexture, generateBrickTexture, generateDoorTexture, generateFloorTexture, generateCeilingTexture } from './textures/wall-texture.js';
+import { generateWallTexture, generateBrickTexture, generateDoorTexture, generateFloorTexture, generateCeilingTexture, generateRechargePadTexture } from './textures/wall-texture.js';
 import { RaycastRenderer } from './modules/RaycastRenderer.js';
 import { SpriteRenderer } from './modules/SpriteRenderer.js';
 import { Model3DRenderer } from './modules/rendering/Model3DRenderer.js';
@@ -373,13 +373,13 @@ export function bootstrap({ dev=false } = {}) {
     brick: generateBrickTexture(64, 64),
     door: generateDoorTexture(64, 64),
     floor: generateFloorTexture(64, 64),
-    ceiling: generateCeilingTexture(64, 64)
+    ceiling: generateCeilingTexture(64, 64),
+    pad: generateRechargePadTexture(64, 64)
   };
 
   // Set entity colors from config
   const colors = {
     exitDoor: GameConfig.COLORS.EXIT_DOOR,
-    rechargePad: GameConfig.COLORS.RECHARGE_PAD,
     entityStunned: GameConfig.COLORS.ENTITY_STUNNED,
     entityTranq: GameConfig.COLORS.ENTITY_TRANQ,
     entitySlowed: GameConfig.COLORS.ENTITY_SLOWED,
@@ -754,11 +754,20 @@ export function bootstrap({ dev=false } = {}) {
     }
   });
 
-  // Pointer lock setup
-  canvas.addEventListener('click', ()=>{
-    if (!gameState.isStarted()) return;
+  // Pointer lock setup. Pointer lock needs a user gesture, so a click that starts the game
+  // also requests the lock in the same handler.
+  function startFromClick() {
+    const settingsOpen = hud.configPanel.classList.contains('show'); // an outside click only closes settings
+    if (isTouchDevice || gameState.isStarted() || gameState.isWon() || settingsOpen) return;
+    startGame();
     inputManager.requestPointerLock(canvas);
+  }
+
+  canvas.addEventListener('click', ()=>{
+    if (gameState.isStarted()) inputManager.requestPointerLock(canvas);
+    else startFromClick();
   });
+  hud.tutorial.addEventListener('click', startFromClick);
 
   eventSystem.on('pointerlockchange', (data)=>{
     player.pointerLocked = data.locked;
@@ -1190,7 +1199,7 @@ export function bootstrap({ dev=false } = {}) {
       // Render 3D enemies (WebGL canvas layer)
       model3DRenderer.render();
 
-      // Render sprites without enemies on base canvas (exit door, recharge pads)
+      // Render sprites without enemies on base canvas (exit door)
       spriteRenderer.renderSprites(player, maze, { entities: [] }, [], W, H, colors);
 
       // Clear UI canvas before rendering

@@ -28,7 +28,10 @@ export class Model3DRenderer {
 
     // Model and instance management
     this.models = new Map(); // LOD level -> model
-    this.enemyInstances = []; // Currently rendered enemy instances
+    this.enemyInstances = []; // Enemy instances drawn this frame
+    this.enemyPool = new Map(); // enemy entity -> { mesh, lod, bodies, tint } kept between frames
+    this.bodyMaterials = new Map(); // tint colour -> shared body material
+    this.partMaterials = null; // shared coal / carrot / scarf materials (created with the first model)
     this.mixers = []; // Animation mixers
 
     // Performance tracking
@@ -92,11 +95,11 @@ export class Model3DRenderer {
       this.renderer.sortObjects = true;
 
       // Add ambient light for basic visibility
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
       this.scene.add(ambientLight);
 
       // Add directional light for depth
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
       dirLight.position.set(1, 2, 1);
       this.scene.add(dirLight);
 
@@ -208,62 +211,135 @@ export class Model3DRenderer {
     this.models.set('enemy_lod1', lod1);
 
     // Create LOD2 - Low detail (simplified snowman - 2 spheres)
-    const lod2 = this.createSnowmanModel(0.15, 0, 0.1); // Bottom and top only
+    const lod2 = this.createSnowmanModel(0.15, 0, 0.1, { eyes: false }); // Bottom and top only, no eyes
     this.models.set('enemy_lod2', lod2);
 
     logger.info('Created procedural enemy models (3 LOD levels)');
   }
 
   /**
-   * Create a snowman-style 3D model (3 stacked spheres)
+   * Create a snowman-style 3D model: 3 stacked spheres, a scarf, and a face on its +Z side.
+   * The model faces +Z, so rotating it about Y turns the face. Body spheres are named 'body'
+   * so instances can swap in a tint material; everything else uses shared fixed materials.
    * @param {number} bottomRadius - Radius of bottom sphere
-   * @param {number} middleRadius - Radius of middle sphere
+   * @param {number} middleRadius - Radius of middle sphere (0 to leave it out)
    * @param {number} topRadius - Radius of top sphere (head)
+   * @param {Object} [options]
+   * @param {boolean} [options.eyes=true] - Add eyes (dropped at long range, where they are invisible)
    * @returns {THREE.Group} 3D model group
    * @private
    */
-  createSnowmanModel(bottomRadius, middleRadius, topRadius) {
+  createSnowmanModel(bottomRadius, middleRadius, topRadius, { eyes = true } = {}) {
     const THREE = this.THREE;
     const group = new THREE.Group();
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xffffff, // White snowmen
-      flatShading: true,
-      roughness: 0.8,
-      metalness: 0.2
-    });
+    const parts = this.getPartMaterials();
+    const body = this.getBodyMaterial(0xffffff);
 
-    // Bottom sphere - sits on the ground (center at bottomRadius height)
-    const bottomGeo = new THREE.SphereGeometry(bottomRadius, 8, 6);
-    const bottom = new THREE.Mesh(bottomGeo, material);
-    bottom.position.y = bottomRadius; // Center of bottom sphere
-    group.add(bottom);
-
-    let middle = null;
-    let middleHeight = 0;
-
-    // Middle sphere - stacked on top of bottom (optional for LOD)
-    if (middleRadius > 0) {
-      const middleGeo = new THREE.SphereGeometry(middleRadius, 8, 6);
-      middle = new THREE.Mesh(middleGeo, material.clone());
-      middle.position.y = bottomRadius * 2 + middleRadius; // Top of bottom + center of middle
-      middleHeight = middleRadius * 2;
-      group.add(middle);
-    }
-
-    // Top sphere (head) - stacked on top of middle (or bottom if no middle)
-    const topGeo = new THREE.SphereGeometry(topRadius, 8, 6);
-    const top = new THREE.Mesh(topGeo, material.clone());
-    top.position.y = bottomRadius * 2 + middleHeight + topRadius; // Stack appropriately
-    group.add(top);
-
-    // Store references for animations
-    group.userData = {
-      bottomSphere: bottom,
-      middleSphere: middle,
-      topSphere: top
+    const addBody = (radius, y) => {
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 8, 6), body);
+      mesh.name = 'body';
+      mesh.position.y = y;
+      group.add(mesh);
     };
 
+    // Spheres overlap (centres closer than the sum of the radii) so they merge into one stacked body
+    // instead of touching at a point. The base sits on the ground.
+    const stack = GameConfig.RENDERING.SNOWMAN_STACK;
+    let lowerY = bottomRadius, lowerRadius = bottomRadius;
+    addBody(bottomRadius, lowerY);
+
+    // Middle sphere (optional for LOD)
+    if (middleRadius > 0) {
+      const middleY = lowerY + (lowerRadius + middleRadius) * stack;
+      addBody(middleRadius, middleY);
+      lowerY = middleY;
+      lowerRadius = middleRadius;
+    }
+
+    // Head, resting in the top of the sphere below
+    const gap = (lowerRadius + topRadius) * stack;
+    const headY = lowerY + gap;
+    addBody(topRadius, headY);
+
+    // The neck is the ring where the head and the sphere below intersect
+    const along = (gap * gap + lowerRadius * lowerRadius - topRadius * topRadius) / (2 * gap);
+    const neckY = lowerY + along;
+    const neckRadius = Math.sqrt(Math.max(lowerRadius * lowerRadius - along * along, 0));
+
+    // Scarf: a flat ring round the neck, plus a tail hanging behind (-Z) so a back view differs from a front view
+    const scarfTube = topRadius * 0.2;
+    const scarfRadius = neckRadius + scarfTube * 0.6;
+    const scarfGeo = new THREE.TorusGeometry(scarfRadius, scarfTube, 4, 8);
+    scarfGeo.rotateX(Math.PI / 2);
+    const scarf = new THREE.Mesh(scarfGeo, parts.scarf);
+    scarf.position.y = neckY;
+    group.add(scarf);
+
+    const tail = new THREE.Mesh(
+      new THREE.BoxGeometry(topRadius * 0.3, topRadius * 0.9, topRadius * 0.12), parts.scarf);
+    tail.position.set(scarfRadius * 0.55, neckY - topRadius * 0.15, -scarfRadius * 0.7);
+    group.add(tail);
+
+    // Carrot nose: a 5-sided cone pointing along +Z
+    const noseLength = topRadius * 0.7;
+    const noseGeo = new THREE.ConeGeometry(topRadius * 0.18, noseLength, 5);
+    noseGeo.rotateX(Math.PI / 2);
+    const nose = new THREE.Mesh(noseGeo, parts.carrot);
+    nose.position.set(0, headY - topRadius * 0.05, topRadius * 0.8 + noseLength / 2);
+    group.add(nose);
+
+    if (eyes) {
+      const eyeGeo = new THREE.SphereGeometry(topRadius * 0.16, 4, 3);
+      for (const dir of [-1, 1]) {
+        const eye = new THREE.Mesh(eyeGeo, parts.coal);
+        eye.position.set(dir * topRadius * 0.38, headY + topRadius * 0.22, topRadius * 0.88);
+        group.add(eye);
+      }
+    }
+
+    // Plain numbers the pose code needs: overall height, and the radius of the widest sphere,
+    // which is how high the body axis sits when the snowman lies on its side
+    group.userData.height = headY + topRadius;
+    group.userData.restHeight = Math.max(bottomRadius, middleRadius, topRadius);
+
     return group;
+  }
+
+  /**
+   * Shared materials for the parts of a snowman that never change colour
+   * @private
+   */
+  getPartMaterials() {
+    if (!this.partMaterials) {
+      const make = (color) => new this.THREE.MeshStandardMaterial({
+        color, flatShading: true, roughness: 0.8, metalness: 0.2
+      });
+      this.partMaterials = {
+        coal: make(0x1b1b1b),
+        carrot: make(0xff8a1f),
+        scarf: make(0xd62828)
+      };
+    }
+    return this.partMaterials;
+  }
+
+  /**
+   * One shared body material per tint colour (instances swap between these instead of cloning)
+   * @param {number} hex - Tint colour
+   * @private
+   */
+  getBodyMaterial(hex) {
+    let material = this.bodyMaterials.get(hex);
+    if (!material) {
+      material = new this.THREE.MeshStandardMaterial({
+        color: hex,
+        flatShading: true, // low-poly look
+        roughness: 0.8,
+        metalness: 0.2
+      });
+      this.bodyMaterials.set(hex, material);
+    }
+    return material;
   }
 
   /**
@@ -326,7 +402,7 @@ export class Model3DRenderer {
 
     // Position camera at player location
     // Y offset of 0.5 to simulate eye height
-    this.camera.position.set(player.x, 0.5, player.y);
+    this.camera.position.set(player.x, GameConfig.RENDERING.EYE_HEIGHT, player.y);
 
     // Rotate camera to match player angle
     // player.a is in radians where 0 = right, PI/2 = down, PI = left, 3PI/2 = up
@@ -373,7 +449,8 @@ export class Model3DRenderer {
   }
 
   /**
-   * Update enemy instances based on current game state
+   * Update enemy instances based on current game state. Each enemy keeps one model between
+   * frames (rebuilt only when its LOD changes); out-of-range or hidden enemies are just made invisible.
    * @param {Array} enemies - Array of enemy entities
    * @param {Object} player - Player object
    * @param {number} deltaTime - Time since last frame (ms)
@@ -382,75 +459,93 @@ export class Model3DRenderer {
   updateEnemies(enemies, player, deltaTime, maze) {
     if (!this.enabled || !this.modelsLoaded) return;
 
-    // Clear previous instances
-    this.enemyInstances.forEach(instance => {
-      this.scene.remove(instance.mesh);
-      if (instance.mixer) {
-        instance.mixer.stopAllAction();
+    // Drop models of enemies that no longer exist (e.g. after a restart)
+    const live = new Set(enemies);
+    for (const [enemy, instance] of this.enemyPool) {
+      if (!live.has(enemy)) {
+        this.scene.remove(instance.mesh);
+        this.enemyPool.delete(enemy);
       }
-    });
+    }
+
     this.enemyInstances = [];
     this.mixers = [];
+    const now = Date.now();
 
-    // Create new instances for visible enemies
     enemies.forEach(enemy => {
+      let instance = this.enemyPool.get(enemy);
       const distance = Math.hypot(enemy.x - player.x, enemy.y - player.y);
       const lodLevel = this.selectLOD(distance);
 
-      // Skip if enemy is too far (use 2D sprite instead)
-      if (lodLevel === null) return;
+      // Too far (2D sprite is used instead) or hidden behind a wall
+      if (lodLevel === null || (maze && this.isOccludedByWall(player, enemy, maze))) {
+        if (instance) instance.mesh.visible = false;
+        return;
+      }
 
-      // Skip if enemy is occluded by walls
-      if (maze && this.isOccludedByWall(player, enemy, maze)) return;
-
-      // Clone model for this enemy
-      const modelTemplate = this.models.get(`enemy_lod${lodLevel}`);
-      if (!modelTemplate) {
+      const template = this.models.get(`enemy_lod${lodLevel}`);
+      if (!template) {
         logger.warn(`Missing model for LOD${lodLevel}`);
         return;
       }
 
-      const model = modelTemplate.clone();
-      // Position at ground level (Y=0), models are built with their base at Y=0 and extend upward
-      model.position.set(enemy.x, 0, enemy.y);
+      if (!instance || instance.lod !== lodLevel) {
+        if (instance) this.scene.remove(instance.mesh);
+        instance = this.createInstance(template, lodLevel);
+        this.enemyPool.set(enemy, instance);
+        this.scene.add(instance.mesh);
+      }
+      instance.mesh.visible = true;
 
-      // Apply state-based color tint
+      // State-based body colour (shared materials, swapped only on change)
       const tint = this.getStateTint(enemy.state);
-      model.traverse((child) => {
-        if (child.isMesh && child.material) {
-          child.material = child.material.clone(); // Clone material to avoid shared state
-          child.material.color.setHex(tint);
-        }
-      });
+      if (instance.tint !== tint) {
+        const material = this.getBodyMaterial(tint);
+        instance.bodies.forEach(body => { body.material = material; });
+        instance.tint = tint;
+      }
 
-      // Simple rotation animation based on state
+      // Pose. The model faces +Z; world X/Z are the maze's x/y, so a heading h needs rotation.y = PI/2 - h.
+      // Snowmen without a heading look at the player.
+      const heading = enemy.heading ?? Math.atan2(player.y - enemy.y, player.x - enemy.x);
+      const facing = Math.PI / 2 - heading;
+      const mesh = instance.mesh;
+      mesh.rotation.set(0, facing, 0);
+      mesh.position.set(enemy.x, 0, enemy.y);
+
       if (enemy.state === 'stunned') {
         // Spinning animation for stunned enemies
-        model.rotation.y = (Date.now() / 500) % (Math.PI * 2);
+        mesh.rotation.y = (now / 500) % (Math.PI * 2);
       } else if (enemy.state === 'tranq') {
-        // Tipped over for tranquilized enemies
-        model.rotation.x = Math.PI / 2;
-        // Adjust position when tipped to keep it near ground
-        model.position.y = 0.3;
-      } else {
-        // Face player direction (billboard-like behavior)
-        const angleToPlayer = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-        model.rotation.y = angleToPlayer + Math.PI / 2;
+        // Asleep on its back: tipped so the face points up and the head lies behind it. The body axis
+        // rests at the widest sphere's radius, so it touches the floor instead of hovering, and the
+        // body is centred on the enemy's spot (the model pivots at its base).
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.y = instance.restHeight;
+        mesh.position.x += Math.cos(heading) * instance.height / 2;
+        mesh.position.z += Math.sin(heading) * instance.height / 2;
+      } else if (enemy.state === 'idle' || !enemy.state) {
+        // Gentle hop that never sinks the base below the floor
+        mesh.position.y = (Math.sin(now / 500) + 1) * 0.025;
       }
 
-      // Simple bobbing animation for idle/walking enemies
-      if (enemy.state === 'idle' || !enemy.state) {
-        const bobOffset = Math.sin(Date.now() / 500) * 0.05;
-        model.position.y = bobOffset;
-      }
-
-      this.scene.add(model);
-      this.enemyInstances.push({
-        mesh: model,
-        enemy: enemy,
-        lodLevel: lodLevel
-      });
+      this.enemyInstances.push(instance);
     });
+  }
+
+  /**
+   * Build a pooled instance from a LOD template. clone() shares geometry and materials,
+   * so this costs a handful of small objects once, not every frame.
+   * @private
+   */
+  createInstance(template, lodLevel) {
+    const mesh = template.clone();
+    // Yaw is applied after the tip-over, so a fallen snowman lies along its own heading
+    mesh.rotation.order = 'YXZ';
+    const bodies = [];
+    mesh.traverse(child => { if (child.name === 'body') bodies.push(child); });
+    const { height, restHeight } = template.userData;
+    return { mesh, lod: lodLevel, bodies, tint: null, height, restHeight };
   }
 
   /**
@@ -507,6 +602,11 @@ export class Model3DRenderer {
       });
     });
 
+    this.bodyMaterials.forEach(material => material.dispose());
+    this.bodyMaterials.clear();
+    if (this.partMaterials) Object.values(this.partMaterials).forEach(material => material.dispose());
+    this.partMaterials = null;
+    this.enemyPool.clear();
     this.models.clear();
     this.enemyInstances = [];
     this.mixers = [];

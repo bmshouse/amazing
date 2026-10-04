@@ -29,7 +29,7 @@
       "instruction_4": "Las criaturas amigables te harán <em>boop</em> suavemente. Usa herramientas defensivas:",
       "instruction_5": "Pisa las plataformas de recarga para rellenar las cargas de los dispositivos.",
       "instruction_6": "¡Haz clic en el <strong>⚙️ icono de engranaje</strong> para personalizar la dificultad, tamaño del laberinto, número de enemigos y configuración de dispositivos!",
-      "start_prompt": "Presiona <strong>Enter</strong> para comenzar. Presiona <strong>R</strong> para reiniciar.",
+      "start_prompt": "Presiona <strong>Enter</strong> o haz <strong>clic</strong> para comenzar. Presiona <strong>R</strong> para reiniciar.",
       "device_list": {
         "disruptor": "<strong>1</strong> Disruptor (aturdimiento de corto alcance)",
         "immobilizer": "<strong>2</strong> Inmovilizador (orbe lento)",

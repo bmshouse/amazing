@@ -209,3 +209,47 @@ export function generateCeilingTexture(width = 64, height = 64) {
   addNoise(ctx, width, height, 14);
   return canvas;
 }
+
+// Recharge pad: a glowing teal disc with a bolt, drawn to fill exactly one maze cell.
+// The disc radius matches GameConfig.MAZE.RECHARGE_PAD_RADIUS so what you see is where you charge.
+export function generateRechargePadTexture(width = 64, height = 64) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const cx = width / 2, cy = height / 2;
+  const radius = width / 2 - 2;
+
+  ctx.fillStyle = '#10222c'; // dark plate
+  ctx.fillRect(0, 0, width, height);
+
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  glow.addColorStop(0, '#9dffee');
+  glow.addColorStop(0.6, '#26d9b8');
+  glow.addColorStop(1, '#0e7f78');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#d9fff7';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Lightning bolt
+  const s = width / 64;
+  ctx.fillStyle = '#0b4a52';
+  ctx.beginPath();
+  ctx.moveTo(36 * s, 12 * s);
+  ctx.lineTo(23 * s, 35 * s);
+  ctx.lineTo(31 * s, 35 * s);
+  ctx.lineTo(27 * s, 52 * s);
+  ctx.lineTo(42 * s, 28 * s);
+  ctx.lineTo(33 * s, 28 * s);
+  ctx.closePath();
+  ctx.fill();
+
+  return canvas;
+}
