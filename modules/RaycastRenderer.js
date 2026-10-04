@@ -9,6 +9,9 @@ const hexToRgb = (hex) => [
 
 const lerpColor = (a, b, t) => a.map((c, i) => c + (b[i] - c) * t);
 
+const MARKER_PAD = 1;
+const MARKER_EXIT = 2;
+
 /** Packs RGB (0-255, may be fractional) into a little-endian ABGR Uint32 pixel */
 function packColor(r, g, b) {
   return (255 << 24) | ((b > 255 ? 255 : b | 0) << 16) | ((g > 255 ? 255 : g | 0) << 8) | (r > 255 ? 255 : r | 0);
@@ -31,6 +34,8 @@ export class RaycastRenderer {
     };
     this.textureCache = new WeakMap(); // texture canvas -> { data, width, height }
     this.frame = null;                 // { canvas, ctx, image, pixels, W, H, backdrop }
+    this.markerCache = null;           // { maze, pads, count, exit, grid }
+    this.glowPulse = 1;                // 0.85-1 brightness wobble shared by every glowing surface
   }
 
   /**
@@ -42,8 +47,9 @@ export class RaycastRenderer {
    */
   render(player, maze, W, H) {
     const frame = this.getFrame(W, H);
+    this.glowPulse = 0.85 + 0.15 * Math.sin(performance.now() / 350);
     frame.pixels.set(frame.backdrop);
-    this.renderFloorAndCeiling(player, W, H);
+    this.renderFloorAndCeiling(player, maze, W, H);
     this.renderWalls(player, maze, W, H);
     frame.ctx.putImageData(frame.image, 0, 0);
     // drawImage (unlike putImageData) honours the canvas DPR transform
@@ -109,17 +115,23 @@ export class RaycastRenderer {
    * Perspective-correct textured floor and ceiling, one screen row at a time.
    * Every pixel in a row sits at the same distance, so shading is computed once per row
    * and the texture coordinate advances linearly across it. Skipped when textures are missing
-   * (the gradient backdrop is used instead).
+   * (the gradient backdrop is used instead). Recharge pads and the light spilling in front of
+   * the exit door are drawn here as floor tiles, so they stay locked to the ground in perspective.
    * @param {Object} player - Player object with x, y, and angle (a) properties
+   * @param {Object} maze - Maze object with w, h, pads and exit
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    */
-  renderFloorAndCeiling(player, W, H) {
-    const { floor, ceiling } = this.textures;
+  renderFloorAndCeiling(player, maze, W, H) {
+    const { floor, ceiling, pad } = this.textures;
     if (!floor || !ceiling) return;
 
     const floorTex = this.getTextureData(floor);
     const ceilTex = this.getTextureData(ceiling);
+    const padTex = pad ? this.getTextureData(pad) : null;
+    const markers = this.getFloorMarkers(maze);
+    const padPulse = this.glowPulse;
+    const { EXIT_GLOW_COLOR, EXIT_FLOOR_GLOW } = GameConfig.RENDERING;
     const pixels = this.frame.pixels;
     const dirX = Math.cos(player.a), dirY = Math.sin(player.a);
     const planeScale = Math.tan(this.config.fov / 2);
@@ -133,6 +145,9 @@ export class RaycastRenderer {
       const [fogR, fogG, fogB] = GameConfig.RENDERING.FOG_COLOR;
       const keep = 1 - shade.fog;
       const fogAddR = fogR * shade.fog, fogAddG = fogG * shade.fog, fogAddB = fogB * shade.fog;
+      // Light added to the exit tile; fades out with fog like everything else
+      const glow = EXIT_FLOOR_GLOW * padPulse * keep;
+      const exitAddR = EXIT_GLOW_COLOR[0] * glow, exitAddG = EXIT_GLOW_COLOR[1] * glow, exitAddB = EXIT_GLOW_COLOR[2] * glow;
 
       // World position at the left edge of the row, and the step per screen pixel
       let worldX = player.x + rowDist * (dirX - planeX);
@@ -143,17 +158,32 @@ export class RaycastRenderer {
       const floorRow = y * W;
       const ceilRow = (H - 1 - y) * W;
       for (let x = 0; x < W; x++, worldX += stepX, worldY += stepY) {
-        const u = worldX - Math.floor(worldX);
-        const v = worldY - Math.floor(worldY);
+        const cellX = Math.floor(worldX), cellY = Math.floor(worldY);
+        const u = worldX - cellX;
+        const v = worldY - cellY;
 
-        let i = (((v * floorTex.height) | 0) * floorTex.width + ((u * floorTex.width) | 0)) * 4;
-        pixels[floorRow + x] = packColor(
-          floorTex.data[i] * shade.r * keep + fogAddR,
-          floorTex.data[i + 1] * shade.g * keep + fogAddG,
-          floorTex.data[i + 2] * shade.b * keep + fogAddB
-        );
+        const marker = markers && cellX >= 0 && cellY >= 0 && cellX < markers.w && cellY < markers.h
+          ? markers.cells[cellY * markers.w + cellX] : 0;
 
-        i = (((v * ceilTex.height) | 0) * ceilTex.width + ((u * ceilTex.width) | 0)) * 4;
+        if (marker === MARKER_PAD && padTex) {
+          // Pad tiles glow: not darkened by distance, only pulsed and fogged
+          const j = (((v * padTex.height) | 0) * padTex.width + ((u * padTex.width) | 0)) * 4;
+          pixels[floorRow + x] = packColor(
+            padTex.data[j] * padPulse * keep + fogAddR,
+            padTex.data[j + 1] * padPulse * keep + fogAddG,
+            padTex.data[j + 2] * padPulse * keep + fogAddB
+          );
+        } else {
+          const i = (((v * floorTex.height) | 0) * floorTex.width + ((u * floorTex.width) | 0)) * 4;
+          const lit = marker === MARKER_EXIT;
+          pixels[floorRow + x] = packColor(
+            floorTex.data[i] * shade.r * keep + fogAddR + (lit ? exitAddR : 0),
+            floorTex.data[i + 1] * shade.g * keep + fogAddG + (lit ? exitAddG : 0),
+            floorTex.data[i + 2] * shade.b * keep + fogAddB + (lit ? exitAddB : 0)
+          );
+        }
+
+        const i = (((v * ceilTex.height) | 0) * ceilTex.width + ((u * ceilTex.width) | 0)) * 4;
         pixels[ceilRow + x] = packColor(
           ceilTex.data[i] * shade.r * keep + fogAddR,
           ceilTex.data[i + 1] * shade.g * keep + fogAddG,
@@ -161,6 +191,31 @@ export class RaycastRenderer {
         );
       }
     }
+  }
+
+  /**
+   * Per-cell lookup of special floor tiles (recharge pads and the exit's walkway cell),
+   * rebuilt only when the maze, its pad list or its exit changes
+   * @returns {{cells: Uint8Array, w: number, h: number}|null} null when there is nothing to mark
+   * @private
+   */
+  getFloorMarkers(maze) {
+    const { pads, exit } = maze;
+    const cached = this.markerCache;
+    if (cached && cached.maze === maze && cached.pads === pads && cached.count === pads?.length
+        && cached.exit === exit) return cached.grid;
+
+    let grid = null;
+    if ((pads && pads.length) || exit) {
+      grid = { cells: new Uint8Array(maze.w * maze.h), w: maze.w, h: maze.h };
+      for (const p of pads || []) grid.cells[p.y * maze.w + p.x] = MARKER_PAD;
+      if (exit) {
+        const ex = Math.floor(exit.x), ey = Math.floor(exit.y);
+        if (ex >= 0 && ey >= 0 && ex < maze.w && ey < maze.h) grid.cells[ey * maze.w + ex] = MARKER_EXIT;
+      }
+    }
+    this.markerCache = { maze, pads, count: pads?.length, exit, grid };
+    return grid;
   }
 
   /**
@@ -274,7 +329,19 @@ export class RaycastRenderer {
     let texYPos = (yStart - wallTop) * texYStep;
 
     // Distance shading plus a darker Y-facing side
-    const { r: mulR, g: mulG, b: mulB, fog } = this.shadeFor(dist, hit.side === 1 ? R.SIDE_SHADE : 1);
+    let { r: mulR, g: mulG, b: mulB, fog } = this.shadeFor(dist, hit.side === 1 ? R.SIDE_SHADE : 1);
+
+    // The exit door is emissive: bright from every angle and distance, pulsing, with only a little fog.
+    // Drawing the glow here (instead of as an overlay) keeps it attached to the wall.
+    const isDoor = hit.cellType === 2;
+    let glowR = 0, glowG = 0, glowB = 0;
+    if (isDoor) {
+      mulR = mulG = mulB = R.EXIT_GLOW_BRIGHTNESS * this.glowPulse;
+      fog *= R.EXIT_GLOW_FOG_FACTOR;
+      glowR = R.EXIT_GLOW_COLOR[0] * R.EXIT_WALL_GLOW * this.glowPulse;
+      glowG = R.EXIT_GLOW_COLOR[1] * R.EXIT_WALL_GLOW * this.glowPulse;
+      glowB = R.EXIT_GLOW_COLOR[2] * R.EXIT_WALL_GLOW * this.glowPulse;
+    }
     const [fogR, fogG, fogB] = R.FOG_COLOR;
     const keep = 1 - fog;
 
@@ -286,9 +353,9 @@ export class RaycastRenderer {
       const texY = Math.min(tex.height - 1, texYPos | 0);
       const i = (texY * tex.width + texX) * 4;
       const color = packColor(
-        texData[i] * mulR * keep + fogR * fog,
-        texData[i + 1] * mulG * keep + fogG * fog,
-        texData[i + 2] * mulB * keep + fogB * fog
+        texData[i] * mulR * keep + fogR * fog + glowR,
+        texData[i + 1] * mulG * keep + fogG * fog + glowG,
+        texData[i + 2] * mulB * keep + fogB * fog + glowB
       );
       const row = y * W + screenX;
       for (let k = 0; k < width; k++) pixels[row + k] = color;

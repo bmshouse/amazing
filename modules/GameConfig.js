@@ -28,9 +28,17 @@ export const GameConfig = {
     FOG_STRENGTH: 0.85,       // 0-1, how strongly distant walls blend into the fog colour
     FOG_COLOR: [17, 23, 40],  // matches COLORS.FLOOR_TOP (#111728)
 
+    // Exit glow (the door itself and the floor tile in front of it)
+    EXIT_GLOW_COLOR: [168, 248, 171], // matches COLORS.EXIT_DOOR (#a8f8ab)
+    EXIT_GLOW_BRIGHTNESS: 1.1,        // door texture multiplier, replaces distance darkening
+    EXIT_GLOW_FOG_FACTOR: 0.35,       // fraction of normal fog applied to the door
+    EXIT_WALL_GLOW: 0.3,              // 0-1, amount of glow colour added to the door
+    EXIT_FLOOR_GLOW: 0.3,             // 0-1, amount of glow colour added to the tile in front of the door
+
     // Sprite rendering
-    EXIT_DOOR_SIZE: 0.6,
-    RECHARGE_PAD_SIZE: 0.4,
+    EYE_HEIGHT: 0.5,     // camera height above the floor; walls are 1 unit tall, so the floor is 0.5 below the eye
+    SNOWMAN_STACK: 0.78, // 3D snowman sphere spacing as a fraction of the touching distance (lower = more overlap)
+    EXIT_DOOR_SIZE: 0.5, // half the door marker width in cells (the marker is one cell wide)
     ENEMY_SIZE: 0.15, // Match 3D snowman bottom sphere radius
     PARTICLE_SIZE: 0.05,
     BILLBOARD_HEIGHT_MULTIPLIER: 1.2,
@@ -66,10 +74,11 @@ export const GameConfig = {
     COUNT: 10,
     SPEED: 1.3,
     MIN_SPAWN_DISTANCE: 5,
-    CHASE_DISTANCE: 6,
+    CHASE_PATH_DISTANCE: 8,   // chase when the player is within this many maze cells by path (not straight-line)
     COLLISION_DISTANCE: 0.6,
     PUSHBACK_FORCE: 0.4,
-    WANDER_JITTER: 0.2,
+    WANDER_SPEED_FACTOR: 0.5, // idle critters stroll at this fraction of chase speed
+    TURN_RATE: 8,             // radians per second a snowman can swing its facing direction
 
     // Smart push configuration (progressive difficulty)
     SMART_PUSH_ENABLED: false,        // Default: disabled (classic radial push)
@@ -116,7 +125,7 @@ export const GameConfig = {
     RECHARGE_PAD_COUNT: 3,
     MIN_DISTANCE_FROM_START: 6,
     MIN_DISTANCE_FROM_EXIT: 6,
-    RECHARGE_PAD_RADIUS: 0.8,
+    RECHARGE_PAD_RADIUS: 0.5, // matches the glowing disc drawn on the pad's floor tile
 
     // Cell types
     CELL_WALL: 1,
@@ -155,11 +164,16 @@ export const GameConfig = {
   // Color constants
   COLORS: {
     EXIT_DOOR: '#a8f8abff',
-    RECHARGE_PAD: '#2b1bbdff',
     ENTITY_STUNNED: '#ffd166',
     ENTITY_TRANQ: '#a29bfe',
     ENTITY_SLOWED: '#00d1ff',
     ENTITY: '#f0134aff',
+
+    // Snowman details
+    SNOWMAN_SHADE: 'rgba(25, 35, 80, 0.3)', // darkens the underside of each sphere
+    SNOWMAN_SCARF: '#d62828',
+    SNOWMAN_COAL: '#1b1b1b',
+    SNOWMAN_CARROT: '#ff8a1f',
 
     // Weapon effect colors
     TASER: '#ffd166',

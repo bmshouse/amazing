@@ -1,6 +1,8 @@
 // modules/enemies.js - friendly AI that pushes player back
 import { GameConfig } from './GameConfig.js';
 
+const DIRECTIONS = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+
 export class EnemyController {
   constructor(maze, player) {
     this.maze = maze;
@@ -9,6 +11,8 @@ export class EnemyController {
     this.onBoop = (_x,_y,_isPull)=>{};
     // Cache for pathfinding distances to avoid expensive recalculations
     this.pathDistanceCache = new Map();
+    // BFS distance (in cells) from the player's cell, shared by every chasing enemy
+    this.flowField = null;
     this.reset(maze);
   }
 
@@ -17,6 +21,7 @@ export class EnemyController {
     this.entities = [];
     // Clear pathfinding cache when maze resets
     this.pathDistanceCache.clear();
+    this.flowField = null;
     const cells = [];
     for (let y=1;y<maze.h;y+=2) for (let x=1;x<maze.w;x+=2) if (maze.grid[y][x]===0) cells.push({x:x+0.5, y:y+0.5});
     for (let i=0;i<GameConfig.ENEMIES.COUNT && cells.length;i++) {
@@ -29,7 +34,8 @@ export class EnemyController {
         state:'idle',
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
-        speedMul: 1
+        speedMul: 1,
+        heading: Math.random() * Math.PI * 2 // direction the snowman faces, in radians (0 = +x)
       });
     }
   }
@@ -37,30 +43,32 @@ export class EnemyController {
   update(dt, maze) {
     this.maze = maze;
     const t = performance.now();
+    const flow = this.updateFlowField(maze);
     for (const e of this.entities) {
       // state recovery using config values
       if (e.state==='stunned' && t - e.stateTime > GameConfig.ENEMIES.STUNNED_DURATION) { e.state='idle'; e.speedMul=1; }
       if (e.state==='slowed' && t - e.stateTime > GameConfig.ENEMIES.SLOWED_DURATION) { e.state='idle'; e.speedMul=1; }
       if (e.state==='tranq'  && t - e.stateTime > GameConfig.ENEMIES.TRANQ_DURATION) { e.state='idle'; e.speedMul=1; }
 
-      // simple steering: chase if close, wander otherwise
-      let targetA = Math.atan2(this.player.y - e.y, this.player.x - e.x);
       const dist = Math.hypot(this.player.x - e.x, this.player.y - e.y);
-      const chase = dist < GameConfig.ENEMIES.CHASE_DISTANCE && e.state!=='tranq';
-
-      if (!chase) {
-        // wander: jitter
-        targetA += (Math.random()-0.5)*GameConfig.ENEMIES.WANDER_JITTER;
-      }
-
       const v = e.speed * e.speedMul * (dt/1000);
-      const nx = e.x + Math.cos(targetA) * v;
-      const ny = e.y + Math.sin(targetA) * v;
-      if (maze.cellAt(nx, e.y) === 0) e.x = nx;
-      if (maze.cellAt(e.x, ny) === 0) e.y = ny;
 
-      // Pushback if close
-      if (dist < GameConfig.ENEMIES.COLLISION_DISTANCE) {
+      // Chase along the maze path when the player is close by path; otherwise stroll the corridors
+      const pathCells = this.flowDistanceAt(flow, e.x, e.y);
+      e.chasing = e.state !== 'tranq' && pathCells >= 0 && pathCells <= GameConfig.ENEMIES.CHASE_PATH_DISTANCE;
+      const fromX = e.x, fromY = e.y;
+      if (e.chasing) {
+        e.wanderTarget = null;
+        this.moveToward(e, this.nextChaseWaypoint(e, flow, pathCells), v, maze);
+      } else {
+        this.wander(e, v * GameConfig.ENEMIES.WANDER_SPEED_FACTOR, maze);
+      }
+      this.faceMovement(e, fromX, fromY, dt);
+
+      // Pushback if close. Stunned and sleeping critters are harmless, so the player can walk
+      // through them; otherwise one in a one-cell corridor would block the way until it wakes.
+      const incapacitated = e.state === 'stunned' || e.state === 'tranq';
+      if (dist < GameConfig.ENEMIES.COLLISION_DISTANCE && !incapacitated) {
         // Determine push direction based on player position relative to exit
         let pushX, pushY;
         let isPull = false;
@@ -116,6 +124,118 @@ export class EnemyController {
         this.onBoop(e.x, e.y, isPull);
       }
     }
+  }
+
+  /**
+   * Returns the BFS distance field from the player's cell, rebuilding it only when the
+   * player changes cell (or the maze changes). Unreachable and wall cells are -1.
+   * @param {Object} maze - Maze object with w, h and cellAt
+   * @returns {{maze: Object, cx: number, cy: number, w: number, dist: Int16Array}}
+   * @private
+   */
+  updateFlowField(maze) {
+    const cx = Math.floor(this.player.x);
+    const cy = Math.floor(this.player.y);
+    const f = this.flowField;
+    if (f && f.maze === maze && f.cx === cx && f.cy === cy) return f;
+
+    const { w, h } = maze;
+    const dist = new Int16Array(w * h).fill(-1);
+    if (maze.cellAt(cx, cy) === 0) {
+      const queue = [cy * w + cx];
+      dist[queue[0]] = 0;
+      for (let head = 0; head < queue.length; head++) {
+        const idx = queue[head];
+        const x = idx % w, y = (idx / w) | 0;
+        for (const [dx, dy] of DIRECTIONS) {
+          const nx = x + dx, ny = y + dy;
+          if (maze.cellAt(nx, ny) !== 0 || dist[ny * w + nx] !== -1) continue;
+          dist[ny * w + nx] = dist[idx] + 1;
+          queue.push(ny * w + nx);
+        }
+      }
+    }
+    this.flowField = { maze, cx, cy, w, dist };
+    return this.flowField;
+  }
+
+  /**
+   * Path distance (in cells) from a world position to the player, or -1 if unreachable
+   * @private
+   */
+  flowDistanceAt(flow, x, y) {
+    const cx = Math.floor(x), cy = Math.floor(y);
+    if (cx < 0 || cy < 0 || cx >= flow.w || cy * flow.w + cx >= flow.dist.length) return -1;
+    return flow.dist[cy * flow.w + cx];
+  }
+
+  /**
+   * World point a chasing enemy should head for: the centre of the neighbouring cell
+   * closest to the player, or the player themselves once in the same cell.
+   * Cells are orthogonally adjacent, so the straight segment never clips a wall corner.
+   * @private
+   */
+  nextChaseWaypoint(e, flow, pathCells) {
+    if (pathCells === 0) return this.player;
+    const cx = Math.floor(e.x), cy = Math.floor(e.y);
+    let best = null, bestDist = pathCells;
+    for (const [dx, dy] of DIRECTIONS) {
+      const d = this.flowDistanceAt(flow, cx + dx + 0.5, cy + dy + 0.5);
+      if (d >= 0 && d < bestDist) { best = { x: cx + dx + 0.5, y: cy + dy + 0.5 }; bestDist = d; }
+    }
+    return best || e;
+  }
+
+  /**
+   * Strolls between neighbouring cells, avoiding an immediate U-turn except in dead ends
+   * @private
+   */
+  wander(e, v, maze) {
+    const cx = Math.floor(e.x), cy = Math.floor(e.y);
+    const t = e.wanderTarget;
+    if (!t || Math.hypot(t.x - e.x, t.y - e.y) < 0.01) {
+      const open = DIRECTIONS
+        .map(([dx, dy]) => ({ x: cx + dx, y: cy + dy }))
+        .filter(c => maze.cellAt(c.x, c.y) === 0);
+      const forward = open.filter(c => !e.prevCell || c.x !== e.prevCell.x || c.y !== e.prevCell.y);
+      const choices = forward.length ? forward : open;
+      if (!choices.length) { e.wanderTarget = null; return; }
+      const pick = choices[(Math.random() * choices.length) | 0];
+      e.prevCell = { x: cx, y: cy };
+      e.wanderTarget = { x: pick.x + 0.5, y: pick.y + 0.5 };
+    }
+    this.moveToward(e, e.wanderTarget, v, maze);
+  }
+
+  /**
+   * Turns the enemy toward the way it just moved, limited to ENEMIES.TURN_RATE so it swings
+   * round corners instead of snapping. Enemies that did not move keep their heading.
+   * @private
+   */
+  faceMovement(e, fromX, fromY, dt) {
+    const dx = e.x - fromX, dy = e.y - fromY;
+    if (dx * dx + dy * dy < 1e-8) return;
+
+    const desired = Math.atan2(dy, dx);
+    if (e.heading === undefined) { e.heading = desired; return; }
+
+    const shortestTurn = Math.atan2(Math.sin(desired - e.heading), Math.cos(desired - e.heading));
+    const maxTurn = GameConfig.ENEMIES.TURN_RATE * dt / 1000;
+    e.heading += Math.max(-maxTurn, Math.min(maxTurn, shortestTurn));
+  }
+
+  /**
+   * Moves an enemy up to v units toward a point without overshooting, respecting walls per axis
+   * @private
+   */
+  moveToward(e, target, v, maze) {
+    const dx = target.x - e.x, dy = target.y - e.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 1e-6) return;
+    const s = Math.min(v, d) / d;
+    const nx = e.x + dx * s, ny = e.y + dy * s;
+    if (maze.cellAt(nx, e.y) === 0) e.x = nx;
+    if (maze.cellAt(e.x, ny) === 0) e.y = ny;
   }
 
   /**

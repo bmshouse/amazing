@@ -354,6 +354,32 @@ describe('Main Bootstrap Integration', () => {
     expect(mockCanvas.height).toBeGreaterThan(0);
   });
 
+  it('starts the game and captures the mouse in one click on the canvas', () => {
+    window.requestAnimationFrame = vi.fn(); // starting the game must not run real frames against the mocked DOM
+    cleanupFn = bootstrap({ dev: true });
+    const canvasClick = mockCanvas.addEventListener.mock.calls.find(([type]) => type === 'click')[1];
+
+    canvasClick();
+    expect(mockCanvas.requestPointerLock).toHaveBeenCalledTimes(1);
+
+    // Already started: a click just re-captures the mouse, without starting again
+    canvasClick();
+    expect(mockCanvas.requestPointerLock).toHaveBeenCalledTimes(2);
+  });
+
+  it('starts the game when the welcome panel is clicked, and ignores later panel clicks', () => {
+    window.requestAnimationFrame = vi.fn(); // starting the game must not run real frames against the mocked DOM
+    cleanupFn = bootstrap({ dev: true });
+    const tutorial = document.getElementById.mock.results.map(r => r.value).find(el => el.id === 'tutorial');
+    const panelClick = tutorial.addEventListener.mock.calls.find(([type]) => type === 'click')[1];
+
+    panelClick();
+    expect(mockCanvas.requestPointerLock).toHaveBeenCalledTimes(1);
+
+    panelClick();
+    expect(mockCanvas.requestPointerLock).toHaveBeenCalledTimes(1);
+  });
+
   it('should handle development mode', async () => {
     expect(() => {
       cleanupFn = bootstrap({ dev: true });

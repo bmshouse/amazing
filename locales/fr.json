@@ -29,7 +29,7 @@
       "instruction_4": "Les créatures amicales vous feront gentiment <em>boop</em>. Utilisez des outils défensifs :",
       "instruction_5": "Marchez sur les plateformes de recharge pour remplir les charges des appareils.",
       "instruction_6": "Cliquez sur l'<strong>⚙️ icône d'engrenage</strong> pour personnaliser la difficulté, la taille du labyrinthe, le nombre d'ennemis et les paramètres des appareils !",
-      "start_prompt": "Appuyez sur <strong>Entrée</strong> pour commencer. Appuyez sur <strong>R</strong> pour redémarrer.",
+      "start_prompt": "Appuyez sur <strong>Entrée</strong> ou <strong>cliquez</strong> pour commencer. Appuyez sur <strong>R</strong> pour redémarrer.",
       "device_list": {
         "disruptor": "<strong>1</strong> Perturbateur (étourdissement courte portée)",
         "immobilizer": "<strong>2</strong> Immobilisateur (orbe lent)",

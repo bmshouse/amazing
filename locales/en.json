@@ -29,7 +29,7 @@
       "instruction_4": "Friendly critters will gently <em>boop</em> you back. Use defensive tools:",
       "instruction_5": "Step on recharge pads to refill device charges.",
       "instruction_6": "Click the <strong>⚙️ gear icon</strong> to customize difficulty, maze size, enemy count, and device settings!",
-      "start_prompt": "Press <strong>Enter</strong> to start. Press <strong>R</strong> to restart.",
+      "start_prompt": "Press <strong>Enter</strong> or <strong>click</strong> to start. Press <strong>R</strong> to restart.",
       "device_list": {
         "disruptor": "<strong>1</strong> Disruptor (short-range stun)",
         "immobilizer": "<strong>2</strong> Immobilizer (slow orb)",

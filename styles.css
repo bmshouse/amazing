@@ -477,6 +477,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   border-radius: 14px;
   margin: 0 auto;
 }
+#tutorial { cursor: pointer; }
 .panel h2 { margin: 6px 0 6px; }
 .panel ol { margin: 6px 0; padding-left: 18px; }
 .panel li { margin: 4px 0; }
