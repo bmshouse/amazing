@@ -11,7 +11,7 @@ export class TaserDevice extends IDevice {
     this.effectDuration = CFG.EFFECT_DURATION;
   }
 
-  activate(player, enemyController, audio, onActivation) {
+  activate(player, enemyController, audio, onActivation, _projectileSystem, onBolt) {
     if (!this.canActivate()) return false;
 
     this.consumeCharge();
@@ -26,6 +26,13 @@ export class TaserDevice extends IDevice {
       audio.beep('square', 720, 0.06, 0.05);
     } else {
       audio.beep('triangle', 520, 0.04, 0.035);
+    }
+
+    // Lightning bolt to the snowman it struck, or out to the end of its reach
+    if (onBolt) {
+      const endX = hit ? hit.x : player.x + Math.cos(player.a) * this.range;
+      const endY = hit ? hit.y : player.y + Math.sin(player.a) * this.range;
+      onBolt(player.x, player.y, endX, endY, CFG.COLOR, !!hit);
     }
 
     // Activation effect

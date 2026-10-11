@@ -1,5 +1,6 @@
 // modules/rendering/Model3DRenderer.js - WebGL-based 3D model renderer for enemies
 // Uses Three.js for low-poly 3D models with LOD system and skeletal animation
+import { bloom } from '../Effects.js';
 import { GameConfig, ENEMY_STATES } from '../GameConfig.js';
 import { logger } from '../Logger.js';
 
@@ -579,29 +580,74 @@ export class Model3DRenderer {
         this.scene.add(group);
       }
       group.position.set(projectile.x, GameConfig.RENDERING.PROJECTILE_HEIGHT, projectile.y);
-      const farEnough = Math.hypot(projectile.x - player.x, projectile.y - player.y) >= GameConfig.RENDERING.PROJECTILE_MIN_DISTANCE;
+      const distance = Math.hypot(projectile.x - player.x, projectile.y - player.y);
+      this.animateProjectile(group, projectile, bloom(distance));
+      const farEnough = distance >= GameConfig.RENDERING.PROJECTILE_MIN_DISTANCE;
       group.visible = farEnough && !(maze && this.isOccludedByWall(player, projectile, maze));
     }
   }
 
   /**
-   * One bead plus a trail of smaller, fainter beads laid out behind it along the (fixed) flight direction
+   * One bead plus a trail of smaller, fainter beads laid out behind it along the (fixed) flight direction.
+   * Device styles (GameConfig.EFFECTS.PROJECTILE_STYLE) add a halo, orbiting motes, a bright core or a
+   * twinkling trail; the parts that move are kept in userData for animateProjectile.
    * @private
    */
   createProjectileMesh(projectile) {
     const THREE = this.THREE;
     if (!this.projectileGeometry) this.projectileGeometry = new THREE.SphereGeometry(1, 8, 6);
 
+    const style = GameConfig.EFFECTS.PROJECTILE_STYLE[projectile.type] ?? {};
+    const trail = style.trail ?? GameConfig.RENDERING.PROJECTILE_TRAIL;
     const group = new THREE.Group();
     const dirX = Math.cos(projectile.a), dirZ = Math.sin(projectile.a);
-    const beads = [{ back: 0, scale: 1, opacity: 1 }, ...GameConfig.RENDERING.PROJECTILE_TRAIL];
-    for (const bead of beads) {
-      const mesh = new THREE.Mesh(this.projectileGeometry, this.getProjectileMaterial(projectile.color, bead.opacity));
-      mesh.scale.setScalar(projectile.r * bead.scale);
-      mesh.position.set(-dirX * bead.back, 0, -dirZ * bead.back);
+    const addBead = (color, opacity, scale, x = 0, y = 0, z = 0) => {
+      const mesh = new THREE.Mesh(this.projectileGeometry, this.getProjectileMaterial(color, opacity));
+      mesh.scale.setScalar(projectile.r * scale);
+      mesh.position.set(x, y, z);
       group.add(mesh);
+      return mesh;
+    };
+
+    // The head comes first, then the trail, then the extras
+    const parts = { style, head: addBead(projectile.color, 1, 1), halo: null, core: null, motes: [] };
+    trail.forEach((bead, i) => {
+      const color = style.twinkle && i % 2 ? style.twinkle : projectile.color;
+      addBead(color, bead.opacity, bead.scale, -dirX * bead.back, 0, -dirZ * bead.back);
+    });
+    if (style.halo) parts.halo = addBead(projectile.color, style.halo.opacity, style.halo.scale);
+    if (style.core) parts.core = addBead(style.core.color, 1, style.core.scale);
+    if (style.motes) {
+      for (let i = 0; i < style.motes.count; i++) parts.motes.push(addBead('#ffffff', style.motes.opacity, style.motes.scale));
     }
+    group.userData = parts;
     return group;
+  }
+
+  /**
+   * Per-frame motion for styled darts: the head pulses (halo and core with it) and motes circle it,
+   * both growing in with 'grown' (0-1) as the dart clears the camera
+   * @private
+   */
+  animateProjectile(group, projectile, grown = 1) {
+    const { style, head, halo, core, motes } = group.userData;
+    if (!style || (!style.pulse && !motes?.length)) return;
+    const seconds = performance.now() / 1000;
+    const pulse = style.pulse ? 1 + style.pulse.amount * Math.sin(seconds * style.pulse.speed) : 1;
+    head.scale.setScalar(projectile.r * pulse);
+    if (halo) halo.scale.setScalar(projectile.r * style.halo.scale * pulse * grown);
+    if (core) core.scale.setScalar(projectile.r * style.core.scale * pulse);
+    if (motes?.length) {
+      const { orbit, speed } = style.motes;
+      // Circle in the plane across the flight line: sideways (perpendicular to heading) and up
+      const sideX = -Math.sin(projectile.a), sideZ = Math.cos(projectile.a);
+      motes.forEach((mote, i) => {
+        const phase = seconds * speed + (i * 2 * Math.PI) / motes.length;
+        const side = Math.cos(phase) * orbit * projectile.r * grown;
+        mote.position.set(sideX * side, Math.sin(phase) * orbit * projectile.r * grown, sideZ * side);
+        mote.scale.setScalar(projectile.r * style.motes.scale * grown);
+      });
+    }
   }
 
   /**

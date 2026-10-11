@@ -19,6 +19,7 @@ import { TouchHUD } from './modules/ui/TouchHUD.js';
 import { HUDManager } from './modules/HUDManager.js';
 import { ConfigUIManager } from './modules/ConfigUIManager.js';
 import { logger } from './modules/Logger.js';
+import { emitHit, emitMiss, emitZap, clipToWalls } from './modules/Effects.js';
 
 /**
  * Build game data object for sharing/challenges
@@ -1005,9 +1006,14 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   const particles = [];
 
-  function spawnParticle(x, y, color = GameConfig.COLORS.PARTICLE_DEFAULT, life = GameConfig.PARTICLES.DEFAULT_LIFE, size) {
+  // Disruptor lightning bolts, drawn for a moment by the renderers on the UI canvas
+  const bolts = [];
+
+  // 'extra' optionally gives the particle motion (vx, vy, h, vh, gravity, drag, grow, fade) and a shape; see Effects.js
+  function spawnParticle(x, y, color = GameConfig.COLORS.PARTICLE_DEFAULT, life = GameConfig.PARTICLES.DEFAULT_LIFE, size, extra) {
     if (particles.length > GameConfig.PARTICLES.MAX_PARTICLES) return;
     particles.push({
+      ...extra,
       x, y, size, // size is optional: undefined draws at the default particle size
       r: GameConfig.PARTICLES.DEFAULT_RADIUS_MIN + Math.random() * (GameConfig.PARTICLES.DEFAULT_RADIUS_MAX - GameConfig.PARTICLES.DEFAULT_RADIUS_MIN),
       life,
@@ -1210,10 +1216,12 @@ export function bootstrap({ dev=false } = {}) {
 
       // Render particles and crosshair on UI canvas (z-index: 2, above 3D models)
       uiRenderer.renderParticles(particles, player, W, H);
+      uiRenderer.renderBolts(bolts, player, W, H);
       uiRenderer.renderCrosshair(W, H);
     } else {
       // Fallback to 2D sprite rendering for everything
       spriteRenderer.renderSprites(player, maze, enemies, particles, W, H, colors, projectileSystem.getProjectiles());
+      spriteRenderer.renderBolts(bolts, player, W, H);
     }
   }
 
@@ -1269,18 +1277,25 @@ export function bootstrap({ dev=false } = {}) {
       for (let i=0;i<SPAWN_COUNT_ON_LAUNCH;i++) spawnParticle(x, y, color, LAUNCH_FLASH_LIFE, LAUNCH_FLASH_SIZE);
       return;
     }
-    for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_HIT;i++) spawnParticle(x, y, color, 350);
+    // The Disruptor's bolt (see onBolt) is its main effect; this is just the crackle at the muzzle
+    emitZap(x, y, color, spawnParticle);
   };
 
-  projectileSystem.setHitCallback((x,y,color)=>{
-    for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_HIT;i++) spawnParticle(x, y, color, 350);
+  defenses.onBolt = (x1, y1, x2, y2, color, hit) => {
+    // A bolt that struck nothing stops at the first wall, rather than showing through it
+    const end = hit ? { x: x2, y: y2 } : clipToWalls(maze, x1, y1, x2, y2);
+    bolts.push({ x1, y1, x2: end.x, y2: end.y, color, born: performance.now(), life: GameConfig.EFFECTS.BOLT.LIFE });
+    if (hit) emitHit(DEVICE_TYPES.TASER, end.x, end.y, color, spawnParticle, Math.atan2(y2 - y1, x2 - x1));
+  };
+
+  // Each device bursts in its own style (sparks, a ring, mist)
+  projectileSystem.setHitCallback((x,y,color,type,heading)=>{
+    emitHit(type, x, y, color, spawnParticle, heading);
   });
 
   // A pale puff, unlike the dart-coloured burst of a hit, marks where a dart that missed ended
   projectileSystem.setMissCallback((x,y)=>{
-    for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_MISS;i++) {
-      spawnParticle(x+(Math.random()-0.5)*0.1, y+(Math.random()-0.5)*0.1, GameConfig.COLORS.PARTICLE_MISS, 450);
-    }
+    emitMiss(x, y, spawnParticle);
   });
 
   // ═════════════════════════════════════════════════════════════════
