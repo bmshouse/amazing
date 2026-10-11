@@ -1,28 +1,54 @@
 // modules/MazeEncoder.js - Maze serialization and URL encoding for sharing
+//
+// A shared challenge is packed into bytes and written as base64url, about 150 characters for a 21x21 maze.
+// Layout, all numbers big-endian:
+//   u8 version | u8 size | u8 rechargePadCount | grid bits, 8 cells per byte, row by row (1 = wall)
+//   u8 exitX, exitY, exitWallX, exitWallY (cells)
+//   u8 padCount, then x, y per pad (cells) | u8 spawnCount, then x, y per snowman (cell; it starts at the centre)
+//   u8 taser, stun and tranq charges | u8 flags (bit 0-2: taser, stun, tranq enabled)
+//   u16 enemy speed x 100 | u32 completion time in ms (0 = none) | u16 + u32 timestamp in ms
+//   u8 length + UTF-8 difficulty | u8 length + UTF-8 player name
 import { GameConfig } from './GameConfig.js';
 import { logger } from './Logger.js';
 
+const FORMAT_VERSION = 1;
+const MAX_TEXT_BYTES = 255;
+const MAX_SIZE = 255;
+const TWO_POW_32 = 2 ** 32;
+
+class ByteWriter {
+  constructor() { this.bytes = []; }
+  u8(n) { this.bytes.push(Math.max(0, Math.min(255, Math.round(n)))); }
+  u16(n) { const v = Math.max(0, Math.min(65535, Math.round(n))); this.bytes.push(v >> 8, v & 255); }
+  u32(n) { const v = Math.max(0, Math.min(TWO_POW_32 - 1, Math.round(n))); this.bytes.push(v >>> 24, (v >>> 16) & 255, (v >>> 8) & 255, v & 255); }
+  raw(list) { for (const b of list) this.bytes.push(b); }
+  text(s) {
+    let bytes = new TextEncoder().encode(String(s ?? ''));
+    // Trim whole characters so a long name never ends in half of one
+    for (const chars = [...String(s ?? '')]; bytes.length > MAX_TEXT_BYTES; bytes = new TextEncoder().encode(chars.join(''))) chars.pop();
+    this.u8(bytes.length);
+    this.raw(bytes);
+  }
+}
+
+class ByteReader {
+  constructor(bytes) { this.bytes = bytes; this.pos = 0; }
+  u8() {
+    if (this.pos >= this.bytes.length) throw new Error('Challenge data is truncated');
+    return this.bytes[this.pos++];
+  }
+  u16() { return this.u8() * 256 + this.u8(); }
+  u32() { return this.u16() * 65536 + this.u16(); }
+  take(n) {
+    if (this.pos + n > this.bytes.length) throw new Error('Challenge data is truncated');
+    return this.bytes.subarray(this.pos, (this.pos += n));
+  }
+  text() { return new TextDecoder().decode(this.take(this.u8())); }
+}
+
 export class MazeEncoder {
   constructor() {
-    this.version = 1; // For future compatibility
-  }
-
-  /**
-   * Generate a deterministic seed from maze configuration
-   * @param {Object} config - Maze configuration (must include timestamp for uniqueness)
-   * @returns {number} Deterministic seed
-   */
-  generateSeed(config) {
-    // Create a simple hash from configuration parameters including timestamp
-    // The timestamp ensures each maze is unique while remaining reproducible from the same data
-    const str = `${config.size}-${config.rechargePadCount}-${config.enemyCount}-${config.enemySpeed}-${config.timestamp}`;
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash);
+    this.version = FORMAT_VERSION;
   }
 
   /**
@@ -39,34 +65,10 @@ export class MazeEncoder {
       playerName = 'Anonymous'
     } = gameData;
 
-    // Generate timestamp for this challenge (ensures unique seed)
-    const timestamp = Date.now();
-
-    // Generate deterministic seed for maze recreation
-    const mazeConfig = {
-      size: maze.w,
-      rechargePadCount: maze.rechargePadCount,
-      enemyCount: enemies?.entities?.length || GameConfig.ENEMIES.COUNT,
-      enemySpeed: config?.enemySpeed || GameConfig.ENEMIES.SPEED,
-      timestamp: timestamp
-    };
-
-    const seed = this.generateSeed(mazeConfig);
-
-    // Serialize maze grid using run-length encoding for compactness
-    // Grid is flattened row by row: [0,0,1,1,1,0,...] -> "2,0,3,1,1,0,..."
-    const gridData = this.encodeMazeGrid(maze.grid);
-
-    // Serialize recharge pad positions
-    const rechargePads = maze.pads.map(pad => ({
-      x: pad.x,
-      y: pad.y
-    }));
-
-    // Serialize enemy spawn positions (deterministic from seed)
+    // Snowmen are saved where they started, not where they have wandered since
     const enemySpawns = enemies?.entities?.map(enemy => ({
-      x: Math.round(enemy.x * 10) / 10, // Round to 1 decimal place
-      y: Math.round(enemy.y * 10) / 10
+      x: enemy.spawnX ?? enemy.x,
+      y: enemy.spawnY ?? enemy.y
     })) || [];
 
     // Device configuration
@@ -81,19 +83,18 @@ export class MazeEncoder {
 
     return {
       version: this.version,
-      timestamp: timestamp,
-      seed,
+      timestamp: Date.now(),
       maze: {
         size: maze.w,
         rechargePadCount: maze.rechargePadCount,
-        grid: gridData,
+        grid: maze.grid.map(row => [...row]),
         exit: {
           x: maze.exit.x,
           y: maze.exit.y,
           wallX: maze.exit.wallX,
           wallY: maze.exit.wallY
         },
-        pads: rechargePads
+        pads: maze.pads.map(pad => ({ x: pad.x, y: pad.y }))
       },
       enemies: {
         count: enemySpawns.length,
@@ -110,24 +111,42 @@ export class MazeEncoder {
   }
 
   /**
-   * Compress and encode serialized data for URL
+   * Pack serialized game state into bytes and encode them for a URL
    * @param {Object} serializedData - Serialized game state
-   * @returns {string} Base64 encoded string
+   * @returns {string} base64url string
    */
   encodeForURL(serializedData) {
     try {
-      const jsonString = JSON.stringify(serializedData);
+      const { maze, enemies, devices, challenge } = serializedData;
+      const size = maze.size;
+      if (!(size > 0 && size <= MAX_SIZE)) throw new Error(`Maze size ${size} cannot be shared`);
 
-      // Simple compression: remove unnecessary whitespace and common patterns
-      const compressed = jsonString
-        .replace(/\s+/g, '')
-        .replace(/"x":/g, '"x":')
-        .replace(/"y":/g, '"y":');
+      const out = new ByteWriter();
+      out.u8(this.version);
+      out.u8(size);
+      out.u8(maze.rechargePadCount);
+      out.raw(this.packGrid(maze.grid, size));
+      out.u8(maze.exit.x);
+      out.u8(maze.exit.y);
+      out.u8(maze.exit.wallX);
+      out.u8(maze.exit.wallY);
+      out.u8(maze.pads.length);
+      for (const pad of maze.pads) { out.u8(pad.x); out.u8(pad.y); }
+      out.u8(enemies.spawns.length);
+      for (const spawn of enemies.spawns) { out.u8(Math.floor(spawn.x)); out.u8(Math.floor(spawn.y)); }
+      out.u8(devices.taserCharges);
+      out.u8(devices.stunCharges);
+      out.u8(devices.tranqCharges);
+      out.u8((devices.taserEnabled ? 1 : 0) | (devices.stunEnabled ? 2 : 0) | (devices.tranqEnabled ? 4 : 0));
+      out.u16(enemies.speed * 100);
+      out.u32(challenge.completionTime || 0);
+      out.u16(Math.floor(serializedData.timestamp / TWO_POW_32));
+      out.u32(serializedData.timestamp % TWO_POW_32);
+      out.text(challenge.difficulty);
+      out.text(challenge.createdBy);
 
-      // Convert to base64
-      const encoded = btoa(unescape(encodeURIComponent(compressed)));
-
-      logger.info(`Encoded maze data: ${jsonString.length} chars -> ${encoded.length} chars`);
+      const encoded = this.toBase64Url(out.bytes);
+      logger.info(`Encoded maze data: ${out.bytes.length} bytes -> ${encoded.length} chars`);
       return encoded;
     } catch (error) {
       logger.error('Failed to encode maze data:', error);
@@ -137,22 +156,50 @@ export class MazeEncoder {
 
   /**
    * Decode URL parameter back to game state
-   * @param {string} encodedData - Base64 encoded maze data
+   * @param {string} encodedData - base64url maze data
    * @returns {Object} Deserialized game state
    */
   decodeFromURL(encodedData) {
     try {
-      // Decode from base64
-      const decompressed = decodeURIComponent(escape(atob(encodedData)));
-      const gameState = JSON.parse(decompressed);
+      const input = new ByteReader(this.fromBase64Url(encodedData));
 
-      // Validate version compatibility
-      if (!gameState.version || gameState.version > this.version) {
-        throw new Error('Incompatible challenge version');
-      }
+      if (input.u8() !== this.version) throw new Error('Incompatible challenge version');
+      const size = input.u8();
+      if (size < 3) throw new Error('Invalid maze size');
+      const rechargePadCount = input.u8();
+      const grid = this.unpackGrid(input.take(Math.ceil((size * size) / 8)), size);
+      const exit = { x: input.u8(), y: input.u8(), wallX: input.u8(), wallY: input.u8() };
+      // The packed grid cannot tell a door from a wall, so put the exit door back
+      if (grid[exit.wallY]?.[exit.wallX] === GameConfig.MAZE.CELL_WALL) grid[exit.wallY][exit.wallX] = GameConfig.MAZE.CELL_EXIT_DOOR;
+
+      const pads = Array.from({ length: input.u8() }, () => ({ x: input.u8(), y: input.u8() }));
+      const spawns = Array.from({ length: input.u8() }, () => ({ x: input.u8() + 0.5, y: input.u8() + 0.5 }));
+      const taserCharges = input.u8();
+      const stunCharges = input.u8();
+      const tranqCharges = input.u8();
+      const flags = input.u8();
+      const speed = input.u16() / 100;
+      const completionTime = input.u32() || null;
+      const timestamp = input.u16() * TWO_POW_32 + input.u32();
+      const difficulty = input.text();
+      const createdBy = input.text();
 
       logger.info('Successfully decoded shared maze challenge');
-      return gameState;
+      return {
+        version: this.version,
+        timestamp,
+        maze: { size, rechargePadCount, grid, exit, pads },
+        enemies: { count: spawns.length, speed, spawns },
+        devices: {
+          taserCharges,
+          stunCharges,
+          tranqCharges,
+          taserEnabled: !!(flags & 1),
+          stunEnabled: !!(flags & 2),
+          tranqEnabled: !!(flags & 4)
+        },
+        challenge: { createdBy, completionTime, difficulty }
+      };
     } catch (error) {
       logger.error('Failed to decode maze data:', error);
       throw new Error('Invalid challenge URL - unable to decode maze data');
@@ -182,7 +229,7 @@ export class MazeEncoder {
    */
   parseShareableURL(url = null) {
     const targetURL = url || window.location.href;
-    const match = targetURL.match(/#\/challenge\/([A-Za-z0-9+/=]+)/);
+    const match = targetURL.match(/#\/challenge\/([A-Za-z0-9_-]+)/);
 
     if (!match || !match[1]) {
       return null;
@@ -199,16 +246,15 @@ export class MazeEncoder {
   validateGameState(gameState) {
     try {
       // Check required top-level fields
-      if (!gameState.version || !gameState.seed || !gameState.maze || !gameState.enemies) {
+      if (!gameState.version || !gameState.maze || !gameState.enemies) {
         return false;
       }
 
       // Check maze structure
       const maze = gameState.maze;
-      if (!maze.size || !maze.exit || !Array.isArray(maze.pads)) {
+      if (!maze.size || !maze.exit || !Array.isArray(maze.pads) || !Array.isArray(maze.grid)) {
         return false;
       }
-      // Grid is optional (for backward compatibility with old shares)
 
       // Check enemy data
       const enemies = gameState.enemies;
@@ -250,68 +296,40 @@ export class MazeEncoder {
   }
 
   /**
-   * Encode maze grid using bit-packing for maximum compression
-   * Each cell (0 or 1) becomes 1 bit, packed 8 cells per byte
+   * Bit-pack the maze grid, 8 cells per byte, row by row. Walls and the exit door are 1, open cells 0.
    * @param {Array<Array<number>>} grid - 2D maze grid
-   * @returns {string} Base64 encoded bit-packed grid
+   * @param {number} size - Maze size (width/height)
+   * @returns {number[]} Packed bytes
    */
-  encodeMazeGrid(grid) {
-    // Flatten grid to 1D array
-    const flat = [];
-    for (let y = 0; y < grid.length; y++) {
-      for (let x = 0; x < grid[y].length; x++) {
-        flat.push(grid[y][x]);
-      }
+  packGrid(grid, size) {
+    const bytes = new Array(Math.ceil((size * size) / 8)).fill(0);
+    for (let i = 0; i < size * size; i++) {
+      if (grid[(i / size) | 0][i % size]) bytes[i >> 3] |= 1 << (i & 7);
     }
-
-    // Pack 8 bits into each byte
-    const bytes = [];
-    for (let i = 0; i < flat.length; i += 8) {
-      let byte = 0;
-      for (let j = 0; j < 8 && i + j < flat.length; j++) {
-        if (flat[i + j] === 1 || flat[i + j] === 2) { // Support walls (1) and exit doors (2)
-          byte |= (1 << j);
-        }
-      }
-      bytes.push(byte);
-    }
-
-    // Convert to base64 using btoa
-    const binaryString = String.fromCharCode.apply(null, bytes);
-    return btoa(binaryString);
+    return bytes;
   }
 
   /**
-   * Decode bit-packed maze grid
-   * @param {string} encoded - Base64 encoded bit-packed grid
+   * Unpack a bit-packed maze grid
+   * @param {Uint8Array} bytes - Packed bytes
    * @param {number} size - Maze size (width/height)
-   * @returns {Array<Array<number>>} 2D maze grid
+   * @returns {Array<Array<number>>} 2D maze grid of 0 (open) and 1 (wall)
    */
-  decodeMazeGrid(encoded, size) {
-    // Decode base64 to binary string
-    const binaryString = atob(encoded);
-    const bytes = [];
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes.push(binaryString.charCodeAt(i));
-    }
+  unpackGrid(bytes, size) {
+    return Array.from({ length: size }, (_, y) =>
+      Array.from({ length: size }, (_, x) => (bytes[(y * size + x) >> 3] >> ((y * size + x) & 7)) & 1));
+  }
 
-    // Unpack bits from bytes
-    const flat = [];
-    const totalCells = size * size;
-    for (let i = 0; i < bytes.length; i++) {
-      const byte = bytes[i];
-      for (let j = 0; j < 8 && flat.length < totalCells; j++) {
-        const bit = (byte >> j) & 1;
-        flat.push(bit);
-      }
-    }
+  /** @private */
+  toBase64Url(bytes) {
+    let binary = '';
+    for (const b of bytes) binary += String.fromCharCode(b);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
 
-    // Convert flat array back to 2D grid
-    const grid = [];
-    for (let y = 0; y < size; y++) {
-      grid.push(flat.slice(y * size, (y + 1) * size));
-    }
-
-    return grid;
+  /** @private */
+  fromBase64Url(text) {
+    const binary = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(binary, c => c.charCodeAt(0));
   }
 }

@@ -114,7 +114,6 @@
         testURLEncoding,
         testURLDecoding,
         testChallengeValidation,
-        testSeededGeneration,
         testChallengeManager
       ];
 
@@ -295,15 +294,14 @@
       return {
         name: 'Data Serialization',
         pass: serialized && serialized.version && serialized.maze && serialized.enemies,
-        message: `Serialized game state with version ${serialized.version}, seed ${serialized.seed}`
+        message: `Serialized game state with version ${serialized.version}`
       };
     }
 
     async function testURLEncoding() {
       const testData = {
         version: 1,
-        seed: 12345,
-        maze: { size: 21, rechargePadCount: 3, exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
+        maze: { size: 21, rechargePadCount: 3, grid: Array.from({ length: 21 }, () => Array(21).fill(1)), exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
         enemies: { count: 3, speed: 1.0, spawns: [] },
         devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
         challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
@@ -322,8 +320,7 @@
     async function testURLDecoding() {
       const testData = {
         version: 1,
-        seed: 12345,
-        maze: { size: 21, rechargePadCount: 3, exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
+        maze: { size: 21, rechargePadCount: 3, grid: Array.from({ length: 21 }, () => Array(21).fill(1)), exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
         enemies: { count: 3, speed: 1.0, spawns: [] },
         devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
         challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
@@ -335,7 +332,7 @@
 
       return {
         name: 'URL Decoding',
-        pass: decoded && decoded.version === testData.version && decoded.seed === testData.seed,
+        pass: decoded && decoded.version === testData.version && decoded.maze.size === testData.maze.size,
         message: `Successfully round-trip encoded/decoded data`
       };
     }
@@ -343,8 +340,7 @@
     async function testChallengeValidation() {
       const validData = {
         version: 1,
-        seed: 12345,
-        maze: { size: 21, rechargePadCount: 3, exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
+        maze: { size: 21, rechargePadCount: 3, grid: Array.from({ length: 21 }, () => Array(21).fill(1)), exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
         enemies: { count: 3, speed: 1.0, spawns: [] },
         devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
         challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
@@ -360,32 +356,6 @@
         name: 'Challenge Validation',
         pass: validResult === true && invalidResult === false,
         message: `Valid data: ${validResult}, Invalid data: ${invalidResult}`
-      };
-    }
-
-    async function testSeededGeneration() {
-      const seed = 12345;
-
-      // Generate two mazes with the same seed
-      challengeManager.seedRandom(seed);
-      const maze1 = new Maze(15, 15, 2);
-      maze1.generate();
-      challengeManager.restoreRandom();
-
-      challengeManager.seedRandom(seed);
-      const maze2 = new Maze(15, 15, 2);
-      maze2.generate();
-      challengeManager.restoreRandom();
-
-      // Check if they're identical
-      const exit1 = maze1.exit;
-      const exit2 = maze2.exit;
-      const exitsMatch = exit1.x === exit2.x && exit1.y === exit2.y;
-
-      return {
-        name: 'Seeded Generation',
-        pass: exitsMatch && maze1.pads.length === maze2.pads.length,
-        message: `Generated identical mazes with same seed. Exit: (${exit1.x}, ${exit1.y}), Pads: ${maze1.pads.length}`
       };
     }
 

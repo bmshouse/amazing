@@ -335,7 +335,7 @@ export function bootstrap({ dev=false } = {}) {
     let ac;
     function beep(type='sine', freq=440, dur=0.08, vol=0.05, slideTo=null) {
       if (!enabled()) return;
-      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      ac = ac || new AudioContext();
       const t0 = ac.currentTime;
       const o = ac.createOscillator();
       const g = ac.createGain();
@@ -877,8 +877,9 @@ export function bootstrap({ dev=false } = {}) {
       if (challengeResult.enemySpawns && challengeResult.enemySpawns.length > 0) {
         challengeResult.enemySpawns.forEach((spawn, index) => {
           if (index < enemies.entities.length) {
-            enemies.entities[index].x = spawn.x;
-            enemies.entities[index].y = spawn.y;
+            const e = enemies.entities[index];
+            e.x = e.spawnX = spawn.x;
+            e.y = e.spawnY = spawn.y;
           }
         });
       }

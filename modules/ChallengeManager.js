@@ -108,9 +108,9 @@ export class ChallengeManager {
   }
 
   /**
-   * Generate a maze from challenge data using seeded randomization
+   * Rebuild the maze and game configuration from challenge data
    * @param {Object} challengeData - Challenge data
-   * @returns {Object} Generated maze and game configuration
+   * @returns {Object} Restored maze and game configuration
    */
   generateMazeFromChallenge(challengeData) {
     if (!challengeData || !this.encoder.validateGameState(challengeData)) {
@@ -124,19 +124,8 @@ export class ChallengeManager {
       challengeData.maze.rechargePadCount
     );
 
-    // Restore the exact maze grid from serialized data (if available)
-    if (challengeData.maze.grid) {
-      maze.grid = this.encoder.decodeMazeGrid(challengeData.maze.grid, challengeData.maze.size);
-      logger.debug('Restored maze grid from serialized data');
-    } else {
-      // Fallback: generate maze using seeded randomization (for backward compatibility)
-      logger.warn('No grid data found, falling back to seeded generation');
-      this.seedRandom(challengeData.seed);
-      maze.generate();
-      this.restoreRandom();
-    }
-
-    // Restore exit and pads
+    // Restore the exact maze, exit and pads
+    maze.grid = challengeData.maze.grid;
     maze.exit = challengeData.maze.exit;
     maze.pads = challengeData.maze.pads;
 
@@ -150,34 +139,6 @@ export class ChallengeManager {
       },
       enemySpawns: challengeData.enemies.spawns
     };
-  }
-
-  /**
-   * Simple seeded random number generator (for reproducible maze generation)
-   * @param {number} seed - Random seed
-   */
-  seedRandom(seed) {
-    // Store original Math.random
-    this.originalRandom = Math.random;
-
-    // Simple LCG (Linear Congruential Generator)
-    let currentSeed = seed;
-    Math.random = () => {
-      currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
-      return currentSeed / 4294967296;
-    };
-
-    logger.debug('Seeded random generator with seed:', seed);
-  }
-
-  /**
-   * Restore original random number generator
-   */
-  restoreRandom() {
-    if (this.originalRandom) {
-      Math.random = this.originalRandom;
-      this.originalRandom = null;
-    }
   }
 
   /**

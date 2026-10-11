@@ -139,6 +139,7 @@ export const GameConfig = {
     RECHARGE_PAD_COUNT: 3,
     MIN_DISTANCE_FROM_START: 6,
     MIN_DISTANCE_FROM_EXIT: 6,
+    MIN_PAD_SPACING: 6, // pads are kept at least this many cells apart (straight line) where the maze allows
     RECHARGE_PAD_RADIUS: 0.5, // matches the glowing disc drawn on the pad's floor tile
 
     // Cell types

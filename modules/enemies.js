@@ -1,5 +1,6 @@
 // modules/enemies.js - friendly AI that pushes player back
 import { GameConfig, ENEMY_STATES } from './GameConfig.js';
+import { distanceField, pickSpread } from './Placement.js';
 
 const DIRECTIONS = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
@@ -25,15 +26,20 @@ export class EnemyController {
     this.pathDistanceCache.clear();
     this.flowField = null;
     this.startField = null;
+    // Spread the snowmen along the route from start to exit rather than leaving it to chance
+    const field = distanceField(maze, Math.floor(GameConfig.PLAYER.START_X), Math.floor(GameConfig.PLAYER.START_Y));
     const cells = [];
-    for (let y=1;y<maze.h;y+=2) for (let x=1;x<maze.w;x+=2) if (maze.grid[y][x]===0) cells.push({x:x+0.5, y:y+0.5});
-    for (let i=0;i<GameConfig.ENEMIES.COUNT && cells.length;i++) {
-      const k = (Math.random()*cells.length)|0;
-      const c = cells.splice(k,1)[0];
-      const dStart = Math.hypot(c.x-GameConfig.PLAYER.START_X, c.y-GameConfig.PLAYER.START_Y);
-      if (dStart < GameConfig.ENEMIES.MIN_SPAWN_DISTANCE) continue;
+    for (let y=1;y<maze.h;y+=2) for (let x=1;x<maze.w;x+=2) {
+      const d = field.dist[y*maze.w + x];
+      if (d < 0) continue;
+      const c = {x:x+0.5, y:y+0.5, d};
+      if (Math.hypot(c.x-GameConfig.PLAYER.START_X, c.y-GameConfig.PLAYER.START_Y) < GameConfig.ENEMIES.MIN_SPAWN_DISTANCE) continue;
+      cells.push(c);
+    }
+    for (const c of pickSpread(cells, GameConfig.ENEMIES.COUNT)) {
       this.entities.push({
         x:c.x, y:c.y,
+        spawnX:c.x, spawnY:c.y, // where it started, so a shared challenge replays from the same place
         state:ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
@@ -163,23 +169,7 @@ export class EnemyController {
    * @private
    */
   buildDistanceField(maze, cx, cy) {
-    const { w, h } = maze;
-    const dist = new Int16Array(w * h).fill(-1);
-    if (maze.cellAt(cx, cy) === 0) {
-      const queue = [cy * w + cx];
-      dist[queue[0]] = 0;
-      for (let head = 0; head < queue.length; head++) {
-        const idx = queue[head];
-        const x = idx % w, y = (idx / w) | 0;
-        for (const [dx, dy] of DIRECTIONS) {
-          const nx = x + dx, ny = y + dy;
-          if (maze.cellAt(nx, ny) !== 0 || dist[ny * w + nx] !== -1) continue;
-          dist[ny * w + nx] = dist[idx] + 1;
-          queue.push(ny * w + nx);
-        }
-      }
-    }
-    return { maze, cx, cy, w, dist };
+    return distanceField(maze, cx, cy);
   }
 
   /**
