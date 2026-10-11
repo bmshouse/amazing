@@ -9,7 +9,8 @@ export class IDevice {
     this.enabled = true; // Devices are enabled by default
   }
 
-  // Abstract methods that must be implemented by concrete devices
+  // Abstract methods that must be implemented by concrete devices.
+  // onActivation(x, y, color, muzzle): muzzle is true for projectile launches, which get a smaller, briefer flash.
   activate(player, target, audio, onActivation) {
     throw new Error('activate() method must be implemented by concrete device class');
   }

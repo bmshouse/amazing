@@ -3,6 +3,7 @@ import { Maze } from '../modules/maze.js'
 import { PlayerController } from '../modules/player.js'
 import { EnemyController } from '../modules/enemies.js'
 import { Defenses } from '../modules/defenses.js'
+import { DEVICE_TYPES } from '../modules/GameConfig.js'
 
 const dummyAudio = { beep(){} }
 const dummyHud = { bars:{ taser:{style:{}}, stun:{style:{}}, tranq:{style:{}} } }
@@ -15,14 +16,14 @@ describe('Defenses', () => {
     const d = new Defenses(p, e, dummyAudio, dummyHud)
 
     // Test that devices exist and have charges
-    expect(d.devices.taser).toBeDefined()
-    expect(d.devices.taser.charges).toBeGreaterThan(0)
+    expect(d.devices[DEVICE_TYPES.TASER]).toBeDefined()
+    expect(d.devices[DEVICE_TYPES.TASER].charges).toBeGreaterThan(0)
 
-    const initialCharges = d.devices.taser.charges
+    const initialCharges = d.devices[DEVICE_TYPES.TASER].charges
 
     // Set some charges and test current device
-    d.currentDevice = 'taser'
-    d.devices.taser.charges = 1
+    d.currentDevice = DEVICE_TYPES.TASER
+    d.devices[DEVICE_TYPES.TASER].charges = 1
 
     // Test that we can get charge ratios
     const taserRatio = d.taserChargeRatio()
@@ -31,8 +32,8 @@ describe('Defenses', () => {
     expect(taserRatio).toBeLessThanOrEqual(1)
 
     // Test device reset restores charges
-    d.devices.taser.charges = 0
+    d.devices[DEVICE_TYPES.TASER].charges = 0
     d.reset()
-    expect(d.devices.taser.charges).toBe(d.devices.taser.maxCharges)
+    expect(d.devices[DEVICE_TYPES.TASER].charges).toBe(d.devices[DEVICE_TYPES.TASER].maxCharges)
   })
 })

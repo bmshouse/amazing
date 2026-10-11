@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { EnemyController } from '../modules/enemies.js';
 import { Maze } from '../modules/maze.js';
-import { GameConfig } from '../modules/GameConfig.js';
+import { GameConfig, ENEMY_STATES } from '../modules/GameConfig.js';
 
 describe('Enemy Pushback Behavior', () => {
   let maze;
@@ -103,7 +103,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy = {
         x: 1.9,  // 0.4 away from player in X
         y: 1.9,  // 0.4 away from player in Y (total distance ~0.56)
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
@@ -143,7 +143,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy = {
         x: 3.0,
         y: 3.0,
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
@@ -179,7 +179,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy = {
         x: 2.3,  // 0.3 away from player
         y: 2.3,  // 0.3 away from player (total distance ~0.42)
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
@@ -213,7 +213,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy = {
         x: 4.5,
         y: 4.5,
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
@@ -243,7 +243,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy = {
         x: 1.5,
         y: 1.5,
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
@@ -285,7 +285,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy = {
         x: 1.8,
         y: 4.2,
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: 1,
         speedMul: 1
@@ -336,7 +336,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy = {
         x: 2.3,  // Close enough for collision
         y: 1.8,
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
@@ -393,7 +393,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy1 = {
         x: 2.7,
         y: 2.7,
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
@@ -403,7 +403,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy2 = {
         x: 1.0,
         y: 1.0,
-        state: 'idle',
+        state: ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1
@@ -426,7 +426,7 @@ describe('Enemy Pushback Behavior', () => {
       const enemy = {
         x: 2.3,
         y: 2.3,
-        state: 'tranq',
+        state: ENEMY_STATES.TRANQ,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 0

@@ -1,6 +1,7 @@
 // Test the shape rendering system
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SpriteRenderer } from '../modules/SpriteRenderer.js';
+import { ENEMY_STATES } from '../modules/GameConfig.js';
 
 describe('Shape Rendering System', () => {
   let canvas, renderer, mockPlayer;
@@ -116,11 +117,11 @@ describe('Shape Rendering System', () => {
           beginPath: () => {}, moveTo: () => {}, lineTo: count('lineTo'), closePath: () => {}
         };
       });
-      const draw = (facing, state = 'idle', size = 40) =>
+      const draw = (facing, state = ENEMY_STATES.IDLE, size = 40) =>
         renderer._drawSnowmanShape(100, 100, size, '#fff', 1, { facing, state });
 
       it('draws only the body when the snowman is tiny', () => {
-        draw({ side: 0, front: 1 }, 'idle', 2);
+        draw({ side: 0, front: 1 }, ENEMY_STATES.IDLE, 2);
         expect(counts.ellipse).toBe(3);
         expect(counts.fillRect).toBeUndefined();
       });
@@ -141,10 +142,10 @@ describe('Shape Rendering System', () => {
       });
 
       it('draws X eyes when stunned and flat lines when asleep', () => {
-        draw({ side: 0, front: 1 }, 'stunned');
+        draw({ side: 0, front: 1 }, ENEMY_STATES.STUNNED);
         expect(counts.stroke).toBe(2); // one X per eye
         counts = {};
-        draw({ side: 0, front: 1 }, 'tranq');
+        draw({ side: 0, front: 1 }, ENEMY_STATES.TRANQ);
         expect(counts.fillRect).toBe(3); // scarf tail plus two closed eyes
       });
     });
@@ -158,7 +159,7 @@ describe('Shape Rendering System', () => {
         beginPath: () => {}, moveTo: () => {}, lineTo: () => {}, closePath: () => {}, fill: () => {},
         fillRect: () => {}, stroke: () => {}, ellipse: (...args) => calls.push(args)
       };
-      renderer.drawEnemy({ x: d, y: 0, heading: Math.PI, state: 'idle' }, { x: 0, y: 0, a: 0 }, 800, H, null, {}, null);
+      renderer.drawEnemy({ x: d, y: 0, heading: Math.PI, state: ENEMY_STATES.IDLE }, { x: 0, y: 0, a: 0 }, 800, H, null, {}, null);
       const [, cy, , ry] = calls[0]; // first ellipse is the base sphere's body fill
       return cy + ry;
     };

@@ -40,6 +40,15 @@ export const GameConfig = {
     SNOWMAN_STACK: 0.78, // 3D snowman sphere spacing as a fraction of the touching distance (lower = more overlap)
     EXIT_DOOR_SIZE: 0.5, // half the door marker width in cells (the marker is one cell wide)
     ENEMY_SIZE: 0.15, // Match 3D snowman bottom sphere radius
+    ENEMY_HIT_RADIUS: 0.1,   // what a dart can hit: the head's radius, since darts fly at head height
+    PROJECTILE_HEIGHT: 0.45, // dart height above the floor, just under the eye so it stays clear of the crosshair
+    PROJECTILE_MIN_DISTANCE: 0.45, // a dart closer than this to the camera isn't drawn (it would clip through the near plane)
+    // Beads behind a dart's head: distance back along its path, size relative to the head, opacity
+    PROJECTILE_TRAIL: [
+      { back: 0.07, scale: 0.8, opacity: 0.6 },
+      { back: 0.14, scale: 0.6, opacity: 0.4 },
+      { back: 0.21, scale: 0.4, opacity: 0.25 }
+    ],
     PARTICLE_SIZE: 0.05,
     BILLBOARD_HEIGHT_MULTIPLIER: 1.2,
 
@@ -96,7 +105,8 @@ export const GameConfig = {
       MAX_CHARGES: 8,
       COOLDOWN: 250,
       RANGE: 1.6,
-      EFFECT_DURATION: 1500
+      EFFECT_DURATION: 1500,
+      COLOR: '#ffd166'
     },
     STUN: {
       MAX_CHARGES: 6,
@@ -104,14 +114,18 @@ export const GameConfig = {
       PROJECTILE_SPEED: 3.2,
       PROJECTILE_RADIUS: 0.08,
       EFFECT_DURATION: 2500,
-      SLOWDOWN_FACTOR: 0.35
+      SLOWDOWN_FACTOR: 0.35,
+      COLOR: '#00d1ff',
+      INDICATOR_RANGE: 3.0
     },
     TRANQ: {
       MAX_CHARGES: 4,
       COOLDOWN: 750,
       PROJECTILE_SPEED: 5.0,
       PROJECTILE_RADIUS: 0.05,
-      EFFECT_DURATION: 3000
+      EFFECT_DURATION: 3000,
+      COLOR: '#a29bfe',
+      INDICATOR_RANGE: 4.0
     }
   },
 
@@ -138,6 +152,11 @@ export const GameConfig = {
     MAX_PARTICLES: 200,
     DEFAULT_LIFE: 400,
     SPAWN_COUNT_ON_HIT: 8,
+    SPAWN_COUNT_ON_MISS: 4,
+    // Muzzle flash when a dart or orb is launched: small and brief, so it doesn't hide the shot
+    SPAWN_COUNT_ON_LAUNCH: 3,
+    LAUNCH_FLASH_LIFE: 120,
+    LAUNCH_FLASH_SIZE: 0.025,
     SPAWN_COUNT_ON_BOOP: 6,
     DEFAULT_RADIUS_MIN: 0.02,
     DEFAULT_RADIUS_MAX: 0.05
@@ -184,6 +203,7 @@ export const GameConfig = {
     PARTICLE_BOOP: '#ff0000', // Red hearts for boop particles
     PARTICLE_HUGGLE: '#ff69b4', // Pink hearts for huggle particles
     PARTICLE_DEFAULT: '#9be7ff',
+    PARTICLE_MISS: '#e8ecff', // pale puff where a dart fizzles out against a wall
 
     // UI colors
     CROSSHAIR: '#e2e2e2',
@@ -218,21 +238,75 @@ export const GameConfig = {
 };
 
 /**
+ * Internal device identifiers (UI names: disruptor / immobilizer / pacifier)
+ */
+export const DEVICE_TYPES = Object.freeze({
+  TASER: 'taser',
+  STUN: 'stun',
+  TRANQ: 'tranq'
+});
+
+// Hotbar order (keys 1-3)
+export const DEVICE_ORDER = Object.freeze([
+  DEVICE_TYPES.TASER,
+  DEVICE_TYPES.STUN,
+  DEVICE_TYPES.TRANQ
+]);
+
+/**
+ * Enemy state identifiers
+ */
+export const ENEMY_STATES = Object.freeze({
+  IDLE: 'idle',
+  STUNNED: 'stunned',
+  SLOWED: 'slowed',
+  TRANQ: 'tranq'
+});
+
+/**
+ * localStorage keys (values unchanged so existing saves keep working)
+ */
+export const STORAGE_KEYS = Object.freeze({
+  USE_3D: 'calmmaze_use3d',
+  AUDIO: 'calmmaze_audio',
+  SENSITIVITY: 'calmmaze_sensitivity',
+  DIFFICULTY: 'calmmaze_difficulty',
+  LANGUAGE: 'calmmaze_language'
+});
+
+/**
+ * Event names used on the EventSystemManager bus
+ */
+export const EVENTS = Object.freeze({
+  KEYDOWN: 'keydown',
+  KEYUP: 'keyup',
+  MOUSEDOWN: 'mousedown',
+  MOUSEUP: 'mouseup',
+  MOUSEMOVE: 'mousemove',
+  POINTER_LOCK_CHANGE: 'pointerlockchange',
+  RESIZE: 'resize',
+  GAME_START: 'gamestart',
+  GAME_END: 'gameend',
+  DEVICE_CHANGE: 'devicechange',
+  DEVICE_CONFIG: 'deviceconfig'
+});
+
+/**
  * Device name mapping between difficulty configuration and game code
  * This centralized mapping eliminates duplication across the codebase
  */
 export const DEVICE_MAPPING = {
   // Map from difficulty config device names to internal game device names
   DIFFICULTY_TO_GAME: {
-    disruptor: 'taser',
-    immobilizer: 'stun',
-    pacifier: 'tranq'
+    disruptor: DEVICE_TYPES.TASER,
+    immobilizer: DEVICE_TYPES.STUN,
+    pacifier: DEVICE_TYPES.TRANQ
   },
   // Map from internal game device names to difficulty config names
   GAME_TO_DIFFICULTY: {
-    taser: 'disruptor',
-    stun: 'immobilizer',
-    tranq: 'pacifier'
+    [DEVICE_TYPES.TASER]: 'disruptor',
+    [DEVICE_TYPES.STUN]: 'immobilizer',
+    [DEVICE_TYPES.TRANQ]: 'pacifier'
   }
 };
 

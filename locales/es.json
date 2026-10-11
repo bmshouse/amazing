@@ -14,7 +14,9 @@
       "settings": "Configuración",
       "close": "Cerrar",
       "play_again": "Jugar de Nuevo",
-      "try_again": "Intentar de Nuevo"
+      "try_again": "Intentar de Nuevo",
+      "fullscreen_enter": "Pantalla completa",
+      "fullscreen_exit": "Salir de pantalla completa"
     },
     "tabs": {
       "basic": "Básico",
@@ -62,13 +64,17 @@
       "copied": "¡Copiado!",
       "share_native": "Compartir",
       "play_again": "Jugar de Nuevo",
-      "share_challenge": "Compartir Desafío"
+      "share_challenge": "Compartir Desafío",
+      "web_share_title": "Desafío CalmMaze",
+      "web_share_text": "Prueba este desafío de CalmMaze: {{summary}}"
     },
     "errors": {
       "copy_failed": "Error al copiar URL al portapapeles",
       "copy_failed_short": "Error al copiar URL",
       "share_prepare_failed": "Error al preparar desafío para compartir",
-      "challenge_load_failed": "Error al cargar datos del desafío"
+      "challenge_load_failed": "Error al cargar datos del desafío",
+      "challenge_create_failed": "No se pudo crear el desafío para compartir",
+      "challenge_load_shared_failed": "No se pudo cargar el desafío compartido"
     },
     "challenge": {
       "loading_title": "Modo Desafío",
@@ -108,7 +114,8 @@
       "victory_tie": "¡Igualaste el tiempo objetivo exactamente! ¿Puedes superarlo en el próximo intento?",
       "victory_close_title": "🎉 ¡Tan Cerca!",
       "victory_close": "¡Solo {{diff}} detrás! ¿Un intento más?",
-      "victory_missed": "Terminaste {{diff}} después del tiempo objetivo. ¿Crees que puedes hacerlo mejor? ¡Inténtalo de nuevo!"
+      "victory_missed": "Terminaste {{diff}} después del tiempo objetivo. ¿Crees que puedes hacerlo mejor? ¡Inténtalo de nuevo!",
+      "performance_mode": "Modo de rendimiento activado"
     },
     "difficulty": {
       "presets": {

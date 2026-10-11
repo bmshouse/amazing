@@ -1,3 +1,5 @@
+import { DEVICE_ORDER } from './GameConfig.js';
+
 /**
  * HUDManager - Manages all HUD (Heads-Up Display) elements and updates
  *
@@ -147,8 +149,7 @@ export class HUDManager {
   updateDeviceVisibility(deviceConfig) {
     if (!this.elements.chargeRows) return;
 
-    const devices = ['taser', 'stun', 'tranq'];
-    devices.forEach(device => {
+    DEVICE_ORDER.forEach(device => {
       if (this.elements.chargeRows[device]) {
         const enabled = deviceConfig[device]?.enabled ?? true;
         this.elements.chargeRows[device].style.display = enabled ? '' : 'none';

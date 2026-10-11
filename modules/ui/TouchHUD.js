@@ -3,6 +3,7 @@ import { VirtualJoystick } from '../input/VirtualJoystick.js';
 import { PlatformDetector } from '../platforms/PlatformDetector.js';
 import { TouchGestureDetector } from '../input/TouchGestureDetector.js';
 import { logger } from '../Logger.js';
+import { DEVICE_TYPES, DEVICE_ORDER, EVENTS } from '../GameConfig.js';
 
 export class TouchHUD {
   constructor(defenses, inputManager, gameConfig, eventSystemManager = null) {
@@ -238,9 +239,9 @@ export class TouchHUD {
 
     // Device types mapping
     const devices = [
-      { id: 'taser', label: 'D', name: 'Disruptor', key: '1' },
-      { id: 'stun', label: 'I', name: 'Immobilizer', key: '2' },
-      { id: 'tranq', label: 'P', name: 'Pacifier', key: '3' }
+      { id: DEVICE_TYPES.TASER, label: 'D', key: '1' },
+      { id: DEVICE_TYPES.STUN, label: 'I', key: '2' },
+      { id: DEVICE_TYPES.TRANQ, label: 'P', key: '3' }
     ];
 
     devices.forEach((device, index) => {
@@ -359,21 +360,21 @@ export class TouchHUD {
   setupEventHandlers() {
     // Listen for game state changes
     if (this.eventSystemManager) {
-      this.eventSystemManager.on('gamestart', () => {
+      this.eventSystemManager.on(EVENTS.GAME_START, () => {
         this.show();
       });
 
-      this.eventSystemManager.on('gameend', () => {
+      this.eventSystemManager.on(EVENTS.GAME_END, () => {
         this.hide();
       });
 
       // Update button states based on current device
-      this.eventSystemManager.on('devicechange', (data) => {
+      this.eventSystemManager.on(EVENTS.DEVICE_CHANGE, (data) => {
         this.updateDeviceButtonStates(data.device);
       });
 
       // Listen for device configuration changes
-      this.eventSystemManager.on('deviceconfig', (data) => {
+      this.eventSystemManager.on(EVENTS.DEVICE_CONFIG, (data) => {
         this.updateDeviceVisibility(data.devices, data.mapping);
       });
     }
@@ -478,7 +479,7 @@ export class TouchHUD {
     if (!this.defenses) return;
 
     // Get only enabled devices
-    const allDevices = ['taser', 'stun', 'tranq'];
+    const allDevices = DEVICE_ORDER;
     const enabledDevices = allDevices.filter(deviceId => {
       return this.defenses.devices[deviceId] && this.defenses.devices[deviceId].enabled !== false;
     });

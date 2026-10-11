@@ -36,8 +36,8 @@ export class ShareManager {
 
     this.challengeManager.initialize();
 
-    this.challengeManager.onChallengeError = (message, error) => {
-      this.showError(message);
+    this.challengeManager.onChallengeError = (messageKey, error) => {
+      this.showError(this.i18n.t(messageKey));
       logger.error('Challenge error:', error);
     };
 
@@ -351,7 +351,10 @@ export class ShareManager {
     try {
       const success = await this.challengeManager.shareViaWebAPI(
         this.shareURL,
-        'CalmMaze Challenge'
+        this.i18n.t('ui.share.web_share_title'),
+        this.i18n.t('ui.share.web_share_text', {
+          summary: this.challengeManager.getCurrentChallengeSummary()
+        })
       );
 
       if (success) {
