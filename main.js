@@ -11,7 +11,7 @@ import { GameState } from './modules/GameState.js';
 import { EventSystemManager } from './modules/EventSystemManager.js';
 import { InputManager } from './modules/InputManager.js';
 import { ProjectileSystem } from './modules/ProjectileSystem.js';
-import { GameConfig, DEVICE_MAPPING } from './modules/GameConfig.js';
+import { GameConfig, DEVICE_MAPPING, DEVICE_TYPES, STORAGE_KEYS, EVENTS } from './modules/GameConfig.js';
 import { DifficultyConfig } from './modules/DifficultyConfig.js';
 import { I18nManager } from './modules/I18nManager.js';
 import { ShareManager } from './modules/ShareManager.js';
@@ -323,7 +323,7 @@ export function bootstrap({ dev=false } = {}) {
       uiCanvas.style.height = rect.height + 'px';
     }
   }
-  eventSystem.on('resize', resize);
+  eventSystem.on(EVENTS.RESIZE, resize);
   resize();
 
   // ═════════════════════════════════════════════════════════════════
@@ -539,11 +539,11 @@ export function bootstrap({ dev=false } = {}) {
     if (isFullscreen()) {
       // Exit fullscreen icon (four corners pointing inward)
       icon.setAttribute('d', 'M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z');
-      hud.fullscreenButton.title = 'Exit Fullscreen';
+      hud.fullscreenButton.title = i18n.t('ui.common.fullscreen_exit');
     } else {
       // Enter fullscreen icon (four corners pointing outward)
       icon.setAttribute('d', 'M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z');
-      hud.fullscreenButton.title = 'Toggle Fullscreen';
+      hud.fullscreenButton.title = i18n.t('ui.common.fullscreen_enter');
     }
   }
 
@@ -612,7 +612,7 @@ export function bootstrap({ dev=false } = {}) {
   function loadUserSettings() {
     try {
       // Load 3D rendering preference
-      const saved3DRendering = localStorage.getItem('calmmaze_use3d');
+      const saved3DRendering = localStorage.getItem(STORAGE_KEYS.USE_3D);
       if (saved3DRendering !== null) {
         const use3D = saved3DRendering === 'true';
         GameConfig.RENDERING.USE_3D_MODELS = use3D;
@@ -620,14 +620,14 @@ export function bootstrap({ dev=false } = {}) {
       }
 
       // Load audio preference
-      const savedAudio = localStorage.getItem('calmmaze_audio');
+      const savedAudio = localStorage.getItem(STORAGE_KEYS.AUDIO);
       if (savedAudio !== null) {
         hud.audioToggle.checked = savedAudio === 'true';
         logger.debug('Loaded audio preference:', hud.audioToggle.checked);
       }
 
       // Load sensitivity preference
-      const savedSensitivity = localStorage.getItem('calmmaze_sensitivity');
+      const savedSensitivity = localStorage.getItem(STORAGE_KEYS.SENSITIVITY);
       if (savedSensitivity !== null) {
         const sensitivity = parseFloat(savedSensitivity);
         if (!isNaN(sensitivity)) {
@@ -644,9 +644,9 @@ export function bootstrap({ dev=false } = {}) {
 
   function saveUserSettings() {
     try {
-      localStorage.setItem('calmmaze_use3d', GameConfig.RENDERING.USE_3D_MODELS.toString());
-      localStorage.setItem('calmmaze_audio', hud.audioToggle.checked.toString());
-      localStorage.setItem('calmmaze_sensitivity', hud.sensitivity.value);
+      localStorage.setItem(STORAGE_KEYS.USE_3D, GameConfig.RENDERING.USE_3D_MODELS.toString());
+      localStorage.setItem(STORAGE_KEYS.AUDIO, hud.audioToggle.checked.toString());
+      localStorage.setItem(STORAGE_KEYS.SENSITIVITY, hud.sensitivity.value);
     } catch (e) {
       logger.warn('Could not save user settings to localStorage:', e);
     }
@@ -720,7 +720,7 @@ export function bootstrap({ dev=false } = {}) {
 
   // Language selector will be initialized in i18n.init() promise
 
-  eventSystem.on('keydown', (data)=>{
+  eventSystem.on(EVENTS.KEYDOWN, (data)=>{
     if (data.code === 'Escape') closeConfigPanel();
     if (data.code === 'Enter') {
       if (gameState.isWon()) {
@@ -738,14 +738,14 @@ export function bootstrap({ dev=false } = {}) {
       }
     }
     if (['Digit1','Digit2','Digit3'].includes(data.code)) {
-      const keyMapping = { Digit1:'taser', Digit2:'stun', Digit3:'tranq' };
+      const keyMapping = { Digit1:DEVICE_TYPES.TASER, Digit2:DEVICE_TYPES.STUN, Digit3:DEVICE_TYPES.TRANQ };
       const requestedDevice = keyMapping[data.code];
       const difficultyDevice = DEVICE_MAPPING.GAME_TO_DIFFICULTY[requestedDevice];
 
       // Check if device is enabled in current difficulty
       if (currentDifficulty.devices[difficultyDevice]?.enabled) {
         defenses.setMode(requestedDevice);
-        hudManager.speak(requestedDevice);
+        hudManager.speak(i18n.t(`game.devices.${requestedDevice}`));
         audio.beep('square', GameConfig.AUDIO.FREQ_WEAPON_SELECT, 0.06, 0.04);
       } else {
         hudManager.speak(i18n.t('game.messages.device_disabled'));
@@ -769,7 +769,7 @@ export function bootstrap({ dev=false } = {}) {
   });
   hud.tutorial.addEventListener('click', startFromClick);
 
-  eventSystem.on('pointerlockchange', (data)=>{
+  eventSystem.on(EVENTS.POINTER_LOCK_CHANGE, (data)=>{
     player.pointerLocked = data.locked;
   });
 
@@ -785,7 +785,7 @@ export function bootstrap({ dev=false } = {}) {
     audio.beep('sine', GameConfig.AUDIO.FREQ_GAME_START, 0.1, 0.06);
 
     // Emit gamestart event for TouchHUD and other systems
-    eventSystem.emit('gamestart');
+    eventSystem.emit(EVENTS.GAME_START);
   }
 
   function restart(autoStart = false) {
@@ -833,7 +833,7 @@ export function bootstrap({ dev=false } = {}) {
       audio.beep('sine', GameConfig.AUDIO.FREQ_RESTART, 0.07, 0.06);
 
       // Hide touch controls when showing tutorial
-      eventSystem.emit('gameend');
+      eventSystem.emit(EVENTS.GAME_END);
     }
   }
 
@@ -977,7 +977,7 @@ export function bootstrap({ dev=false } = {}) {
     }
 
     // Emit event for other systems (TouchHUD) to update
-    eventSystem.emit('deviceconfig', {
+    eventSystem.emit(EVENTS.DEVICE_CONFIG, {
       devices: currentDifficulty.devices,
       mapping: DEVICE_MAPPING.DIFFICULTY_TO_GAME
     });
@@ -1005,10 +1005,10 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   const particles = [];
 
-  function spawnParticle(x, y, color = GameConfig.COLORS.PARTICLE_DEFAULT, life = GameConfig.PARTICLES.DEFAULT_LIFE) {
+  function spawnParticle(x, y, color = GameConfig.COLORS.PARTICLE_DEFAULT, life = GameConfig.PARTICLES.DEFAULT_LIFE, size) {
     if (particles.length > GameConfig.PARTICLES.MAX_PARTICLES) return;
     particles.push({
-      x, y,
+      x, y, size, // size is optional: undefined draws at the default particle size
       r: GameConfig.PARTICLES.DEFAULT_RADIUS_MIN + Math.random() * (GameConfig.PARTICLES.DEFAULT_RADIUS_MAX - GameConfig.PARTICLES.DEFAULT_RADIUS_MIN),
       life,
       color,
@@ -1049,7 +1049,7 @@ export function bootstrap({ dev=false } = {}) {
         if (recentAverageFPS < GameConfig.RENDERING.MIN_FPS_FOR_3D) {
           logger.warn(`Auto-disabling 3D models due to low FPS: ${recentAverageFPS.toFixed(1)} < ${GameConfig.RENDERING.MIN_FPS_FOR_3D}`);
           GameConfig.RENDERING.USE_3D_MODELS = false;
-          hudManager.speak(i18n.t('game.messages.performance_mode') || 'Performance mode enabled');
+          hudManager.speak(i18n.t('game.messages.performance_mode'));
         }
       }
 
@@ -1095,7 +1095,7 @@ export function bootstrap({ dev=false } = {}) {
           gameState.winGame();
 
           // Emit gameend event for TouchHUD and other systems
-          eventSystem.emit('gameend');
+          eventSystem.emit(EVENTS.GAME_END);
 
           // Hide tutorial and show victory panel
           hudManager.hideTutorial();
@@ -1196,6 +1196,9 @@ export function bootstrap({ dev=false } = {}) {
       // Update enemy 3D models (LOD selection and state)
       model3DRenderer.updateEnemies(enemies.entities, player, 0, maze);
 
+      // Darts in flight share the scene with the snowmen, so they depth-sort against them
+      model3DRenderer.updateProjectiles(projectileSystem.getProjectiles(), player, maze);
+
       // Render 3D enemies (WebGL canvas layer)
       model3DRenderer.render();
 
@@ -1210,7 +1213,7 @@ export function bootstrap({ dev=false } = {}) {
       uiRenderer.renderCrosshair(W, H);
     } else {
       // Fallback to 2D sprite rendering for everything
-      spriteRenderer.renderSprites(player, maze, enemies, particles, W, H, colors);
+      spriteRenderer.renderSprites(player, maze, enemies, particles, W, H, colors, projectileSystem.getProjectiles());
     }
   }
 
@@ -1259,12 +1262,25 @@ export function bootstrap({ dev=false } = {}) {
     flashBoop(isPull);
   };
 
-  defenses.onActivation = (x,y,color)=>{
+  defenses.onActivation = (x,y,color,muzzle)=>{
+    if (muzzle) {
+      // Launching a dart: a small, brief flash, so the dart itself stays in view
+      const { SPAWN_COUNT_ON_LAUNCH, LAUNCH_FLASH_LIFE, LAUNCH_FLASH_SIZE } = GameConfig.PARTICLES;
+      for (let i=0;i<SPAWN_COUNT_ON_LAUNCH;i++) spawnParticle(x, y, color, LAUNCH_FLASH_LIFE, LAUNCH_FLASH_SIZE);
+      return;
+    }
     for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_HIT;i++) spawnParticle(x, y, color, 350);
   };
 
   projectileSystem.setHitCallback((x,y,color)=>{
     for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_HIT;i++) spawnParticle(x, y, color, 350);
+  });
+
+  // A pale puff, unlike the dart-coloured burst of a hit, marks where a dart that missed ended
+  projectileSystem.setMissCallback((x,y)=>{
+    for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_MISS;i++) {
+      spawnParticle(x+(Math.random()-0.5)*0.1, y+(Math.random()-0.5)*0.1, GameConfig.COLORS.PARTICLE_MISS, 450);
+    }
   });
 
   // ═════════════════════════════════════════════════════════════════

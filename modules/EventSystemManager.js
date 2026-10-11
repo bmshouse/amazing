@@ -1,5 +1,6 @@
 // modules/EventSystemManager.js - Pure event system (Single Responsibility)
 import { logger } from './Logger.js';
+import { EVENTS } from './GameConfig.js';
 
 export class EventSystemManager {
   constructor() {
@@ -11,25 +12,25 @@ export class EventSystemManager {
     // Keyboard events
     window.addEventListener('keydown', (e) => {
       const key = e.key.toLowerCase();
-      this.emit('keydown', { key, code: e.code, event: e });
+      this.emit(EVENTS.KEYDOWN, { key, code: e.code, event: e });
     });
 
     window.addEventListener('keyup', (e) => {
       const key = e.key.toLowerCase();
-      this.emit('keyup', { key, code: e.code, event: e });
+      this.emit(EVENTS.KEYUP, { key, code: e.code, event: e });
     });
 
     // Mouse events
     window.addEventListener('mousedown', (e) => {
-      this.emit('mousedown', { button: e.button, event: e });
+      this.emit(EVENTS.MOUSEDOWN, { button: e.button, event: e });
     });
 
     window.addEventListener('mouseup', (e) => {
-      this.emit('mouseup', { button: e.button, event: e });
+      this.emit(EVENTS.MOUSEUP, { button: e.button, event: e });
     });
 
     window.addEventListener('mousemove', (e) => {
-      this.emit('mousemove', {
+      this.emit(EVENTS.MOUSEMOVE, {
         x: e.clientX,
         y: e.clientY,
         dx: e.movementX || 0,
@@ -41,12 +42,12 @@ export class EventSystemManager {
     // Pointer lock events
     document.addEventListener('pointerlockchange', () => {
       const locked = document.pointerLockElement !== null;
-      this.emit('pointerlockchange', { locked });
+      this.emit(EVENTS.POINTER_LOCK_CHANGE, { locked });
     });
 
     // Window events
     window.addEventListener('resize', (e) => {
-      this.emit('resize', { event: e });
+      this.emit(EVENTS.RESIZE, { event: e });
     });
   }
 

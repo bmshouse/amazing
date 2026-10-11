@@ -1,6 +1,6 @@
 // modules/defenses.js - tools, charges, cooldown, recharge (Legacy wrapper)
 import { DeviceFactory } from './devices/DeviceFactory.js';
-import { GameConfig } from './GameConfig.js';
+import { GameConfig, DEVICE_TYPES, EVENTS } from './GameConfig.js';
 
 export class Defenses {
   constructor(player, enemies, audio, hud) {
@@ -9,10 +9,10 @@ export class Defenses {
     this.audio = audio;
     this.hud = hud;
     this.devices = DeviceFactory.createAllDevices();
-    this.currentDevice = 'taser';
+    this.currentDevice = DEVICE_TYPES.TASER;
     this.projectileSystem = null; // Will be injected
     this.eventManager = null; // Will be injected
-    this.onActivation = (_x,_y,_c)=>{};
+    this.onActivation = (_x,_y,_c,_muzzle)=>{};
     this.onRangeIndicator = (_x1,_y1,_x2,_y2,_c,_a)=>{};
   }
 
@@ -51,7 +51,7 @@ export class Defenses {
   }
 
   reset() {
-    this.currentDevice = 'taser';
+    this.currentDevice = DEVICE_TYPES.TASER;
     Object.values(this.devices).forEach(device => device.recharge());
   }
 
@@ -63,12 +63,12 @@ export class Defenses {
     this.eventManager = eventManager;
     // Set up event handlers through EventManager
     if (eventManager) {
-      eventManager.on('mousedown', (data) => {
+      eventManager.on(EVENTS.MOUSEDOWN, (data) => {
         if (data.button === 0 && document.pointerLockElement && !this.isClickOnUI(data.event)) {
           this.activate();
         }
       });
-      eventManager.on('keydown', (data) => {
+      eventManager.on(EVENTS.KEYDOWN, (data) => {
         if (data.code === 'Space') {
           data.event.preventDefault();
           this.activate();
@@ -79,9 +79,9 @@ export class Defenses {
 
   setMode(m) { this.currentDevice = m; }
 
-  taserChargeRatio(){ return this.devices.taser.getChargeRatio(); }
-  stunChargeRatio(){ return this.devices.stun.getChargeRatio(); }
-  tranqChargeRatio(){ return this.devices.tranq.getChargeRatio(); }
+  taserChargeRatio(){ return this.devices[DEVICE_TYPES.TASER].getChargeRatio(); }
+  stunChargeRatio(){ return this.devices[DEVICE_TYPES.STUN].getChargeRatio(); }
+  tranqChargeRatio(){ return this.devices[DEVICE_TYPES.TRANQ].getChargeRatio(); }
 
   activate() {
     const device = this.devices[this.currentDevice];

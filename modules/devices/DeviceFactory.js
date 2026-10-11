@@ -2,15 +2,16 @@
 import { TaserDevice } from './TaserDevice.js';
 import { StunDevice } from './StunDevice.js';
 import { TranqDevice } from './TranqDevice.js';
+import { DEVICE_TYPES, DEVICE_ORDER } from '../GameConfig.js';
 
 export class DeviceFactory {
   static createDevice(type) {
     switch (type.toLowerCase()) {
-      case 'taser':
+      case DEVICE_TYPES.TASER:
         return new TaserDevice();
-      case 'stun':
+      case DEVICE_TYPES.STUN:
         return new StunDevice();
-      case 'tranq':
+      case DEVICE_TYPES.TRANQ:
         return new TranqDevice();
       default:
         throw new Error(`Unknown device type: ${type}`);
@@ -18,7 +19,7 @@ export class DeviceFactory {
   }
 
   static getAvailableDevices() {
-    return ['taser', 'stun', 'tranq'];
+    return [...DEVICE_ORDER];
   }
 
   static createAllDevices() {

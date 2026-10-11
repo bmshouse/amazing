@@ -1,4 +1,6 @@
 // modules/ProjectileSystem.js - Manages projectile physics and collisions
+import { GameConfig, DEVICE_TYPES, ENEMY_STATES } from './GameConfig.js';
+
 export class ProjectileSystem {
   /**
    * Creates a new ProjectileSystem instance
@@ -10,6 +12,7 @@ export class ProjectileSystem {
     this.enemyController = enemyController;
     this.projectiles = [];
     this.onHit = null;
+    this.onMiss = null;
   }
 
   addProjectile(projectileData) {
@@ -21,20 +24,24 @@ export class ProjectileSystem {
       const projectile = this.projectiles[i];
 
       // Move projectile
+      const fromX = projectile.x, fromY = projectile.y;
       projectile.x += Math.cos(projectile.a) * projectile.v * (dt / 1000);
       projectile.y += Math.sin(projectile.a) * projectile.v * (dt / 1000);
 
-      // Check wall collision
-      if (this.maze.cellAt(projectile.x, projectile.y) === 1) {
+      // Check enemy collision along the whole step, before the wall check so a shot that
+      // ends inside a wall still hits a snowman standing in front of it
+      const hitEnemy = this.enemyController.findHitAlongSegment(fromX, fromY, projectile.x, projectile.y, projectile.r);
+      if (hitEnemy) {
+        this.handleEnemyHit(projectile, hitEnemy);
         this.projectiles.splice(i, 1);
         continue;
       }
 
-      // Check enemy collision
-      const hitEnemy = this.enemyController.findHit(projectile.x, projectile.y, projectile.r);
-      if (hitEnemy) {
-        this.handleEnemyHit(projectile, hitEnemy);
+      // Check wall collision: the dart fizzles out at the last open point before the wall
+      if (this.maze.cellAt(projectile.x, projectile.y) === 1) {
+        const end = this.lastOpenPoint(fromX, fromY, projectile.x, projectile.y);
         this.projectiles.splice(i, 1);
+        if (this.onMiss) this.onMiss(end.x, end.y, projectile.color);
         continue;
       }
 
@@ -42,9 +49,27 @@ export class ProjectileSystem {
       const age = performance.now() - projectile.born;
       if (age > 10000) { // 10 second max lifetime
         this.projectiles.splice(i, 1);
+        if (this.onMiss) this.onMiss(projectile.x, projectile.y, projectile.color);
         continue;
       }
     }
+  }
+
+  /**
+   * Walks a step that ended inside a wall back to the last open point along it, so the
+   * miss effect appears against the wall face rather than a whole step short of it.
+   * @private
+   */
+  lastOpenPoint(x0, y0, x1, y1) {
+    const SUBSTEPS = 8;
+    let last = { x: x0, y: y0 };
+    for (let s = 1; s <= SUBSTEPS; s++) {
+      const x = x0 + (x1 - x0) * s / SUBSTEPS;
+      const y = y0 + (y1 - y0) * s / SUBSTEPS;
+      if (this.maze.cellAt(x, y) === 1) break;
+      last = { x, y };
+    }
+    return last;
   }
 
   /**
@@ -75,13 +100,13 @@ export class ProjectileSystem {
   applyLegacyEffect(projectile, enemy) {
     const t = performance.now();
     switch (projectile.type) {
-      case 'stun':
-        enemy.state = 'slowed';
-        enemy.speedMul = 0.35;
+      case DEVICE_TYPES.STUN:
+        enemy.state = ENEMY_STATES.SLOWED;
+        enemy.speedMul = GameConfig.DEVICES.STUN.SLOWDOWN_FACTOR;
         enemy.stateTime = t;
         break;
-      case 'tranq':
-        enemy.state = 'tranq';
+      case DEVICE_TYPES.TRANQ:
+        enemy.state = ENEMY_STATES.TRANQ;
         enemy.speedMul = 0;
         enemy.stateTime = t;
         break;
@@ -109,5 +134,10 @@ export class ProjectileSystem {
 
   setHitCallback(callback) {
     this.onHit = callback;
+  }
+
+  /** @param {(x: number, y: number, color: string) => void} callback - called where a dart ends without hitting anything */
+  setMissCallback(callback) {
+    this.onMiss = callback;
   }
 }

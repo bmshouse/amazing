@@ -1,6 +1,6 @@
 // Test the new SOLID architecture
 import { describe, it, expect } from 'vitest';
-import { GameConfig } from '../modules/GameConfig.js';
+import { GameConfig, DEVICE_ORDER, DEVICE_TYPES } from '../modules/GameConfig.js';
 import { DeviceFactory } from '../modules/devices/DeviceFactory.js';
 import { RaycastRenderer } from '../modules/RaycastRenderer.js';
 import { GameState } from '../modules/GameState.js';
@@ -13,13 +13,13 @@ describe('SOLID Architecture', () => {
   });
 
   it('DeviceFactory creates device instances', () => {
-    const taser = DeviceFactory.createDevice('taser');
-    expect(taser.name).toBe('taser');
+    const taser = DeviceFactory.createDevice(DEVICE_TYPES.TASER);
+    expect(taser.name).toBe(DEVICE_TYPES.TASER);
     expect(taser.maxCharges).toBe(8);
     expect(taser.canActivate()).toBe(true);
 
     const allDevices = DeviceFactory.createAllDevices();
-    expect(Object.keys(allDevices)).toEqual(['taser', 'stun', 'tranq']);
+    expect(Object.keys(allDevices)).toEqual([...DEVICE_ORDER]);
   });
 
   it('GameState manages game lifecycle', () => {

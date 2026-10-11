@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Model3DRenderer } from '../modules/rendering/Model3DRenderer.js';
 import * as THREE from '../libs/three.module.js';
+import { ENEMY_STATES } from '../modules/GameConfig.js';
 
 // A renderer wired up with Three.js objects only (no WebGL context needed)
 const makeRenderer = async () => {
@@ -15,7 +16,7 @@ const makeRenderer = async () => {
 };
 
 const player = { x: 0, y: 0, a: 0 };
-const makeEnemy = (x, y, extra = {}) => ({ x, y, heading: 0, state: 'idle', ...extra });
+const makeEnemy = (x, y, extra = {}) => ({ x, y, heading: 0, state: ENEMY_STATES.IDLE, ...extra });
 
 describe('3D snowman model', () => {
   let r;
@@ -54,7 +55,7 @@ describe('3D snowman model', () => {
   });
 
   it('looks at the player when an enemy has no heading', () => {
-    const enemy = { x: 2, y: 0, state: 'idle' };
+    const enemy = { x: 2, y: 0, state: ENEMY_STATES.IDLE };
     r.updateEnemies([enemy], player, 0, null);
     const forward = new THREE.Vector3(0, 0, 1).applyEuler(r.enemyPool.get(enemy).mesh.rotation);
     expect(forward.x).toBeCloseTo(-1); // toward the player at the origin
@@ -78,7 +79,7 @@ describe('3D snowman model', () => {
     const bodyA = r.enemyPool.get(a).bodies[0], bodyB = r.enemyPool.get(b).bodies[0];
     expect(bodyA.material).toBe(bodyB.material);
 
-    a.state = 'slowed';
+    a.state = ENEMY_STATES.SLOWED;
     r.updateEnemies([a, b], player, 0, null);
     expect(bodyA.material).not.toBe(bodyB.material);
     expect(bodyA.material.color.getHex()).toBe(0x00d1ff);
@@ -140,12 +141,12 @@ describe('3D snowman model', () => {
   });
 
   it('tips a tranquilized snowman onto its back and resets the pose when it wakes', () => {
-    const enemy = makeEnemy(2, 0, { state: 'tranq' });
+    const enemy = makeEnemy(2, 0, { state: ENEMY_STATES.TRANQ });
     r.updateEnemies([enemy], player, 0, null);
     const mesh = r.enemyPool.get(enemy).mesh;
     expect(mesh.rotation.x).toBeCloseTo(-Math.PI / 2);
 
-    enemy.state = 'idle';
+    enemy.state = ENEMY_STATES.IDLE;
     r.updateEnemies([enemy], player, 0, null);
     expect(mesh.rotation.x).toBe(0);
   });
@@ -158,7 +159,7 @@ describe('3D snowman model', () => {
 
     it('rests a tranquilized snowman on the floor instead of hovering', () => {
       for (const heading of [0, 1, Math.PI / 2, 3, -2]) {
-        const enemy = makeEnemy(2, 1, { state: 'tranq', heading });
+        const enemy = makeEnemy(2, 1, { state: ENEMY_STATES.TRANQ, heading });
         r.updateEnemies([enemy], player, 0, null);
         const box = bounds(r.enemyPool.get(enemy).mesh);
         expect(box.min.y).toBeGreaterThan(-0.02); // not sunk into the floor
@@ -168,7 +169,7 @@ describe('3D snowman model', () => {
     });
 
     it('lies along its heading, centred on the enemy position', () => {
-      const enemy = makeEnemy(2, 1, { state: 'tranq', heading: 0 });
+      const enemy = makeEnemy(2, 1, { state: ENEMY_STATES.TRANQ, heading: 0 });
       r.updateEnemies([enemy], player, 0, null);
       const box = bounds(r.enemyPool.get(enemy).mesh);
       const center = box.getCenter(new THREE.Vector3());
@@ -178,7 +179,7 @@ describe('3D snowman model', () => {
     });
 
     it('keeps an upright snowman on the floor too', () => {
-      const enemy = makeEnemy(2, 0, { state: 'slowed' });
+      const enemy = makeEnemy(2, 0, { state: ENEMY_STATES.SLOWED });
       r.updateEnemies([enemy], player, 0, null);
       const box = bounds(r.enemyPool.get(enemy).mesh);
       expect(box.min.y).toBeGreaterThan(-0.001);

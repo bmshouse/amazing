@@ -1,5 +1,5 @@
 // modules/SpriteRenderer.js - Handles billboard sprite rendering and particles
-import { GameConfig } from './GameConfig.js';
+import { GameConfig, ENEMY_STATES } from './GameConfig.js';
 
 // Distance from a snowman sprite's centre to the bottom of its base sphere, in size units
 // (the base sphere is centred 0.6 below and is 0.8 tall)
@@ -28,17 +28,21 @@ export class SpriteRenderer {
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    * @param {Object} colors - Color configuration object
+   * @param {Array} [projectiles] - In-flight projectiles to draw among the enemies
    */
-  renderSprites(player, maze, enemies, particles, W, H, colors) {
+  renderSprites(player, maze, enemies, particles, W, H, colors, projectiles = []) {
     // Exit door billboard
     if (maze.exit) {
       this.drawExitDoor(maze.exit, player, W, H, colors.exitDoor, maze);
     }
 
-    // Enemies
-    enemies.entities.forEach(e => {
-      this.drawEnemy(e, player, W, H, maze, colors, colors.exitDoor);
-    });
+    // Enemies and projectiles, far to near, so a dart behind a snowman is covered by it
+    const distance = (o) => Math.hypot(o.x - player.x, o.y - player.y);
+    const drawables = [
+      ...enemies.entities.map(e => ({ d: distance(e), draw: () => this.drawEnemy(e, player, W, H, maze, colors, colors.exitDoor) })),
+      ...projectiles.map(p => ({ d: distance(p), draw: () => this.drawProjectile(p, player, W, H, maze) }))
+    ];
+    drawables.sort((a, b) => b.d - a.d).forEach(item => item.draw());
 
     // Particles
     this.renderParticles(particles, player, W, H);
@@ -55,9 +59,9 @@ export class SpriteRenderer {
    */
   getEnemyColor(enemy, colors) {
     switch (enemy.state) {
-      case 'stunned': return colors.entityStunned;
-      case 'tranq': return colors.entityTranq;
-      case 'slowed': return colors.entitySlowed;
+      case ENEMY_STATES.STUNNED: return colors.entityStunned;
+      case ENEMY_STATES.TRANQ: return colors.entityTranq;
+      case ENEMY_STATES.SLOWED: return colors.entitySlowed;
       default: return '#ffffff'; // White to match 3D snowmen
     }
   }
@@ -102,7 +106,8 @@ export class SpriteRenderer {
       : H/2 + (GameConfig.RENDERING.EYE_HEIGHT - options.baseExtent * objectSize) * (H / distanceToObject);
 
     // Distance-based transparency
-    const distanceBasedAlpha = Math.max(GameConfig.BALANCE.SPRITE_MIN_ALPHA, 1 - distanceToObject / this.config.maxDepth);
+    const distanceBasedAlpha = Math.max(GameConfig.BALANCE.SPRITE_MIN_ALPHA, 1 - distanceToObject / this.config.maxDepth)
+      * (options.alphaScale ?? 1);
 
     // Render the shape based on type
     this.ctx.globalAlpha = distanceBasedAlpha;
@@ -256,7 +261,7 @@ export class SpriteRenderer {
       const eyeX = x + headRx * 0.95 * Math.sin(eyeLon);
       const eyeRx = size * 0.075 * (0.4 + 0.6 * facingEye);
       const eyeRy = size * 0.075;
-      if (options.state === 'stunned') {
+      if (options.state === ENEMY_STATES.STUNNED) {
         // Dazed X eyes
         this.ctx.beginPath();
         this.ctx.moveTo(eyeX - eyeRx, eyeY - eyeRy);
@@ -264,7 +269,7 @@ export class SpriteRenderer {
         this.ctx.moveTo(eyeX + eyeRx, eyeY - eyeRy);
         this.ctx.lineTo(eyeX - eyeRx, eyeY + eyeRy);
         this.ctx.stroke();
-      } else if (options.state === 'tranq') {
+      } else if (options.state === ENEMY_STATES.TRANQ) {
         // Sleeping: closed eyes as flat lines
         this.ctx.fillRect(eyeX - eyeRx, eyeY, eyeRx * 2, Math.max(1, size * 0.03));
       } else {
@@ -448,6 +453,42 @@ export class SpriteRenderer {
   }
 
   /**
+   * Draws an in-flight dart as a bright bead with a short fading trail behind it, at dart height
+   * and hidden behind walls (so it matches the 3D renderer's dart).
+   * @param {Object} projectile - Projectile with x, y, a (heading), r and color
+   * @param {Object} player - Player object with position and angle
+   * @param {number} W - Screen width in pixels
+   * @param {number} H - Screen height in pixels
+   * @param {Object} maze - Maze object for occlusion checking
+   */
+  drawProjectile(projectile, player, W, H, maze) {
+    const { PROJECTILE_HEIGHT, PROJECTILE_TRAIL, PROJECTILE_MIN_DISTANCE } = GameConfig.RENDERING;
+    // Just launched: it would be a huge blob right in front of the camera
+    if (Math.hypot(projectile.x - player.x, projectile.y - player.y) < PROJECTILE_MIN_DISTANCE) return;
+    const dirX = Math.cos(projectile.a), dirY = Math.sin(projectile.a);
+    // Trail first, so the head draws on top
+    for (const bead of [...PROJECTILE_TRAIL].reverse().concat({ back: 0, scale: 1, opacity: 1 })) {
+      const size = projectile.r * bead.scale;
+      this._drawBillboard(
+        projectile.x - dirX * bead.back,
+        projectile.y - dirY * bead.back,
+        size,
+        projectile.color,
+        player,
+        W,
+        H,
+        {
+          checkOcclusion: true,
+          maze,
+          shape: 'ellipse',
+          baseExtent: PROJECTILE_HEIGHT / size, // puts the bead's centre PROJECTILE_HEIGHT above the floor
+          alphaScale: bead.opacity
+        }
+      );
+    }
+  }
+
+  /**
    * Draws a particle billboard - small, temporary, no occlusion
    * @param {Object} particle - Particle object with x, y coordinates and color
    * @param {Object} player - Player object with position and angle
@@ -463,7 +504,7 @@ export class SpriteRenderer {
     return this._drawBillboard(
       particle.x,
       particle.y,
-      GameConfig.RENDERING.PARTICLE_SIZE,
+      particle.size ?? GameConfig.RENDERING.PARTICLE_SIZE,
       particle.color,
       player,
       W,

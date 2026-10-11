@@ -1,5 +1,5 @@
 // modules/enemies.js - friendly AI that pushes player back
-import { GameConfig } from './GameConfig.js';
+import { GameConfig, ENEMY_STATES } from './GameConfig.js';
 
 const DIRECTIONS = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
@@ -13,6 +13,8 @@ export class EnemyController {
     this.pathDistanceCache = new Map();
     // BFS distance (in cells) from the player's cell, shared by every chasing enemy
     this.flowField = null;
+    // BFS distance (in cells) from the start cell, used by smart push
+    this.startField = null;
     this.reset(maze);
   }
 
@@ -22,6 +24,7 @@ export class EnemyController {
     // Clear pathfinding cache when maze resets
     this.pathDistanceCache.clear();
     this.flowField = null;
+    this.startField = null;
     const cells = [];
     for (let y=1;y<maze.h;y+=2) for (let x=1;x<maze.w;x+=2) if (maze.grid[y][x]===0) cells.push({x:x+0.5, y:y+0.5});
     for (let i=0;i<GameConfig.ENEMIES.COUNT && cells.length;i++) {
@@ -31,7 +34,7 @@ export class EnemyController {
       if (dStart < GameConfig.ENEMIES.MIN_SPAWN_DISTANCE) continue;
       this.entities.push({
         x:c.x, y:c.y,
-        state:'idle',
+        state:ENEMY_STATES.IDLE,
         stateTime: performance.now(),
         speed: GameConfig.ENEMIES.SPEED,
         speedMul: 1,
@@ -46,16 +49,16 @@ export class EnemyController {
     const flow = this.updateFlowField(maze);
     for (const e of this.entities) {
       // state recovery using config values
-      if (e.state==='stunned' && t - e.stateTime > GameConfig.ENEMIES.STUNNED_DURATION) { e.state='idle'; e.speedMul=1; }
-      if (e.state==='slowed' && t - e.stateTime > GameConfig.ENEMIES.SLOWED_DURATION) { e.state='idle'; e.speedMul=1; }
-      if (e.state==='tranq'  && t - e.stateTime > GameConfig.ENEMIES.TRANQ_DURATION) { e.state='idle'; e.speedMul=1; }
+      if (e.state===ENEMY_STATES.STUNNED && t - e.stateTime > GameConfig.ENEMIES.STUNNED_DURATION) { e.state=ENEMY_STATES.IDLE; e.speedMul=1; }
+      if (e.state===ENEMY_STATES.SLOWED && t - e.stateTime > GameConfig.ENEMIES.SLOWED_DURATION) { e.state=ENEMY_STATES.IDLE; e.speedMul=1; }
+      if (e.state===ENEMY_STATES.TRANQ && t - e.stateTime > GameConfig.ENEMIES.TRANQ_DURATION) { e.state=ENEMY_STATES.IDLE; e.speedMul=1; }
 
       const dist = Math.hypot(this.player.x - e.x, this.player.y - e.y);
       const v = e.speed * e.speedMul * (dt/1000);
 
       // Chase along the maze path when the player is close by path; otherwise stroll the corridors
       const pathCells = this.flowDistanceAt(flow, e.x, e.y);
-      e.chasing = e.state !== 'tranq' && pathCells >= 0 && pathCells <= GameConfig.ENEMIES.CHASE_PATH_DISTANCE;
+      e.chasing = e.state !== ENEMY_STATES.TRANQ && pathCells >= 0 && pathCells <= GameConfig.ENEMIES.CHASE_PATH_DISTANCE;
       const fromX = e.x, fromY = e.y;
       if (e.chasing) {
         e.wanderTarget = null;
@@ -67,7 +70,7 @@ export class EnemyController {
 
       // Pushback if close. Stunned and sleeping critters are harmless, so the player can walk
       // through them; otherwise one in a one-cell corridor would block the way until it wakes.
-      const incapacitated = e.state === 'stunned' || e.state === 'tranq';
+      const incapacitated = e.state === ENEMY_STATES.STUNNED || e.state === ENEMY_STATES.TRANQ;
       if (dist < GameConfig.ENEMIES.COLLISION_DISTANCE && !incapacitated) {
         // Determine push direction based on player position relative to exit
         let pushX, pushY;
@@ -85,17 +88,13 @@ export class EnemyController {
         } else {
           // Player is NOT closer to exit - PUSH behavior
           // Determine push direction based on smart push setting and player position
-          let ax, ay;
-
-          if (GameConfig.ENEMIES.SMART_PUSH_ENABLED && !this.isPlayerNearStart(this.player)) {
-            // Smart mode enabled and player is deep in maze: push TOWARD start position
-            ax = GameConfig.PLAYER.START_X - this.player.x;
-            ay = GameConfig.PLAYER.START_Y - this.player.y;
-          } else {
-            // Classic mode OR near start: push directly away from snowman (radial)
-            ax = this.player.x - e.x;
-            ay = this.player.y - e.y;
-          }
+          // Smart mode enabled and player is deep in maze: push along the corridor toward the start
+          const toStart = GameConfig.ENEMIES.SMART_PUSH_ENABLED && !this.isPlayerNearStart(this.player)
+            ? this.nextCellTowardStart(maze)
+            : null;
+          // Otherwise (classic mode, near start, or no route): push directly away from snowman (radial)
+          const ax = toStart ? toStart.x - this.player.x : this.player.x - e.x;
+          const ay = toStart ? toStart.y - this.player.y : this.player.y - e.y;
 
           const len = Math.hypot(ax, ay) || 1;
           const push = GameConfig.ENEMIES.PUSHBACK_FORCE;
@@ -139,6 +138,31 @@ export class EnemyController {
     const f = this.flowField;
     if (f && f.maze === maze && f.cx === cx && f.cy === cy) return f;
 
+    this.flowField = this.buildDistanceField(maze, cx, cy);
+    return this.flowField;
+  }
+
+  /**
+   * Returns the BFS distance field from the start cell. The start never moves, so it is
+   * built once per maze. Same shape as the player flow field.
+   * @param {Object} maze - Maze object with w, h and cellAt
+   * @private
+   */
+  updateStartField(maze) {
+    const cx = Math.floor(GameConfig.PLAYER.START_X);
+    const cy = Math.floor(GameConfig.PLAYER.START_Y);
+    const f = this.startField;
+    if (f && f.maze === maze && f.cx === cx && f.cy === cy) return f;
+
+    this.startField = this.buildDistanceField(maze, cx, cy);
+    return this.startField;
+  }
+
+  /**
+   * BFS distance (in cells) from a source cell over open cells. Unreachable and wall cells are -1.
+   * @private
+   */
+  buildDistanceField(maze, cx, cy) {
     const { w, h } = maze;
     const dist = new Int16Array(w * h).fill(-1);
     if (maze.cellAt(cx, cy) === 0) {
@@ -155,8 +179,20 @@ export class EnemyController {
         }
       }
     }
-    this.flowField = { maze, cx, cy, w, dist };
-    return this.flowField;
+    return { maze, cx, cy, w, dist };
+  }
+
+  /**
+   * Centre of the neighbouring cell one step closer to the start by path, or null when the
+   * player is in the start cell, in a wall, or cut off from the start (caller falls back to radial).
+   * @private
+   */
+  nextCellTowardStart(maze) {
+    const field = this.updateStartField(maze);
+    const pathCells = this.flowDistanceAt(field, this.player.x, this.player.y);
+    if (pathCells <= 0) return null;
+    const next = this.nextChaseWaypoint(this.player, field, pathCells);
+    return next === this.player ? null : next;
   }
 
   /**
@@ -392,7 +428,8 @@ export class EnemyController {
     while (d < maxDist) {
       const rx = x + Math.cos(a)*d;
       const ry = y + Math.sin(a)*d;
-      const hit = this.findHit(rx, ry, 0.15);
+      // The beam has no width of its own, so it hits what it touches: the head, at head height
+      const hit = this.findHit(rx, ry, GameConfig.RENDERING.ENEMY_HIT_RADIUS);
       if (hit) return hit;
       d += step;
     }
@@ -412,5 +449,31 @@ export class EnemyController {
       if (dx*dx + dy*dy < r*r) return e;
     }
     return null;
+  }
+
+  /**
+   * Finds the first enemy a moving projectile touched between two positions. Darts fly at head
+   * height, so the enemy counts as its head (ENEMY_HIT_RADIUS): a shot that visibly touches the
+   * snowman hits, and one that visibly passes beside it misses. Sweeping the whole segment
+   * means a fast shot can't skip over one between frames.
+   * @param {number} x0 - Projectile X at the start of the step
+   * @param {number} y0 - Projectile Y at the start of the step
+   * @param {number} x1 - Projectile X at the end of the step
+   * @param {number} y1 - Projectile Y at the end of the step
+   * @param {number} r - Projectile radius
+   * @returns {Object|null} The enemy hit earliest along the segment, or null if none
+   */
+  findHitAlongSegment(x0, y0, x1, y1, r) {
+    const sx = x1 - x0, sy = y1 - y0;
+    const lenSq = sx*sx + sy*sy;
+    const reach = GameConfig.RENDERING.ENEMY_HIT_RADIUS + r;
+    let best = null, bestT = Infinity;
+    for (const e of this.entities) {
+      // Closest point on the segment to the enemy centre, as a fraction t of the step
+      const t = lenSq ? Math.max(0, Math.min(1, ((e.x - x0)*sx + (e.y - y0)*sy) / lenSq)) : 0;
+      const dx = e.x - (x0 + sx*t), dy = e.y - (y0 + sy*t);
+      if (dx*dx + dy*dy < reach*reach && t < bestT) { best = e; bestT = t; }
+    }
+    return best;
   }
 }

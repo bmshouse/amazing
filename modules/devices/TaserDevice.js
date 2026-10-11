@@ -1,11 +1,14 @@
 // modules/devices/TaserDevice.js - Short-range instant stun device
 import { IDevice } from './IDevice.js';
+import { GameConfig, DEVICE_TYPES, ENEMY_STATES } from '../GameConfig.js';
+
+const CFG = GameConfig.DEVICES.TASER;
 
 export class TaserDevice extends IDevice {
   constructor() {
-    super('taser', 8, 250);
-    this.range = 1.6;
-    this.effectDuration = 1500;
+    super(DEVICE_TYPES.TASER, CFG.MAX_CHARGES, CFG.COOLDOWN);
+    this.range = CFG.RANGE;
+    this.effectDuration = CFG.EFFECT_DURATION;
   }
 
   activate(player, enemyController, audio, onActivation) {
@@ -17,7 +20,7 @@ export class TaserDevice extends IDevice {
     const hit = enemyController.raycastForEnemy(player.x, player.y, player.a, this.range);
 
     if (hit) {
-      hit.state = 'stunned';
+      hit.state = ENEMY_STATES.STUNNED;
       hit.stateTime = performance.now();
       hit.speedMul = 0;
       audio.beep('square', 720, 0.06, 0.05);
@@ -28,13 +31,13 @@ export class TaserDevice extends IDevice {
     // Activation effect
     const fxX = player.x + Math.cos(player.a) * 0.8;
     const fxY = player.y + Math.sin(player.a) * 0.8;
-    onActivation(fxX, fxY, '#ffd166');
+    onActivation(fxX, fxY, CFG.COLOR);
 
     return true;
   }
 
   getEffectColor() {
-    return '#ffd166';
+    return CFG.COLOR;
   }
 
   getDescription() {

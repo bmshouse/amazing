@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { EventSystemManager } from '../modules/EventSystemManager.js';
 import { InputManager } from '../modules/InputManager.js';
+import { DEVICE_TYPES, EVENTS } from '../modules/GameConfig.js';
 
 describe('Direct EventSystemManager Usage', () => {
   let eventSystem;
@@ -58,9 +59,9 @@ describe('Direct EventSystemManager Usage', () => {
 
   it('should support custom game events', () => {
     const callback = vi.fn();
-    eventSystem.on('gamestart', callback);
+    eventSystem.on(EVENTS.GAME_START, callback);
 
-    eventSystem.emit('gamestart');
+    eventSystem.emit(EVENTS.GAME_START);
 
     expect(callback).toHaveBeenCalled();
   });
@@ -173,10 +174,10 @@ describe('EventSystemManager and InputManager Integration', () => {
   it('should work together for game events', () => {
     // Test that EventSystem and InputManager can coexist
     const gamestartCallback = vi.fn();
-    eventSystem.on('gamestart', gamestartCallback);
+    eventSystem.on(EVENTS.GAME_START, gamestartCallback);
 
     // Emit game event
-    eventSystem.emit('gamestart');
+    eventSystem.emit(EVENTS.GAME_START);
 
     // EventSystem should notify listeners
     expect(gamestartCallback).toHaveBeenCalled();
@@ -188,25 +189,25 @@ describe('EventSystemManager and InputManager Integration', () => {
 
   it('should handle gamestart event', () => {
     const gamestartCallback = vi.fn();
-    eventSystem.on('gamestart', gamestartCallback);
+    eventSystem.on(EVENTS.GAME_START, gamestartCallback);
 
-    eventSystem.emit('gamestart');
+    eventSystem.emit(EVENTS.GAME_START);
 
     expect(gamestartCallback).toHaveBeenCalledOnce();
   });
 
   it('should handle gameend event', () => {
     const gameendCallback = vi.fn();
-    eventSystem.on('gameend', gameendCallback);
+    eventSystem.on(EVENTS.GAME_END, gameendCallback);
 
-    eventSystem.emit('gameend');
+    eventSystem.emit(EVENTS.GAME_END);
 
     expect(gameendCallback).toHaveBeenCalledOnce();
   });
 
   it('should handle deviceconfig event', () => {
     const deviceconfigCallback = vi.fn();
-    eventSystem.on('deviceconfig', deviceconfigCallback);
+    eventSystem.on(EVENTS.DEVICE_CONFIG, deviceconfigCallback);
 
     const deviceConfig = {
       devices: {
@@ -215,13 +216,13 @@ describe('EventSystemManager and InputManager Integration', () => {
         pacifier: { enabled: true, charges: 4 }
       },
       mapping: {
-        disruptor: 'taser',
-        immobilizer: 'stun',
-        pacifier: 'tranq'
+        disruptor: DEVICE_TYPES.TASER,
+        immobilizer: DEVICE_TYPES.STUN,
+        pacifier: DEVICE_TYPES.TRANQ
       }
     };
 
-    eventSystem.emit('deviceconfig', deviceConfig);
+    eventSystem.emit(EVENTS.DEVICE_CONFIG, deviceConfig);
 
     expect(deviceconfigCallback).toHaveBeenCalledWith(deviceConfig);
   });

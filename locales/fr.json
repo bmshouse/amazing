@@ -14,7 +14,9 @@
       "settings": "Paramètres",
       "close": "Fermer",
       "play_again": "Rejouer",
-      "try_again": "Réessayer"
+      "try_again": "Réessayer",
+      "fullscreen_enter": "Plein écran",
+      "fullscreen_exit": "Quitter le plein écran"
     },
     "tabs": {
       "basic": "Basique",
@@ -62,13 +64,17 @@
       "copied": "Copié !",
       "share_native": "Partager",
       "play_again": "Rejouer",
-      "share_challenge": "Partager le Défi"
+      "share_challenge": "Partager le Défi",
+      "web_share_title": "Défi CalmMaze",
+      "web_share_text": "Essayez ce défi CalmMaze : {{summary}}"
     },
     "errors": {
       "copy_failed": "Échec de la copie de l'URL dans le presse-papiers",
       "copy_failed_short": "Échec de la copie de l'URL",
       "share_prepare_failed": "Échec de la préparation du défi à partager",
-      "challenge_load_failed": "Échec du chargement des données du défi"
+      "challenge_load_failed": "Échec du chargement des données du défi",
+      "challenge_create_failed": "Échec de la création du défi à partager",
+      "challenge_load_shared_failed": "Échec du chargement du défi partagé"
     },
     "challenge": {
       "loading_title": "Mode Défi",
@@ -108,7 +114,8 @@
       "victory_tie": "Vous avez égalé le temps cible exactement ! Pouvez-vous le battre au prochain essai ?",
       "victory_close_title": "🎉 Si Proche !",
       "victory_close": "Seulement {{diff}} derrière ! Un dernier essai ?",
-      "victory_missed": "Vous avez terminé {{diff}} après le temps cible. Pensez-vous pouvoir faire mieux ? Réessayez !"
+      "victory_missed": "Vous avez terminé {{diff}} après le temps cible. Pensez-vous pouvoir faire mieux ? Réessayez !",
+      "performance_mode": "Mode performance activé"
     },
     "difficulty": {
       "presets": {

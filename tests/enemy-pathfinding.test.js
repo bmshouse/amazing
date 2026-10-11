@@ -1,8 +1,8 @@
 // tests/enemy-pathfinding.test.js - enemies follow maze corridors instead of pushing into walls
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { EnemyController } from '../modules/enemies.js';
 import { Maze } from '../modules/maze.js';
-import { GameConfig } from '../modules/GameConfig.js';
+import { GameConfig, ENEMY_STATES } from '../modules/GameConfig.js';
 
 // Snake corridor: row 1 and row 3 are joined only through (5, 2)
 //   1111111
@@ -23,7 +23,7 @@ const makeSnakeMaze = () => {
 };
 
 const makeEnemy = (x, y) => ({
-  x, y, state: 'idle', stateTime: performance.now(), speed: GameConfig.ENEMIES.SPEED, speedMul: 1
+  x, y, state: ENEMY_STATES.IDLE, stateTime: performance.now(), speed: GameConfig.ENEMIES.SPEED, speedMul: 1
 });
 
 describe('Enemy path-finding', () => {
@@ -80,7 +80,7 @@ describe('Enemy path-finding', () => {
   });
 
   it('never chases a tranquilized enemy', () => {
-    const enemy = { ...makeEnemy(5.5, 1.5), state: 'tranq', speedMul: 0 };
+    const enemy = { ...makeEnemy(5.5, 1.5), state: ENEMY_STATES.TRANQ, speedMul: 0 };
     enemies.entities.push(enemy);
     enemies.update(16, maze);
     expect(enemy.chasing).toBe(false);
@@ -122,28 +122,59 @@ describe('Enemy path-finding', () => {
     };
 
     it('lets the player walk through a stunned enemy', () => {
-      expect(collide('stunned', 0)).toEqual({ moved: false, boops: 0 });
+      expect(collide(ENEMY_STATES.STUNNED, 0)).toEqual({ moved: false, boops: 0 });
     });
 
     it('lets the player walk through a tranquilized enemy', () => {
-      expect(collide('tranq', 0)).toEqual({ moved: false, boops: 0 });
+      expect(collide(ENEMY_STATES.TRANQ, 0)).toEqual({ moved: false, boops: 0 });
     });
 
     it('still pushes the player back from active and slowed enemies', () => {
-      expect(collide('idle', 1)).toMatchObject({ moved: true, boops: 1 });
+      expect(collide(ENEMY_STATES.IDLE, 1)).toMatchObject({ moved: true, boops: 1 });
       enemies.entities = [];
-      expect(collide('slowed', 0.35)).toMatchObject({ moved: true, boops: 1 });
+      expect(collide(ENEMY_STATES.SLOWED, 0.35)).toMatchObject({ moved: true, boops: 1 });
     });
 
     it('pushes again once a stunned enemy recovers', () => {
       player.x = 3.5; player.y = 1.5;
-      const enemy = { ...makeEnemy(3.9, 1.5), state: 'stunned', speedMul: 0, stateTime: performance.now() - 10_000 };
+      const enemy = { ...makeEnemy(3.9, 1.5), state: ENEMY_STATES.STUNNED, speedMul: 0, stateTime: performance.now() - 10_000 };
       enemies.entities.push(enemy);
       let boops = 0;
       enemies.onBoop = () => { boops++; };
       enemies.update(16, maze); // stun duration long expired: back to idle, boop resumes
-      expect(enemy.state).toBe('idle');
+      expect(enemy.state).toBe(ENEMY_STATES.IDLE);
       expect(boops).toBe(1);
+    });
+  });
+
+  describe('smart push', () => {
+    // Player deep in the lower corridor (8 cells from the start by path); the start is
+    // up-left through a wall, but the way back goes east, up through (5, 2), then west.
+    const bump = (smart) => {
+      GameConfig.ENEMIES.SMART_PUSH_ENABLED = smart;
+      player.x = 3.5; player.y = 3.5;
+      enemies.entities.push({ ...makeEnemy(3.9, 3.5), speedMul: 0 });
+      enemies.update(16, maze);
+    };
+    afterEach(() => { GameConfig.ENEMIES.SMART_PUSH_ENABLED = false; });
+
+    it('pushes along the corridor toward the start, not straight at it through walls', () => {
+      bump(true);
+      expect(player.x).toBeGreaterThan(3.5);
+      expect(maze.cellAt(player.x, player.y)).toBe(0);
+    });
+
+    it('still pushes radially away from the snowman when disabled', () => {
+      bump(false);
+      expect(player.x).toBeLessThan(3.5);
+    });
+
+    it('rebuilds the start field when the maze changes', () => {
+      bump(true);
+      const first = enemies.startField;
+      enemies.reset(maze);
+      expect(enemies.startField).toBeNull();
+      expect(first).not.toBeNull();
     });
   });
 
@@ -174,7 +205,7 @@ describe('Enemy path-finding', () => {
     });
 
     it('keeps its heading when it cannot move', () => {
-      const enemy = { ...makeEnemy(5.5, 1.5), state: 'tranq', speedMul: 0, heading: 1.25 };
+      const enemy = { ...makeEnemy(5.5, 1.5), state: ENEMY_STATES.TRANQ, speedMul: 0, heading: 1.25 };
       enemies.entities.push(enemy);
       for (let i = 0; i < 10; i++) enemies.update(16, maze);
       expect(enemy.heading).toBe(1.25);

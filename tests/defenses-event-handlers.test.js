@@ -5,6 +5,7 @@ import { Maze } from '../modules/maze.js';
 import { PlayerController } from '../modules/player.js';
 import { EnemyController } from '../modules/enemies.js';
 import { EventSystemManager } from '../modules/EventSystemManager.js';
+import { EVENTS } from '../modules/GameConfig.js';
 
 describe('Defenses Event Handling', () => {
   let maze, player, enemies, defenses, audio, hud, eventSystem;
@@ -39,7 +40,7 @@ describe('Defenses Event Handling', () => {
     const activateSpy = vi.spyOn(defenses, 'activate');
 
     // Emit mousedown event through EventSystemManager
-    eventSystem.emit('mousedown', {
+    eventSystem.emit(EVENTS.MOUSEDOWN, {
       button: 0,
       event: { target: document.body }
     });
@@ -55,7 +56,7 @@ describe('Defenses Event Handling', () => {
     const preventDefaultSpy = vi.fn();
 
     // Emit keydown event through EventSystemManager
-    eventSystem.emit('keydown', {
+    eventSystem.emit(EVENTS.KEYDOWN, {
       code: 'Space',
       event: { preventDefault: preventDefaultSpy }
     });
@@ -70,7 +71,7 @@ describe('Defenses Event Handling', () => {
 
     const activateSpy = vi.spyOn(defenses, 'activate');
 
-    eventSystem.emit('mousedown', {
+    eventSystem.emit(EVENTS.MOUSEDOWN, {
       button: 0,
       event: { target: document.body }
     });
@@ -83,7 +84,7 @@ describe('Defenses Event Handling', () => {
 
     const activateSpy = vi.spyOn(defenses, 'activate');
 
-    eventSystem.emit('mousedown', {
+    eventSystem.emit(EVENTS.MOUSEDOWN, {
       button: 2, // Right-click
       event: { target: document.body }
     });
@@ -102,7 +103,7 @@ describe('Defenses Event Handling', () => {
     const configButton = document.createElement('button');
     configButton.id = 'configButton';
 
-    eventSystem.emit('mousedown', {
+    eventSystem.emit(EVENTS.MOUSEDOWN, {
       button: 0,
       event: { target: configButton }
     });
@@ -120,7 +121,7 @@ describe('Defenses Event Handling', () => {
     const activateSpy = vi.spyOn(defenses, 'activate');
 
     // Emit event through EventSystemManager
-    eventSystem.emit('mousedown', {
+    eventSystem.emit(EVENTS.MOUSEDOWN, {
       button: 0,
       event: { target: document.body }
     });

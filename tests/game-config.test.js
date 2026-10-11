@@ -8,7 +8,11 @@ import {
   getPlayerConfig,
   getEnemyConfig,
   getMazeConfig,
-  DEVICE_MAPPING
+  DEVICE_MAPPING,
+  DEVICE_TYPES,
+  ENEMY_STATES,
+  STORAGE_KEYS,
+  EVENTS
 } from '../modules/GameConfig.js';
 
 describe('GameConfig', () => {
@@ -22,16 +26,16 @@ describe('GameConfig', () => {
   });
 
   it('getDeviceConfig should return correct device config', () => {
-    const taserConfig = getDeviceConfig('taser');
+    const taserConfig = getDeviceConfig(DEVICE_TYPES.TASER);
     expect(taserConfig).toBeDefined();
     expect(taserConfig.MAX_CHARGES).toBe(8);
     expect(taserConfig.COOLDOWN).toBe(250);
 
-    const stunConfig = getDeviceConfig('stun');
+    const stunConfig = getDeviceConfig(DEVICE_TYPES.STUN);
     expect(stunConfig).toBeDefined();
     expect(stunConfig.MAX_CHARGES).toBe(6);
 
-    const tranqConfig = getDeviceConfig('tranq');
+    const tranqConfig = getDeviceConfig(DEVICE_TYPES.TRANQ);
     expect(tranqConfig).toBeDefined();
     expect(tranqConfig.MAX_CHARGES).toBe(4);
   });
@@ -84,15 +88,15 @@ describe('GameConfig', () => {
     });
 
     it('should map difficulty config names to game device names', () => {
-      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.disruptor).toBe('taser');
-      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.immobilizer).toBe('stun');
-      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.pacifier).toBe('tranq');
+      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.disruptor).toBe(DEVICE_TYPES.TASER);
+      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.immobilizer).toBe(DEVICE_TYPES.STUN);
+      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.pacifier).toBe(DEVICE_TYPES.TRANQ);
     });
 
     it('should map game device names to difficulty config names', () => {
-      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY.taser).toBe('disruptor');
-      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY.stun).toBe('immobilizer');
-      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY.tranq).toBe('pacifier');
+      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY[DEVICE_TYPES.TASER]).toBe('disruptor');
+      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY[DEVICE_TYPES.STUN]).toBe('immobilizer');
+      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY[DEVICE_TYPES.TRANQ]).toBe('pacifier');
     });
 
     it('should have consistent bidirectional mappings', () => {
@@ -113,6 +117,28 @@ describe('GameConfig', () => {
         expect(deviceConfig).toBeDefined();
         expect(deviceConfig.MAX_CHARGES).toBeGreaterThan(0);
       });
+    });
+  });
+
+  // Pins the literal values that saved data, shared links and locale keys depend on
+  describe('Identifier constants', () => {
+    it('should keep device ids stable', () => {
+      expect(DEVICE_TYPES).toEqual({ TASER: 'taser', STUN: 'stun', TRANQ: 'tranq' });
+    });
+
+    it('should keep enemy states stable', () => {
+      expect(ENEMY_STATES).toEqual({ IDLE: 'idle', STUNNED: 'stunned', SLOWED: 'slowed', TRANQ: 'tranq' });
+    });
+
+    it('should keep localStorage keys stable so existing saves load', () => {
+      expect(Object.values(STORAGE_KEYS).sort()).toEqual([
+        'calmmaze_audio', 'calmmaze_difficulty', 'calmmaze_language', 'calmmaze_sensitivity', 'calmmaze_use3d'
+      ]);
+    });
+
+    it('should define unique event names', () => {
+      const names = Object.values(EVENTS);
+      expect(new Set(names).size).toBe(names.length);
     });
   });
 });

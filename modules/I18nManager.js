@@ -1,5 +1,6 @@
 // modules/I18nManager.js - Internationalization manager for multi-language support
 import { logger } from './Logger.js';
+import { STORAGE_KEYS } from './GameConfig.js';
 
 export class I18nManager {
   constructor() {
@@ -53,7 +54,7 @@ export class I18nManager {
    */
   detectLanguage(defaultLanguage = 'en') {
     // 1. Check localStorage for saved preference
-    const savedLanguage = localStorage.getItem('calmmaze_language');
+    const savedLanguage = localStorage.getItem(STORAGE_KEYS.LANGUAGE);
     if (savedLanguage && this.availableLanguages.includes(savedLanguage)) {
       return savedLanguage;
     }
@@ -137,7 +138,7 @@ export class I18nManager {
     this.currentLanguage = languageCode;
 
     // Save preference
-    localStorage.setItem('calmmaze_language', languageCode);
+    localStorage.setItem(STORAGE_KEYS.LANGUAGE, languageCode);
 
     // Update HTML attributes
     document.documentElement.lang = languageCode;

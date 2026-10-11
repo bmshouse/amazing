@@ -69,7 +69,7 @@ export class ChallengeManager {
     } catch (error) {
       logger.error('Failed to create challenge:', error);
       if (this.onChallengeError) {
-        this.onChallengeError('Failed to create shareable challenge', error);
+        this.onChallengeError('ui.errors.challenge_create_failed', error);
       }
       throw error;
     }
@@ -101,7 +101,7 @@ export class ChallengeManager {
     } catch (error) {
       logger.error('Failed to load challenge:', error);
       if (this.onChallengeError) {
-        this.onChallengeError('Failed to load shared challenge', error);
+        this.onChallengeError('ui.errors.challenge_load_shared_failed', error);
       }
       return null;
     }
@@ -280,15 +280,16 @@ export class ChallengeManager {
   /**
    * Share challenge via Web Share API (if available)
    * @param {string} url - Challenge URL
-   * @param {string} title - Share title
+   * @param {string} title - Share title (localized by the caller)
+   * @param {string} text - Share text (localized by the caller)
    * @returns {Promise<boolean>} Success status
    */
-  async shareViaWebAPI(url, title = 'CalmMaze Challenge') {
+  async shareViaWebAPI(url, title, text) {
     try {
       if (navigator.share) {
         await navigator.share({
           title: title,
-          text: `Try this CalmMaze challenge: ${this.getCurrentChallengeSummary()}`,
+          text: text,
           url: url
         });
         return true;

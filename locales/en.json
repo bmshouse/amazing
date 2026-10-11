@@ -14,7 +14,9 @@
       "settings": "Settings",
       "close": "Close",
       "play_again": "Play Again",
-      "try_again": "Try Again"
+      "try_again": "Try Again",
+      "fullscreen_enter": "Toggle Fullscreen",
+      "fullscreen_exit": "Exit Fullscreen"
     },
     "tabs": {
       "basic": "Basic",
@@ -62,13 +64,17 @@
       "copied": "Copied!",
       "share_native": "Share",
       "play_again": "Play Again",
-      "share_challenge": "Share Challenge"
+      "share_challenge": "Share Challenge",
+      "web_share_title": "CalmMaze Challenge",
+      "web_share_text": "Try this CalmMaze challenge: {{summary}}"
     },
     "errors": {
       "copy_failed": "Failed to copy URL to clipboard",
       "copy_failed_short": "Failed to copy URL",
       "share_prepare_failed": "Failed to prepare challenge for sharing",
-      "challenge_load_failed": "Failed to load challenge data"
+      "challenge_load_failed": "Failed to load challenge data",
+      "challenge_create_failed": "Failed to create shareable challenge",
+      "challenge_load_shared_failed": "Failed to load shared challenge"
     },
     "challenge": {
       "loading_title": "Challenge Mode",
@@ -108,7 +114,8 @@
       "victory_tie": "You matched the target time exactly! Can you beat it on the next try?",
       "victory_close_title": "🎉 So Close!",
       "victory_close": "Just {{diff}} behind! One more try?",
-      "victory_missed": "You finished {{diff}} after the target time. Think you can do better? Try again!"
+      "victory_missed": "You finished {{diff}} after the target time. Think you can do better? Try again!",
+      "performance_mode": "Performance mode enabled"
     },
     "difficulty": {
       "presets": {

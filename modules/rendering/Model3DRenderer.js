@@ -1,6 +1,6 @@
 // modules/rendering/Model3DRenderer.js - WebGL-based 3D model renderer for enemies
 // Uses Three.js for low-poly 3D models with LOD system and skeletal animation
-import { GameConfig } from '../GameConfig.js';
+import { GameConfig, ENEMY_STATES } from '../GameConfig.js';
 import { logger } from '../Logger.js';
 
 /**
@@ -33,6 +33,9 @@ export class Model3DRenderer {
     this.bodyMaterials = new Map(); // tint colour -> shared body material
     this.partMaterials = null; // shared coal / carrot / scarf materials (created with the first model)
     this.mixers = []; // Animation mixers
+    this.projectilePool = new Map(); // projectile -> group of beads, kept while the dart is in flight
+    this.projectileMaterials = new Map(); // "colour/opacity" -> shared unlit material
+    this.projectileGeometry = null; // unit sphere shared by every bead
 
     // Performance tracking
     this.enabled = false;
@@ -386,9 +389,9 @@ export class Model3DRenderer {
    */
   getStateTint(state) {
     switch (state) {
-      case 'stunned': return 0xffd166; // Yellow
-      case 'slowed': return 0x00d1ff;  // Cyan
-      case 'tranq': return 0xa29bfe;   // Purple
+      case ENEMY_STATES.STUNNED: return 0xffd166; // Yellow
+      case ENEMY_STATES.SLOWED: return 0x00d1ff;  // Cyan
+      case ENEMY_STATES.TRANQ: return 0xa29bfe;   // Purple
       default: return 0xffffff;        // White (default)
     }
   }
@@ -513,10 +516,10 @@ export class Model3DRenderer {
       mesh.rotation.set(0, facing, 0);
       mesh.position.set(enemy.x, 0, enemy.y);
 
-      if (enemy.state === 'stunned') {
+      if (enemy.state === ENEMY_STATES.STUNNED) {
         // Spinning animation for stunned enemies
         mesh.rotation.y = (now / 500) % (Math.PI * 2);
-      } else if (enemy.state === 'tranq') {
+      } else if (enemy.state === ENEMY_STATES.TRANQ) {
         // Asleep on its back: tipped so the face points up and the head lies behind it. The body axis
         // rests at the widest sphere's radius, so it touches the floor instead of hovering, and the
         // body is centred on the enemy's spot (the model pivots at its base).
@@ -524,7 +527,7 @@ export class Model3DRenderer {
         mesh.position.y = instance.restHeight;
         mesh.position.x += Math.cos(heading) * instance.height / 2;
         mesh.position.z += Math.sin(heading) * instance.height / 2;
-      } else if (enemy.state === 'idle' || !enemy.state) {
+      } else if (enemy.state === ENEMY_STATES.IDLE || !enemy.state) {
         // Gentle hop that never sinks the base below the floor
         mesh.position.y = (Math.sin(now / 500) + 1) * 0.025;
       }
@@ -546,6 +549,75 @@ export class Model3DRenderer {
     mesh.traverse(child => { if (child.name === 'body') bodies.push(child); });
     const { height, restHeight } = template.userData;
     return { mesh, lod: lodLevel, bodies, tint: null, height, restHeight };
+  }
+
+  /**
+   * Draws each in-flight projectile as a bright bead with a short fading trail behind it. They
+   * live in the same scene as the snowmen, so a dart is hidden by a snowman in front of it
+   * and passes visibly in front of or beside one it misses. Hidden while a wall is in the way,
+   * and for its first half unit, where it would sit inside the camera's near plane.
+   * @param {Array} projectiles - Live projectiles ({x, y, a, r, color}); identity is stable per dart
+   * @param {Object} player - Player object
+   * @param {Object} maze - Maze object for occlusion checking
+   */
+  updateProjectiles(projectiles, player, maze) {
+    if (!this.enabled || !this.scene) return;
+
+    const live = new Set(projectiles);
+    for (const [projectile, group] of this.projectilePool) {
+      if (!live.has(projectile)) {
+        this.scene.remove(group);
+        this.projectilePool.delete(projectile);
+      }
+    }
+
+    for (const projectile of projectiles) {
+      let group = this.projectilePool.get(projectile);
+      if (!group) {
+        group = this.createProjectileMesh(projectile);
+        this.projectilePool.set(projectile, group);
+        this.scene.add(group);
+      }
+      group.position.set(projectile.x, GameConfig.RENDERING.PROJECTILE_HEIGHT, projectile.y);
+      const farEnough = Math.hypot(projectile.x - player.x, projectile.y - player.y) >= GameConfig.RENDERING.PROJECTILE_MIN_DISTANCE;
+      group.visible = farEnough && !(maze && this.isOccludedByWall(player, projectile, maze));
+    }
+  }
+
+  /**
+   * One bead plus a trail of smaller, fainter beads laid out behind it along the (fixed) flight direction
+   * @private
+   */
+  createProjectileMesh(projectile) {
+    const THREE = this.THREE;
+    if (!this.projectileGeometry) this.projectileGeometry = new THREE.SphereGeometry(1, 8, 6);
+
+    const group = new THREE.Group();
+    const dirX = Math.cos(projectile.a), dirZ = Math.sin(projectile.a);
+    const beads = [{ back: 0, scale: 1, opacity: 1 }, ...GameConfig.RENDERING.PROJECTILE_TRAIL];
+    for (const bead of beads) {
+      const mesh = new THREE.Mesh(this.projectileGeometry, this.getProjectileMaterial(projectile.color, bead.opacity));
+      mesh.scale.setScalar(projectile.r * bead.scale);
+      mesh.position.set(-dirX * bead.back, 0, -dirZ * bead.back);
+      group.add(mesh);
+    }
+    return group;
+  }
+
+  /**
+   * Unlit material per colour and opacity, so beads stay bright whatever the lighting
+   * @private
+   */
+  getProjectileMaterial(color, opacity) {
+    const key = `${color}/${opacity}`;
+    let material = this.projectileMaterials.get(key);
+    if (!material) {
+      material = new this.THREE.MeshBasicMaterial({
+        color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1
+      });
+      this.projectileMaterials.set(key, material);
+    }
+    return material;
   }
 
   /**
@@ -607,6 +679,11 @@ export class Model3DRenderer {
     if (this.partMaterials) Object.values(this.partMaterials).forEach(material => material.dispose());
     this.partMaterials = null;
     this.enemyPool.clear();
+    this.projectilePool.clear();
+    this.projectileMaterials.forEach(material => material.dispose());
+    this.projectileMaterials.clear();
+    if (this.projectileGeometry) this.projectileGeometry.dispose();
+    this.projectileGeometry = null;
     this.models.clear();
     this.enemyInstances = [];
     this.mixers = [];
