@@ -98,7 +98,8 @@ export class SpriteRenderer {
     }
 
     // Perspective projection
-    const projectedSizeOnScreen = (H / distanceToObject) * objectSize;
+    let projectedSizeOnScreen = (H / distanceToObject) * objectSize;
+    if (options.maxScreenSize !== undefined) projectedSizeOnScreen = Math.min(projectedSizeOnScreen, options.maxScreenSize * H);
     const screenPositionX = Math.tan(angleFromPlayerToObject) / Math.tan(this.config.fov/2) * (W/2) + (W/2);
     // Objects that declare how far their base hangs below their centre (in size units) are stood on the floor,
     // which sits EYE_HEIGHT below the horizon at this distance. Others stay centred on the horizon.
@@ -553,6 +554,8 @@ export class SpriteRenderer {
     const options = { checkOcclusion: false, shape }; // Particles are always visible
     if (state.h !== undefined) options.baseExtent = state.h / state.size; // centred state.h above the floor
     if (state.alpha < 1) options.alphaScale = state.alpha;
+    // Boop and huggle hearts have a size cap, so one right in front of the camera can't fill the screen
+    if (isBoopParticle || isHuggleParticle) options.maxScreenSize = GameConfig.PARTICLES.BOOP_HEART_MAX_SIZE;
 
     return this._drawBillboard(state.x, state.y, state.size, particle.color, player, W, H, options);
   }

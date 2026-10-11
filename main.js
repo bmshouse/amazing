@@ -1256,15 +1256,17 @@ export function bootstrap({ dev=false } = {}) {
     const audioFreq = isPull ? GameConfig.AUDIO.FREQ_HUGGLE : GameConfig.AUDIO.FREQ_BOOP;
     const audioDuration = isPull ? 0.08 : 0.05; // Slightly longer for huggle
 
-    for (let i=0;i<GameConfig.PARTICLES.SPAWN_COUNT_ON_BOOP;i++) {
-      spawnParticle(x+(Math.random()-0.5)*0.2, y+(Math.random()-0.5)*0.2, particleColor, 300);
-    }
     hudManager.speak(i18n.t(messageKey));
 
-    // Sound and flash fire at most once per boopFeedbackInterval, since a close critter boops every frame
+    // Hearts, sound and flash fire at most once per boopFeedbackInterval, since a close critter boops every frame
     const now = performance.now();
     if (now - lastBoopFeedback < BOOP_FEEDBACK_INTERVAL) return;
     lastBoopFeedback = now;
+    const { SPAWN_COUNT_ON_BOOP, BOOP_HEART_HEIGHT, BOOP_HEART_RISE, BOOP_HEART_GROW } = GameConfig.PARTICLES;
+    for (let i=0;i<SPAWN_COUNT_ON_BOOP;i++) {
+      spawnParticle(x+(Math.random()-0.5)*0.2, y+(Math.random()-0.5)*0.2, particleColor, 300, undefined,
+        { h: BOOP_HEART_HEIGHT, vh: BOOP_HEART_RISE, grow: BOOP_HEART_GROW, fade: true });
+    }
     // Pitch-drop "bwoop" reads as a soft bounce; huggles slide up instead
     audio.beep('sine', audioFreq, audioDuration * 2, 0.07, isPull ? audioFreq * 1.5 : audioFreq * 0.5);
     flashBoop(isPull);
