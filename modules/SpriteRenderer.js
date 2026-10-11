@@ -1,5 +1,6 @@
 // modules/SpriteRenderer.js - Handles billboard sprite rendering and particles
 import { GameConfig, ENEMY_STATES } from './GameConfig.js';
+import { particleState, bloom } from './Effects.js';
 
 // Distance from a snowman sprite's centre to the bottom of its base sphere, in size units
 // (the base sphere is centred 0.6 below and is 0.8 tall)
@@ -138,6 +139,9 @@ export class SpriteRenderer {
       case 'heart':
         this._drawHeartShape(x, y, size);
         break;
+      case 'star':
+        this._drawStarShape(x, y, size);
+        break;
       case 'ellipse':
       default:
         this._drawEllipseShape(x, y, size);
@@ -155,6 +159,26 @@ export class SpriteRenderer {
   _drawEllipseShape(x, y, size) {
     this.ctx.beginPath();
     this.ctx.ellipse(x, y, size, size * GameConfig.RENDERING.BILLBOARD_HEIGHT_MULTIPLIER, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  /**
+   * Draws a four-pointed sparkle
+   * @param {number} x - Screen X position
+   * @param {number} y - Screen Y position
+   * @param {number} size - Projected size on screen
+   * @private
+   */
+  _drawStarShape(x, y, size) {
+    const outer = size * 2, inner = outer * 0.3;
+    this.ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const radius = i % 2 ? inner : outer;
+      const angle = (i * Math.PI) / 4 - Math.PI / 2;
+      const px = x + Math.cos(angle) * radius, py = y + Math.sin(angle) * radius;
+      if (i === 0) this.ctx.moveTo(px, py); else this.ctx.lineTo(px, py);
+    }
+    this.ctx.closePath();
     this.ctx.fill();
   }
 
@@ -464,16 +488,23 @@ export class SpriteRenderer {
   drawProjectile(projectile, player, W, H, maze) {
     const { PROJECTILE_HEIGHT, PROJECTILE_TRAIL, PROJECTILE_MIN_DISTANCE } = GameConfig.RENDERING;
     // Just launched: it would be a huge blob right in front of the camera
-    if (Math.hypot(projectile.x - player.x, projectile.y - player.y) < PROJECTILE_MIN_DISTANCE) return;
+    const distance = Math.hypot(projectile.x - player.x, projectile.y - player.y);
+    if (distance < PROJECTILE_MIN_DISTANCE) return;
+    const grown = bloom(distance);
+    const style = GameConfig.EFFECTS.PROJECTILE_STYLE[projectile.type] ?? {};
+    const trail = style.trail ?? PROJECTILE_TRAIL;
+    const seconds = performance.now() / 1000;
+    const pulse = style.pulse ? 1 + style.pulse.amount * Math.sin(seconds * style.pulse.speed) : 1;
     const dirX = Math.cos(projectile.a), dirY = Math.sin(projectile.a);
-    // Trail first, so the head draws on top
-    for (const bead of [...PROJECTILE_TRAIL].reverse().concat({ back: 0, scale: 1, opacity: 1 })) {
-      const size = projectile.r * bead.scale;
+
+    // One ellipse at 'back' behind the head, 'side' across the flight line and 'rise' above dart height
+    const bead = (back, side, rise, scale, opacity, color) => {
+      const size = projectile.r * scale;
       this._drawBillboard(
-        projectile.x - dirX * bead.back,
-        projectile.y - dirY * bead.back,
+        projectile.x - dirX * back - dirY * side,
+        projectile.y - dirY * back + dirX * side,
         size,
-        projectile.color,
+        color,
         player,
         W,
         H,
@@ -481,10 +512,27 @@ export class SpriteRenderer {
           checkOcclusion: true,
           maze,
           shape: 'ellipse',
-          baseExtent: PROJECTILE_HEIGHT / size, // puts the bead's centre PROJECTILE_HEIGHT above the floor
-          alphaScale: bead.opacity
+          baseExtent: (PROJECTILE_HEIGHT + rise) / size, // puts the bead's centre that far above the floor
+          alphaScale: opacity
         }
       );
+    };
+
+    if (style.halo) bead(0, 0, 0, style.halo.scale * pulse * grown, style.halo.opacity, projectile.color);
+    // Trail first, so the head draws on top
+    for (let i = trail.length - 1; i >= 0; i--) {
+      const b = trail[i];
+      const color = style.twinkle && i % 2 ? style.twinkle : projectile.color;
+      bead(b.back, 0, 0, b.scale, b.opacity, color);
+    }
+    bead(0, 0, 0, pulse, 1, projectile.color);
+    if (style.core) bead(0, 0, 0, style.core.scale * pulse, 1, style.core.color);
+    if (style.motes) {
+      const { count, orbit, scale, speed, opacity } = style.motes;
+      for (let i = 0; i < count; i++) {
+        const phase = seconds * speed + (i * 2 * Math.PI) / count;
+        bead(0, Math.cos(phase) * orbit * projectile.r * grown, Math.sin(phase) * orbit * projectile.r * grown, scale * grown, opacity, '#ffffff');
+      }
     }
   }
 
@@ -495,25 +543,18 @@ export class SpriteRenderer {
    * @param {number} W - Screen width in pixels
    * @param {number} H - Screen height in pixels
    */
-  drawParticle(particle, player, W, H) {
-    // Use heart shape for boop and huggle particles, ellipse for others
+  drawParticle(particle, player, W, H, now = performance.now()) {
+    // An explicit shape wins; otherwise hearts for boop and huggle particles, ellipses for others
     const isBoopParticle = particle.color === GameConfig.COLORS.PARTICLE_BOOP;
     const isHuggleParticle = particle.color === GameConfig.COLORS.PARTICLE_HUGGLE;
-    const shape = (isBoopParticle || isHuggleParticle) ? 'heart' : 'ellipse';
+    const shape = particle.shape ?? ((isBoopParticle || isHuggleParticle) ? 'heart' : 'ellipse');
+    // Moving particles drift, rise, swell and fade as they age; plain ones stay as spawned
+    const state = particleState(particle, now);
+    const options = { checkOcclusion: false, shape }; // Particles are always visible
+    if (state.h !== undefined) options.baseExtent = state.h / state.size; // centred state.h above the floor
+    if (state.alpha < 1) options.alphaScale = state.alpha;
 
-    return this._drawBillboard(
-      particle.x,
-      particle.y,
-      particle.size ?? GameConfig.RENDERING.PARTICLE_SIZE,
-      particle.color,
-      player,
-      W,
-      H,
-      {
-        checkOcclusion: false,  // Particles are always visible
-        shape: shape            // Hearts for boop/huggle particles, ellipses for others
-      }
-    );
+    return this._drawBillboard(state.x, state.y, state.size, particle.color, player, W, H, options);
   }
 
 
@@ -533,8 +574,72 @@ export class SpriteRenderer {
         particles.splice(i, 1);
         continue;
       }
-      this.drawParticle(p, player, W, H);
+      this.drawParticle(p, player, W, H, now);
     }
+  }
+
+  /**
+   * Draws the Disruptor's lightning bolts, a fresh jagged path every frame so they crackle, and
+   * drops the ones whose time is up.
+   * @param {Array} bolts - Bolts: x2, y2 (world end point), color, born, life
+   * @param {Object} player - Player object with position and angle
+   * @param {number} W - Screen width in pixels
+   * @param {number} H - Screen height in pixels
+   */
+  renderBolts(bolts, player, W, H) {
+    const now = performance.now();
+    const { SEGMENTS, JITTER, GLOW_WIDTH, CORE_WIDTH, START_X, START_Y } = GameConfig.EFFECTS.BOLT;
+    for (let i = bolts.length - 1; i >= 0; i--) {
+      const bolt = bolts[i];
+      const u = (now - bolt.born) / bolt.life;
+      if (u >= 1) {
+        bolts.splice(i, 1);
+        continue;
+      }
+      const end = this._projectAtHeight(bolt.x2, bolt.y2, GameConfig.RENDERING.PROJECTILE_HEIGHT, player, W, H);
+      if (!end) continue;
+      const startX = W * START_X, startY = H * START_Y;
+      const dx = end.x - startX, dy = end.y - startY;
+      const length = Math.hypot(dx, dy) || 1;
+      const nx = -dy / length, ny = dx / length;
+
+      const points = [{ x: startX, y: startY }];
+      for (let s = 1; s < SEGMENTS; s++) {
+        const t = s / SEGMENTS;
+        const wobble = (Math.random() - 0.5) * 2 * JITTER * length * Math.sin(Math.PI * t);
+        points.push({ x: startX + dx * t + nx * wobble, y: startY + dy * t + ny * wobble });
+      }
+      points.push({ x: end.x, y: end.y });
+
+      this.ctx.save();
+      this.ctx.lineJoin = 'round';
+      this.ctx.lineCap = 'round';
+      for (const [color, width, alpha] of [[bolt.color, GLOW_WIDTH, 0.35], ['#ffffff', CORE_WIDTH, 0.95]]) {
+        this.ctx.globalAlpha = alpha * (1 - u);
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = width;
+        this.ctx.beginPath();
+        points.forEach((pt, n) => (n ? this.ctx.lineTo(pt.x, pt.y) : this.ctx.moveTo(pt.x, pt.y)));
+        this.ctx.stroke();
+      }
+      this.ctx.restore();
+    }
+  }
+
+  /**
+   * Screen position of a world point at a height above the floor, projected as billboards are
+   * @returns {{x: number, y: number}|null} Null when the point is behind the player
+   * @private
+   */
+  _projectAtHeight(worldX, worldY, height, player, W, H) {
+    const dx = worldX - player.x, dy = worldY - player.y;
+    const distance = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx) - player.a;
+    if (Math.cos(angle) <= 0 || distance < 0.05) return null;
+    return {
+      x: Math.tan(angle) / Math.tan(this.config.fov / 2) * (W / 2) + W / 2,
+      y: H / 2 + (GameConfig.RENDERING.EYE_HEIGHT - height) * (H / distance)
+    };
   }
 
   /**

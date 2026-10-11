@@ -13,7 +13,8 @@ export class Defenses {
     this.projectileSystem = null; // Will be injected
     this.eventManager = null; // Will be injected
     this.onActivation = (_x,_y,_c,_muzzle)=>{};
-    this.onRangeIndicator = (_x1,_y1,_x2,_y2,_c,_a)=>{};
+    this.onBolt = (_x1,_y1,_x2,_y2,_c,_hit)=>{};
+    this.onRangeIndicator =(_x1,_y1,_x2,_y2,_c,_a)=>{};
   }
 
   // Check if click is on UI elements to prevent accidental device activation
@@ -90,7 +91,7 @@ export class Defenses {
     // Check if device is enabled
     if (device.enabled === false) return;
 
-    const result = device.activate(this.player, this.enemies, this.audio, this.onActivation, this.projectileSystem);
+    const result = device.activate(this.player, this.enemies, this.audio, this.onActivation, this.projectileSystem, this.onBolt);
     return result;
   }
 

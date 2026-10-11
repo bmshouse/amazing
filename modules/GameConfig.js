@@ -162,6 +162,43 @@ export const GameConfig = {
     DEFAULT_RADIUS_MAX: 0.05
   },
 
+  // Per-device visual flair. Projectile styles are read by both the 2D and the 3D renderer;
+  // a projectile whose type has no style keeps the plain bead-and-trail look.
+  EFFECTS: {
+    PROJECTILE_STYLE: {
+      stun: {
+        pulse: { amount: 0.25, speed: 9 },                       // head swells and shrinks, speed in rad/s
+        halo: { scale: 2.4, opacity: 0.22 },                     // soft glow around the head, relative to head size
+        motes: { count: 3, orbit: 1.9, scale: 0.25, speed: 8, opacity: 0.85 } // little lights circling the head
+      },
+      tranq: {
+        core: { color: '#ffffff', scale: 0.45 },                 // bright needle tip inside the head
+        twinkle: '#ffffff',                                      // every other trail bead flickers to this colour
+        trail: [
+          { back: 0.06, scale: 0.75, opacity: 0.6 },
+          { back: 0.12, scale: 0.6, opacity: 0.5 },
+          { back: 0.18, scale: 0.5, opacity: 0.4 },
+          { back: 0.24, scale: 0.4, opacity: 0.3 },
+          { back: 0.30, scale: 0.3, opacity: 0.2 },
+          { back: 0.36, scale: 0.2, opacity: 0.12 }
+        ]
+      }
+    },
+    // Disruptor lightning bolt
+    BOLT: {
+      LIFE: 170,          // ms
+      SEGMENTS: 9,
+      JITTER: 0.09,       // sideways wobble as a fraction of the bolt's screen length
+      GLOW_WIDTH: 7,
+      CORE_WIDTH: 2,
+      START_X: 0.62,      // where the bolt leaves the "hand", as fractions of the screen
+      START_Y: 1.0
+    },
+    BLOOM_DISTANCE: 1.2,  // halo and motes grow in over this much flight past the near cut-off, so a fresh shot doesn't fill the screen
+    GRAVITY: 3.2,         // world units/s^2 pulling sparks down
+    PALE_MIST: '#e4defa'
+  },
+
   // Audio constants
   AUDIO: {
     DEFAULT_VOLUME: 0.05,

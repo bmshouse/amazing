@@ -88,7 +88,7 @@ export class ProjectileSystem {
 
     // Trigger hit callback with particle effect
     if (this.onHit) {
-      this.onHit(projectile.x, projectile.y, projectile.color);
+      this.onHit(projectile.x, projectile.y, projectile.color, projectile.type, projectile.a);
     }
   }
 
