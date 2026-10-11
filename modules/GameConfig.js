@@ -158,6 +158,11 @@ export const GameConfig = {
     LAUNCH_FLASH_LIFE: 120,
     LAUNCH_FLASH_SIZE: 0.025,
     SPAWN_COUNT_ON_BOOP: 6,
+    // Boop/huggle hearts stay readable but never blind the player when a snowman is right up close
+    BOOP_HEART_MAX_SIZE: 0.04,  // largest on-screen heart size, as a fraction of screen height
+    BOOP_HEART_HEIGHT: 0.2,     // height above the floor where hearts appear
+    BOOP_HEART_RISE: 0.3,       // world units/s hearts float upward
+    BOOP_HEART_GROW: 1.2,       // size multiplier by the end of a heart's life
     DEFAULT_RADIUS_MIN: 0.02,
     DEFAULT_RADIUS_MAX: 0.05
   },

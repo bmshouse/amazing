@@ -1,7 +1,7 @@
 // Test the shape rendering system
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SpriteRenderer } from '../modules/SpriteRenderer.js';
-import { ENEMY_STATES } from '../modules/GameConfig.js';
+import { ENEMY_STATES, GameConfig } from '../modules/GameConfig.js';
 
 describe('Shape Rendering System', () => {
   let canvas, renderer, mockPlayer;
@@ -202,6 +202,16 @@ describe('Shape Rendering System', () => {
     expect(() => {
       renderer.drawParticle(boopParticle, mockPlayer, 800, 600);
     }).not.toThrow();
+  });
+
+  it('caps boop heart size when the snowman is right up close', () => {
+    const sizes = [];
+    renderer._drawShape = (...args) => sizes.push(args[3]);
+    const boop = GameConfig.COLORS.PARTICLE_BOOP;
+    renderer.drawParticle({ x: 5.1, y: 5, color: boop }, mockPlayer, 800, 600);
+    renderer.drawParticle({ x: 5.1, y: 5, color: '#00ff00' }, mockPlayer, 800, 600);
+    expect(sizes[0]).toBeCloseTo(GameConfig.PARTICLES.BOOP_HEART_MAX_SIZE * 600);
+    expect(sizes[1]).toBeGreaterThan(sizes[0]); // other particles stay uncapped
   });
 
   it('has heart shape drawing method', () => {
