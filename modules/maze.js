@@ -1,5 +1,6 @@
 // modules/maze.js - generation, pathing, pads & exit
 import { GameConfig } from './GameConfig.js';
+import { distanceField, pickSpread } from './Placement.js';
 
 export class Maze {
   constructor(w, h, rechargePadCount = null) {
@@ -97,11 +98,14 @@ export class Maze {
       const dExit = Math.hypot(x-this.exit.x, y-this.exit.y);
       return dStart > GameConfig.MAZE.MIN_DISTANCE_FROM_START && dExit > GameConfig.MAZE.MIN_DISTANCE_FROM_EXIT;
     };
+    // Spread them along the route from start to exit, and apart from each other
+    const field = distanceField(this, Math.floor(GameConfig.PLAYER.START_X), Math.floor(GameConfig.PLAYER.START_Y));
     const cand = [];
-    for (let y=1;y<this.h;y+=2) for (let x=1;x<this.w;x+=2) if (g[y][x]===0 && isOk(x,y)) cand.push([x,y]);
-    for (let i=0;i<this.rechargePadCount && cand.length;i++) {
-      const k = (Math.random()*cand.length)|0;
-      const [x,y] = cand.splice(k,1)[0];
+    for (let y=1;y<this.h;y+=2) for (let x=1;x<this.w;x+=2) {
+      const d = field.dist[y*this.w + x];
+      if (g[y][x]===0 && d >= 0 && isOk(x,y)) cand.push({ x, y, d });
+    }
+    for (const { x, y } of pickSpread(cand, this.rechargePadCount, GameConfig.MAZE.MIN_PAD_SPACING)) {
       this.pads.push({ x, y });
     }
     const t1 = performance.now();
