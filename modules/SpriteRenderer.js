@@ -1,10 +1,13 @@
 // modules/SpriteRenderer.js - Handles billboard sprite rendering and particles
-import { GameConfig, ENEMY_STATES } from './GameConfig.js';
+import { GameConfig, ENEMY_STATES, snowmanSpheres } from './GameConfig.js';
 import { particleState, bloom } from './Effects.js';
 
-// Distance from a snowman sprite's centre to the bottom of its base sphere, in size units
-// (the base sphere is centred 0.6 below and is 0.8 tall)
-const SNOWMAN_BASE_EXTENT = 1.4;
+// The snowman sprite is laid out from the same world-unit sphere stack as the 3D model. Its anchor is the
+// middle sphere's centre; BASE_EXTENT is how far that sits above the floor, in sprite size units
+// (size is the base sphere's radius, ENEMY_SIZE in world units).
+const SNOWMAN_SPHERES = snowmanSpheres(GameConfig.RENDERING.SNOWMAN_RADII, GameConfig.RENDERING.SNOWMAN_STACK);
+const SNOWMAN_ANCHOR_HEIGHT = SNOWMAN_SPHERES[1].y;
+const SNOWMAN_BASE_EXTENT = SNOWMAN_ANCHOR_HEIGHT / GameConfig.RENDERING.ENEMY_SIZE;
 
 export class SpriteRenderer {
   /**
@@ -220,25 +223,16 @@ export class SpriteRenderer {
    * @private
    */
   _drawSnowmanShape(x, y, size, color, alpha, options = {}) {
-    // Bottom sphere (largest)
-    const bottomRadius = size;
-    const bottomY = y + size * 0.6;
-
-    // Middle sphere (medium)
-    const middleRadius = size * 0.7;
-    const middleY = y;
-
-    // Top sphere (smallest - head)
-    const topRadius = size * 0.5;
-    const topY = y - size * 0.7;
-
-    const spheres = [[bottomY, bottomRadius], [middleY, middleRadius], [topY, topRadius]];
+    // Sphere sizes and heights come from the world-unit stack; px converts world units to screen pixels
+    const px = size / GameConfig.RENDERING.ENEMY_SIZE;
+    const spheres = SNOWMAN_SPHERES.map(({ r, y: h }) => [y - (h - SNOWMAN_ANCHOR_HEIGHT) * px, r * px]);
+    const [topY, topRadius] = spheres[spheres.length - 1];
     if (size < 4) {
       // Too small for shading: one flat path (moveTo starts each ellipse cleanly, so no hairline is filled)
       this.ctx.beginPath();
       for (const [cy, radius] of spheres) {
         this.ctx.moveTo(x + radius, cy);
-        this.ctx.ellipse(x, cy, radius, radius * 0.8, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(x, cy, radius, radius, 0, 0, Math.PI * 2);
       }
       this.ctx.fill();
       return;
@@ -249,7 +243,7 @@ export class SpriteRenderer {
     // which leaves a shaded crescent along the lower right. The head's crescent falls onto the
     // torso and the torso's onto the base, which is what makes the three read as one stack.
     for (const [cy, radius] of spheres) {
-      const ry = radius * 0.8;
+      const ry = radius;
       this.ctx.fillStyle = color;
       this._fillEllipse(x, cy, radius, ry);
       this.ctx.fillStyle = GameConfig.COLORS.SNOWMAN_SHADE;
@@ -263,29 +257,29 @@ export class SpriteRenderer {
 
     const { side = 0, front = 1 } = options.facing || {};
     const yaw = Math.atan2(side, front); // 0 = facing the viewer, +/- PI/2 = sideways, PI = away
-    const headRx = topRadius, headRy = topRadius * 0.8;
+    const headRx = topRadius, headRy = topRadius;
     const { COLORS } = GameConfig;
 
     // Scarf: a band at the neck, with a tail that trails behind the direction it faces
     const neckY = topY + headRy * 0.9;
     this.ctx.fillStyle = COLORS.SNOWMAN_SCARF;
     this.ctx.beginPath();
-    this.ctx.ellipse(x, neckY, size * 0.58, size * 0.12, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(x, neckY, topRadius * 1.16, topRadius * 0.24, 0, 0, Math.PI * 2);
     this.ctx.fill();
     const tailSide = side > 0.25 ? -1 : 1;
-    this.ctx.fillRect(x + tailSide * size * 0.4 - size * 0.08, neckY, size * 0.16, size * 0.42);
+    this.ctx.fillRect(x + tailSide * topRadius * 0.8 - topRadius * 0.16, neckY, topRadius * 0.32, topRadius * 0.84);
 
     // Eyes sit either side of the face centre (longitude yaw +/- 0.5 rad) and are visible on the front hemisphere
     const eyeY = topY - headRy * 0.2;
     this.ctx.fillStyle = COLORS.SNOWMAN_COAL;
     this.ctx.strokeStyle = COLORS.SNOWMAN_COAL;
-    this.ctx.lineWidth = Math.max(1, size * 0.04);
+    this.ctx.lineWidth = Math.max(1, topRadius * 0.08);
     for (const eyeLon of [yaw - 0.5, yaw + 0.5]) {
       const facingEye = Math.cos(eyeLon);
       if (facingEye <= 0.05) continue;
       const eyeX = x + headRx * 0.95 * Math.sin(eyeLon);
-      const eyeRx = size * 0.075 * (0.4 + 0.6 * facingEye);
-      const eyeRy = size * 0.075;
+      const eyeRx = topRadius * 0.15 * (0.4 + 0.6 * facingEye);
+      const eyeRy = topRadius * 0.15;
       if (options.state === ENEMY_STATES.STUNNED) {
         // Dazed X eyes
         this.ctx.beginPath();
@@ -296,7 +290,7 @@ export class SpriteRenderer {
         this.ctx.stroke();
       } else if (options.state === ENEMY_STATES.TRANQ) {
         // Sleeping: closed eyes as flat lines
-        this.ctx.fillRect(eyeX - eyeRx, eyeY, eyeRx * 2, Math.max(1, size * 0.03));
+        this.ctx.fillRect(eyeX - eyeRx, eyeY, eyeRx * 2, Math.max(1, topRadius * 0.06));
       } else {
         this.ctx.beginPath();
         this.ctx.ellipse(eyeX, eyeY, eyeRx, eyeRy, 0, 0, Math.PI * 2);
@@ -309,8 +303,8 @@ export class SpriteRenderer {
     if (Math.cos(yaw) > -0.3) {
       const noseX = x + headRx * 0.97 * Math.sin(yaw);
       const noseY = topY + headRy * 0.15;
-      const halfBase = size * 0.07;
-      const length = size * 0.36 * Math.abs(Math.sin(yaw));
+      const halfBase = topRadius * 0.14;
+      const length = topRadius * 0.72 * Math.abs(Math.sin(yaw));
       this.ctx.fillStyle = COLORS.SNOWMAN_CARROT;
       if (Math.cos(yaw) > 0) {
         this.ctx.beginPath();
@@ -453,14 +447,26 @@ export class SpriteRenderer {
    * @param {Object} maze - Maze object for occlusion checking
    * @param {Object} colors - Color configuration object
    * @param {string} exitDoorColor - Exit door color to avoid occluding exit
+   * @param {number} [now] - Timestamp in ms driving the idle hop and the stunned spin (same clock as 3D)
    */
-  drawEnemy(enemy, player, W, H, maze, colors, exitDoorColor) {
+  drawEnemy(enemy, player, W, H, maze, colors, exitDoorColor, now = Date.now()) {
     const enemyColor = this.getEnemyColor(enemy, colors);
+    const { ENEMY_SIZE, SNOWMAN_SPIN_PERIOD, SNOWMAN_HOP_HEIGHT, SNOWMAN_HOP_PERIOD } = GameConfig.RENDERING;
+
+    // Same motion as the 3D model: a stunned snowman spins, an idle one hops, others stand still
+    let facing = this.getSnowmanFacing(enemy, player);
+    let lift = 0;
+    if (enemy.state === ENEMY_STATES.STUNNED) {
+      const spin = now / SNOWMAN_SPIN_PERIOD;
+      facing = { side: Math.sin(spin), front: Math.cos(spin) };
+    } else if (enemy.state === ENEMY_STATES.IDLE || !enemy.state) {
+      lift = (Math.sin(now / SNOWMAN_HOP_PERIOD) + 1) * SNOWMAN_HOP_HEIGHT;
+    }
 
     return this._drawBillboard(
       enemy.x,
       enemy.y,
-      GameConfig.RENDERING.ENEMY_SIZE,
+      ENEMY_SIZE,
       enemyColor,
       player,
       W,
@@ -470,8 +476,8 @@ export class SpriteRenderer {
         maze: maze,
         exitDoorColor: exitDoorColor,
         shape: 'snowman',       // Enemies are snowman-shaped
-        baseExtent: SNOWMAN_BASE_EXTENT,
-        facing: this.getSnowmanFacing(enemy, player),
+        baseExtent: SNOWMAN_BASE_EXTENT + lift / ENEMY_SIZE,
+        facing,
         state: enemy.state
       }
     );

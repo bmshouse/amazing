@@ -1,12 +1,12 @@
-// modules/devices/TaserDevice.js - Short-range instant stun device
+// modules/devices/DisruptorDevice.js - Short-range instant stun device (key 1)
 import { IDevice } from './IDevice.js';
 import { GameConfig, DEVICE_TYPES, ENEMY_STATES } from '../GameConfig.js';
 
-const CFG = GameConfig.DEVICES.TASER;
+const CFG = GameConfig.DEVICES.DISRUPTOR;
 
-export class TaserDevice extends IDevice {
+export class DisruptorDevice extends IDevice {
   constructor() {
-    super(DEVICE_TYPES.TASER, CFG.MAX_CHARGES, CFG.COOLDOWN);
+    super(DEVICE_TYPES.DISRUPTOR, CFG.MAX_CHARGES, CFG.COOLDOWN);
     this.range = CFG.RANGE;
     this.effectDuration = CFG.EFFECT_DURATION;
   }

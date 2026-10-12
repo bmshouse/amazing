@@ -38,9 +38,9 @@ describe('ConfigUIManager', () => {
         if (id === 'enableDisruptor') return { checked: false, addEventListener: vi.fn(), removeEventListener: vi.fn() };
         if (id === 'disruptorCharges') return { value: '', addEventListener: vi.fn(), removeEventListener: vi.fn() };
         if (id === 'disruptorChargesValue') return { textContent: '' };
-        if (id === 'enableImmobilizer') return { checked: false, addEventListener: vi.fn(), removeEventListener: vi.fn() };
-        if (id === 'immobilizerCharges') return { value: '', addEventListener: vi.fn(), removeEventListener: vi.fn() };
-        if (id === 'immobilizerChargesValue') return { textContent: '' };
+        if (id === 'enableFrost') return { checked: false, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+        if (id === 'frostCharges') return { value: '', addEventListener: vi.fn(), removeEventListener: vi.fn() };
+        if (id === 'frostChargesValue') return { textContent: '' };
         if (id === 'enablePacifier') return { checked: false, addEventListener: vi.fn(), removeEventListener: vi.fn() };
         if (id === 'pacifierCharges') return { value: '', addEventListener: vi.fn(), removeEventListener: vi.fn() };
         if (id === 'pacifierChargesValue') return { textContent: '' };
@@ -59,7 +59,7 @@ describe('ConfigUIManager', () => {
         enemies: { count: 10, speedMultiplier: 1.0, smartPush: false },
         devices: {
           disruptor: { enabled: true, charges: 5 },
-          immobilizer: { enabled: true, charges: 5 },
+          frost: { enabled: true, charges: 5 },
           pacifier: { enabled: true, charges: 5 }
         }
       })),
@@ -213,7 +213,7 @@ describe('ConfigUIManager', () => {
         enemies: { count: 10, speedMultiplier: 1.0, smartPush: false },
         devices: {
           disruptor: { enabled: true, charges: 5 },
-          immobilizer: { enabled: true, charges: 5 },
+          frost: { enabled: true, charges: 5 },
           pacifier: { enabled: true, charges: 5 }
         }
       };
@@ -260,9 +260,9 @@ describe('ConfigUIManager', () => {
         disruptorEnable: { checked: false },
         disruptorCharges: { value: '' },
         disruptorChargesValue: { textContent: '' },
-        immobilizerEnable: { checked: false },
-        immobilizerCharges: { value: '' },
-        immobilizerChargesValue: { textContent: '' },
+        frostEnable: { checked: false },
+        frostCharges: { value: '' },
+        frostChargesValue: { textContent: '' },
         pacifierEnable: { checked: false },
         pacifierCharges: { value: '' },
         pacifierChargesValue: { textContent: '' }
@@ -272,9 +272,9 @@ describe('ConfigUIManager', () => {
         if (id === 'enableDisruptor') return deviceMocks.disruptorEnable;
         if (id === 'disruptorCharges') return deviceMocks.disruptorCharges;
         if (id === 'disruptorChargesValue') return deviceMocks.disruptorChargesValue;
-        if (id === 'enableImmobilizer') return deviceMocks.immobilizerEnable;
-        if (id === 'immobilizerCharges') return deviceMocks.immobilizerCharges;
-        if (id === 'immobilizerChargesValue') return deviceMocks.immobilizerChargesValue;
+        if (id === 'enableFrost') return deviceMocks.frostEnable;
+        if (id === 'frostCharges') return deviceMocks.frostCharges;
+        if (id === 'frostChargesValue') return deviceMocks.frostChargesValue;
         if (id === 'enablePacifier') return deviceMocks.pacifierEnable;
         if (id === 'pacifierCharges') return deviceMocks.pacifierCharges;
         if (id === 'pacifierChargesValue') return deviceMocks.pacifierChargesValue;
@@ -291,7 +291,7 @@ describe('ConfigUIManager', () => {
         enemies: {},
         devices: {
           disruptor: { enabled: true, charges: 7 },
-          immobilizer: { enabled: false, charges: 3 },
+          frost: { enabled: false, charges: 3 },
           pacifier: { enabled: true, charges: 10 }
         }
       };
@@ -301,7 +301,7 @@ describe('ConfigUIManager', () => {
 
       expect(deviceMocks.disruptorEnable.checked).toBe(true);
       expect(deviceMocks.disruptorCharges.value).toBe('7');
-      expect(deviceMocks.immobilizerEnable.checked).toBe(false);
+      expect(deviceMocks.frostEnable.checked).toBe(false);
     });
 
     it('should highlight active preset button', () => {

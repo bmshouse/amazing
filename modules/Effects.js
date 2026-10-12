@@ -53,7 +53,7 @@ export function bloom(distance) {
 
 /**
  * Emits the particles for a dart or beam landing on a snowman, each device in its own style:
- * the Disruptor throws sparks, the Immobilizer an expanding ring, the Pacifier drifting mist.
+ * the Disruptor throws sparks, the Frost an expanding ring, the Pacifier drifting mist.
  * @param {string} type - A DEVICE_TYPES value (anything else gets the plain burst)
  * @param {number} x - Impact x
  * @param {number} y - Impact y
@@ -65,14 +65,14 @@ export function emitHit(type, x, y, color, spawn, heading = 0) {
   const h = GameConfig.RENDERING.PROJECTILE_HEIGHT;
   const g = GameConfig.EFFECTS.GRAVITY;
   switch (type) {
-    case DEVICE_TYPES.TASER:
+    case DEVICE_TYPES.DISRUPTOR:
       for (let i = 0; i < 10; i++) {
         spawn(x, y, i % 3 === 0 ? '#ffffff' : color, rand(260, 380), rand(0.018, 0.03), {
           ...inPlane(heading, rand(0, TAU), rand(0.7, 1.6)), h, gravity: g, drag: 2.5, fade: true, shape: 'star'
         });
       }
       break;
-    case DEVICE_TYPES.STUN: {
+    case DEVICE_TYPES.FROST: {
       const RING = 12;
       for (let i = 0; i < RING; i++) {
         spawn(x, y, color, 620, 0.03, { ...inPlane(heading, (i / RING) * TAU, 1.1), h, drag: 3.2, fade: true, grow: 0.5 });
@@ -83,7 +83,7 @@ export function emitHit(type, x, y, color, spawn, heading = 0) {
       }
       break;
     }
-    case DEVICE_TYPES.TRANQ:
+    case DEVICE_TYPES.PACIFIER:
       for (let i = 0; i < 7; i++) {
         const drift = inPlane(heading, rand(0, TAU), rand(0.08, 0.22));
         spawn(x, y, i % 2 ? color : GameConfig.EFFECTS.PALE_MIST, rand(750, 1000), rand(0.045, 0.065), {

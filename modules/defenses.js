@@ -9,7 +9,7 @@ export class Defenses {
     this.audio = audio;
     this.hud = hud;
     this.devices = DeviceFactory.createAllDevices();
-    this.currentDevice = DEVICE_TYPES.TASER;
+    this.currentDevice = DEVICE_TYPES.DISRUPTOR;
     this.projectileSystem = null; // Will be injected
     this.eventManager = null; // Will be injected
     this.onActivation = (_x,_y,_c,_muzzle)=>{};
@@ -52,7 +52,7 @@ export class Defenses {
   }
 
   reset() {
-    this.currentDevice = DEVICE_TYPES.TASER;
+    this.currentDevice = DEVICE_TYPES.DISRUPTOR;
     Object.values(this.devices).forEach(device => device.recharge());
   }
 
@@ -80,9 +80,9 @@ export class Defenses {
 
   setMode(m) { this.currentDevice = m; }
 
-  taserChargeRatio(){ return this.devices[DEVICE_TYPES.TASER].getChargeRatio(); }
-  stunChargeRatio(){ return this.devices[DEVICE_TYPES.STUN].getChargeRatio(); }
-  tranqChargeRatio(){ return this.devices[DEVICE_TYPES.TRANQ].getChargeRatio(); }
+  disruptorChargeRatio(){ return this.devices[DEVICE_TYPES.DISRUPTOR].getChargeRatio(); }
+  frostChargeRatio(){ return this.devices[DEVICE_TYPES.FROST].getChargeRatio(); }
+  pacifierChargeRatio(){ return this.devices[DEVICE_TYPES.PACIFIER].getChargeRatio(); }
 
   activate() {
     const device = this.devices[this.currentDevice];

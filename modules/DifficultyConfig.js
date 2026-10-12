@@ -24,15 +24,15 @@ export class DifficultyConfig {
       devices: {
         disruptor: {
           enabled: true,
-          charges: GameConfig.DEVICES.TASER.MAX_CHARGES
+          charges: GameConfig.DEVICES.DISRUPTOR.MAX_CHARGES
         },
-        immobilizer: {
+        frost: {
           enabled: true,
-          charges: GameConfig.DEVICES.STUN.MAX_CHARGES
+          charges: GameConfig.DEVICES.FROST.MAX_CHARGES
         },
         pacifier: {
           enabled: true,
-          charges: GameConfig.DEVICES.TRANQ.MAX_CHARGES
+          charges: GameConfig.DEVICES.PACIFIER.MAX_CHARGES
         }
       },
       advanced: {
@@ -52,8 +52,8 @@ export class DifficultyConfig {
         enemies: { count: 5, speedMultiplier: 0.8, smartPush: false },
         devices: {
           disruptor: { enabled: true, charges: 12 },
-          immobilizer: { enabled: true, charges: 9 },
-          pacifier: { enabled: true, charges: 6 }
+          frost: { enabled: true, charges: 6 },
+          pacifier: { enabled: true, charges: 4 }
         },
         advanced: { timerEnabled: false, timerDuration: 0, rechargeMode: 'instant' }
       },
@@ -63,9 +63,9 @@ export class DifficultyConfig {
         maze: { size: 21, rechargePads: 3 },
         enemies: { count: 10, speedMultiplier: 1.0, smartPush: false },
         devices: {
-          disruptor: { enabled: true, charges: 8 },
-          immobilizer: { enabled: true, charges: 6 },
-          pacifier: { enabled: true, charges: 4 }
+          disruptor: { enabled: true, charges: 10 },
+          frost: { enabled: true, charges: 5 },
+          pacifier: { enabled: true, charges: 3 }
         },
         advanced: { timerEnabled: true, timerDuration: 600000, rechargeMode: 'instant' }
       },
@@ -76,7 +76,7 @@ export class DifficultyConfig {
         enemies: { count: 15, speedMultiplier: 1.2, smartPush: true },
         devices: {
           disruptor: { enabled: true, charges: 6 },
-          immobilizer: { enabled: true, charges: 4 },
+          frost: { enabled: true, charges: 3 },
           pacifier: { enabled: true, charges: 2 }
         },
         advanced: { timerEnabled: true, timerDuration: 480000, rechargeMode: 'instant' }
@@ -87,9 +87,9 @@ export class DifficultyConfig {
         maze: { size: 13, rechargePads: 5 },
         enemies: { count: 3, speedMultiplier: 0.6, smartPush: false },
         devices: {
-          disruptor: { enabled: true, charges: 15 },
-          immobilizer: { enabled: true, charges: 12 },
-          pacifier: { enabled: true, charges: 10 }
+          disruptor: { enabled: true, charges: 16 },
+          frost: { enabled: true, charges: 8 },
+          pacifier: { enabled: true, charges: 6 }
         },
         advanced: { timerEnabled: false, timerDuration: 0, rechargeMode: 'instant' }
       },
@@ -266,6 +266,12 @@ export class DifficultyConfig {
       const saved = localStorage.getItem(STORAGE_KEYS.DIFFICULTY);
       if (saved) {
         const parsedConfig = JSON.parse(saved);
+        // Settings saved before the Immobilizer became the Frost device
+        const devices = parsedConfig.devices;
+        if (devices?.immobilizer) {
+          devices.frost ??= devices.immobilizer;
+          delete devices.immobilizer;
+        }
         // Merge with default config to handle new properties
         this.config = { ...this.getDefaultConfig(), ...parsedConfig };
         this.validateConfig();

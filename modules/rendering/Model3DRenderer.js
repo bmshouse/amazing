@@ -1,8 +1,20 @@
 // modules/rendering/Model3DRenderer.js - WebGL-based 3D model renderer for enemies
 // Uses Three.js for low-poly 3D models with LOD system and skeletal animation
 import { bloom } from '../Effects.js';
-import { GameConfig, ENEMY_STATES } from '../GameConfig.js';
+import { GameConfig, ENEMY_STATES, snowmanSpheres } from '../GameConfig.js';
 import { logger } from '../Logger.js';
+
+
+// Which of an eye's looks a state shows
+const eyeLookFor = (state) =>
+  state === ENEMY_STATES.STUNNED ? 'x' : state === ENEMY_STATES.TRANQ ? 'closed' : 'open';
+
+// Shows one look on every eye of a snowman model and hides the rest
+function setEyeLook(root, look) {
+  root.traverse(child => {
+    if (child.name.startsWith('eye-')) child.visible = child.name === `eye-${look}`;
+  });
+}
 
 /**
  * Handles rendering of 3D enemy models using WebGL/Three.js
@@ -207,15 +219,16 @@ export class Model3DRenderer {
    */
   async createProceduralEnemies() {
     // Create LOD0 - High detail (full snowman with all 3 spheres)
-    const lod0 = this.createSnowmanModel(0.15, 0.12, 0.1); // Bottom, middle, top radii
+    const lod0 = this.createSnowmanModel(...GameConfig.RENDERING.SNOWMAN_RADII); // Bottom, middle, top radii
     this.models.set('enemy_lod0', lod0);
 
     // Create LOD1 - Medium detail (full snowman with all 3 spheres)
-    const lod1 = this.createSnowmanModel(0.15, 0.12, 0.1);
+    const lod1 = this.createSnowmanModel(...GameConfig.RENDERING.SNOWMAN_RADII);
     this.models.set('enemy_lod1', lod1);
 
     // Create LOD2 - Low detail (simplified snowman - 2 spheres)
-    const lod2 = this.createSnowmanModel(0.15, 0, 0.1, { eyes: false }); // Bottom and top only, no eyes
+    const [bottom, , top] = GameConfig.RENDERING.SNOWMAN_RADII;
+    const lod2 = this.createSnowmanModel(bottom, 0, top, { eyes: false }); // Bottom and top only, no eyes
     this.models.set('enemy_lod2', lod2);
 
     logger.info('Created procedural enemy models (3 LOD levels)');
@@ -248,22 +261,13 @@ export class Model3DRenderer {
 
     // Spheres overlap (centres closer than the sum of the radii) so they merge into one stacked body
     // instead of touching at a point. The base sits on the ground.
-    const stack = GameConfig.RENDERING.SNOWMAN_STACK;
-    let lowerY = bottomRadius, lowerRadius = bottomRadius;
-    addBody(bottomRadius, lowerY);
+    const spheres = snowmanSpheres([bottomRadius, middleRadius, topRadius], GameConfig.RENDERING.SNOWMAN_STACK);
+    for (const { r, y } of spheres) addBody(r, y);
 
-    // Middle sphere (optional for LOD)
-    if (middleRadius > 0) {
-      const middleY = lowerY + (lowerRadius + middleRadius) * stack;
-      addBody(middleRadius, middleY);
-      lowerY = middleY;
-      lowerRadius = middleRadius;
-    }
-
-    // Head, resting in the top of the sphere below
-    const gap = (lowerRadius + topRadius) * stack;
-    const headY = lowerY + gap;
-    addBody(topRadius, headY);
+    // The head rests in the top of the sphere below
+    const { r: lowerRadius, y: lowerY } = spheres[spheres.length - 2];
+    const { y: headY } = spheres[spheres.length - 1];
+    const gap = headY - lowerY;
 
     // The neck is the ring where the head and the sphere below intersect
     const along = (gap * gap + lowerRadius * lowerRadius - topRadius * topRadius) / (2 * gap);
@@ -293,18 +297,31 @@ export class Model3DRenderer {
     group.add(nose);
 
     if (eyes) {
-      const eyeGeo = new THREE.SphereGeometry(topRadius * 0.16, 4, 3);
+      // Each eye holds all three looks; the state shows one: open (round), closed (flat line), dazed (X)
+      const R = topRadius;
+      const openGeo = new THREE.SphereGeometry(R * 0.16, 4, 3);
+      const barGeo = new THREE.BoxGeometry(R * 0.34, R * 0.06, R * 0.05);
       for (const dir of [-1, 1]) {
-        const eye = new THREE.Mesh(eyeGeo, parts.coal);
-        eye.position.set(dir * topRadius * 0.38, headY + topRadius * 0.22, topRadius * 0.88);
+        const eye = new THREE.Group();
+        eye.position.set(dir * R * 0.38, headY + R * 0.22, R * 0.88);
+        const look = (name, ...meshes) => {
+          const g = new THREE.Group();
+          g.name = name;
+          meshes.forEach(m => g.add(m));
+          eye.add(g);
+        };
+        const bar = (angle = 0) => {
+          const m = new THREE.Mesh(barGeo, parts.coal);
+          m.rotation.z = angle;
+          return m;
+        };
+        look('eye-open', new THREE.Mesh(openGeo, parts.coal));
+        look('eye-closed', bar());
+        look('eye-x', bar(Math.PI / 4), bar(-Math.PI / 4));
         group.add(eye);
       }
+      setEyeLook(group, 'open');
     }
-
-    // Plain numbers the pose code needs: overall height, and the radius of the widest sphere,
-    // which is how high the body axis sits when the snowman lies on its side
-    group.userData.height = headY + topRadius;
-    group.userData.restHeight = Math.max(bottomRadius, middleRadius, topRadius);
 
     return group;
   }
@@ -517,20 +534,19 @@ export class Model3DRenderer {
       mesh.rotation.set(0, facing, 0);
       mesh.position.set(enemy.x, 0, enemy.y);
 
+      const { SNOWMAN_SPIN_PERIOD, SNOWMAN_HOP_HEIGHT, SNOWMAN_HOP_PERIOD } = GameConfig.RENDERING;
       if (enemy.state === ENEMY_STATES.STUNNED) {
-        // Spinning animation for stunned enemies
-        mesh.rotation.y = (now / 500) % (Math.PI * 2);
-      } else if (enemy.state === ENEMY_STATES.TRANQ) {
-        // Asleep on its back: tipped so the face points up and the head lies behind it. The body axis
-        // rests at the widest sphere's radius, so it touches the floor instead of hovering, and the
-        // body is centred on the enemy's spot (the model pivots at its base).
-        mesh.rotation.x = -Math.PI / 2;
-        mesh.position.y = instance.restHeight;
-        mesh.position.x += Math.cos(heading) * instance.height / 2;
-        mesh.position.z += Math.sin(heading) * instance.height / 2;
+        mesh.rotation.y = (now / SNOWMAN_SPIN_PERIOD) % (Math.PI * 2);
       } else if (enemy.state === ENEMY_STATES.IDLE || !enemy.state) {
         // Gentle hop that never sinks the base below the floor
-        mesh.position.y = (Math.sin(now / 500) + 1) * 0.025;
+        mesh.position.y = (Math.sin(now / SNOWMAN_HOP_PERIOD) + 1) * SNOWMAN_HOP_HEIGHT;
+      }
+
+      // Eyes show the state: dazed X when stunned, closed when asleep
+      const look = eyeLookFor(enemy.state);
+      if (instance.eyes !== look) {
+        setEyeLook(mesh, look);
+        instance.eyes = look;
       }
 
       this.enemyInstances.push(instance);
@@ -544,12 +560,9 @@ export class Model3DRenderer {
    */
   createInstance(template, lodLevel) {
     const mesh = template.clone();
-    // Yaw is applied after the tip-over, so a fallen snowman lies along its own heading
-    mesh.rotation.order = 'YXZ';
     const bodies = [];
     mesh.traverse(child => { if (child.name === 'body') bodies.push(child); });
-    const { height, restHeight } = template.userData;
-    return { mesh, lod: lodLevel, bodies, tint: null, height, restHeight };
+    return { mesh, lod: lodLevel, bodies, tint: null, eyes: 'open' };
   }
 
   /**

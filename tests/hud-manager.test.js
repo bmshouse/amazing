@@ -35,14 +35,14 @@ describe('HUDManager', () => {
       },
       restartButton: { style: { display: '' } },
       bars: {
-        taser: { style: { transform: '' } },
-        stun: { style: { transform: '' } },
-        tranq: { style: { transform: '' } }
+        disruptor: { style: { transform: '' } },
+        frost: { style: { transform: '' } },
+        pacifier: { style: { transform: '' } }
       },
       chargeRows: {
-        taser: { style: { display: '' } },
-        stun: { style: { display: '' } },
-        tranq: { style: { display: '' } }
+        disruptor: { style: { display: '' } },
+        frost: { style: { display: '' } },
+        pacifier: { style: { display: '' } }
       }
     };
 
@@ -118,47 +118,47 @@ describe('HUDManager', () => {
   describe('Charge Bars', () => {
     it('should update all charge bars', () => {
       hudManager.updateChargeBars(1.0, 0.5, 0.0);
-      expect(mockElements.bars.taser.style.transform).toBe('scaleX(1)');
-      expect(mockElements.bars.stun.style.transform).toBe('scaleX(0.5)');
-      expect(mockElements.bars.tranq.style.transform).toBe('scaleX(0)');
+      expect(mockElements.bars.disruptor.style.transform).toBe('scaleX(1)');
+      expect(mockElements.bars.frost.style.transform).toBe('scaleX(0.5)');
+      expect(mockElements.bars.pacifier.style.transform).toBe('scaleX(0)');
     });
 
     it('should handle fractional charge values', () => {
       hudManager.updateChargeBars(0.75, 0.333, 0.125);
-      expect(mockElements.bars.taser.style.transform).toBe('scaleX(0.75)');
-      expect(mockElements.bars.stun.style.transform).toBe('scaleX(0.333)');
-      expect(mockElements.bars.tranq.style.transform).toBe('scaleX(0.125)');
+      expect(mockElements.bars.disruptor.style.transform).toBe('scaleX(0.75)');
+      expect(mockElements.bars.frost.style.transform).toBe('scaleX(0.333)');
+      expect(mockElements.bars.pacifier.style.transform).toBe('scaleX(0.125)');
     });
 
     it('should clamp charge values between 0 and 1', () => {
       hudManager.updateChargeBars(1.5, -0.5, 2.0);
-      expect(mockElements.bars.taser.style.transform).toBe('scaleX(1)');
-      expect(mockElements.bars.stun.style.transform).toBe('scaleX(0)');
-      expect(mockElements.bars.tranq.style.transform).toBe('scaleX(1)');
+      expect(mockElements.bars.disruptor.style.transform).toBe('scaleX(1)');
+      expect(mockElements.bars.frost.style.transform).toBe('scaleX(0)');
+      expect(mockElements.bars.pacifier.style.transform).toBe('scaleX(1)');
     });
   });
 
   describe('Device Visibility', () => {
     it('should show enabled device charge rows', () => {
       hudManager.updateDeviceVisibility({
-        taser: { enabled: true },
-        stun: { enabled: true },
-        tranq: { enabled: true }
+        disruptor: { enabled: true },
+        frost: { enabled: true },
+        pacifier: { enabled: true }
       });
-      expect(mockElements.chargeRows.taser.style.display).toBe('');
-      expect(mockElements.chargeRows.stun.style.display).toBe('');
-      expect(mockElements.chargeRows.tranq.style.display).toBe('');
+      expect(mockElements.chargeRows.disruptor.style.display).toBe('');
+      expect(mockElements.chargeRows.frost.style.display).toBe('');
+      expect(mockElements.chargeRows.pacifier.style.display).toBe('');
     });
 
     it('should hide disabled device charge rows', () => {
       hudManager.updateDeviceVisibility({
-        taser: { enabled: true },
-        stun: { enabled: false },
-        tranq: { enabled: false }
+        disruptor: { enabled: true },
+        frost: { enabled: false },
+        pacifier: { enabled: false }
       });
-      expect(mockElements.chargeRows.taser.style.display).toBe('');
-      expect(mockElements.chargeRows.stun.style.display).toBe('none');
-      expect(mockElements.chargeRows.tranq.style.display).toBe('none');
+      expect(mockElements.chargeRows.disruptor.style.display).toBe('');
+      expect(mockElements.chargeRows.frost.style.display).toBe('none');
+      expect(mockElements.chargeRows.pacifier.style.display).toBe('none');
     });
 
     it('should handle missing device configs', () => {

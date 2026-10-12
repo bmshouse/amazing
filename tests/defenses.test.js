@@ -16,24 +16,24 @@ describe('Defenses', () => {
     const d = new Defenses(p, e, dummyAudio, dummyHud)
 
     // Test that devices exist and have charges
-    expect(d.devices[DEVICE_TYPES.TASER]).toBeDefined()
-    expect(d.devices[DEVICE_TYPES.TASER].charges).toBeGreaterThan(0)
+    expect(d.devices[DEVICE_TYPES.DISRUPTOR]).toBeDefined()
+    expect(d.devices[DEVICE_TYPES.DISRUPTOR].charges).toBeGreaterThan(0)
 
-    const initialCharges = d.devices[DEVICE_TYPES.TASER].charges
+    const initialCharges = d.devices[DEVICE_TYPES.DISRUPTOR].charges
 
     // Set some charges and test current device
-    d.currentDevice = DEVICE_TYPES.TASER
-    d.devices[DEVICE_TYPES.TASER].charges = 1
+    d.currentDevice = DEVICE_TYPES.DISRUPTOR
+    d.devices[DEVICE_TYPES.DISRUPTOR].charges = 1
 
     // Test that we can get charge ratios
-    const taserRatio = d.taserChargeRatio()
-    expect(taserRatio).toBeTypeOf('number')
-    expect(taserRatio).toBeGreaterThanOrEqual(0)
-    expect(taserRatio).toBeLessThanOrEqual(1)
+    const disruptorRatio = d.disruptorChargeRatio()
+    expect(disruptorRatio).toBeTypeOf('number')
+    expect(disruptorRatio).toBeGreaterThanOrEqual(0)
+    expect(disruptorRatio).toBeLessThanOrEqual(1)
 
     // Test device reset restores charges
-    d.devices[DEVICE_TYPES.TASER].charges = 0
+    d.devices[DEVICE_TYPES.DISRUPTOR].charges = 0
     d.reset()
-    expect(d.devices[DEVICE_TYPES.TASER].charges).toBe(d.devices[DEVICE_TYPES.TASER].maxCharges)
+    expect(d.devices[DEVICE_TYPES.DISRUPTOR].charges).toBe(d.devices[DEVICE_TYPES.DISRUPTOR].maxCharges)
   })
 })

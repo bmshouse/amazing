@@ -157,9 +157,9 @@
             enemyCount: 3,
             enemySpeed: 1.0,
             devices: {
-              taserCharges: 8,
-              stunCharges: 6,
-              tranqCharges: 4
+              disruptorCharges: 8,
+              frostCharges: 6,
+              pacifierCharges: 4
             }
           },
           completionTime: 125000, // 2:05
@@ -248,7 +248,7 @@
         <p><strong>Summary:</strong> ${summary}</p>
         <p><strong>Maze Size:</strong> ${challengeData.maze.size}x${challengeData.maze.size}</p>
         <p><strong>Enemies:</strong> ${challengeData.enemies.count} at ${challengeData.enemies.speed}x speed</p>
-        <p><strong>Devices:</strong> ${challengeData.devices.taserCharges}/${challengeData.devices.stunCharges}/${challengeData.devices.tranqCharges} charges</p>
+        <p><strong>Devices:</strong> ${challengeData.devices.disruptorCharges}/${challengeData.devices.frostCharges}/${challengeData.devices.pacifierCharges} charges</p>
         <p><strong>Creator:</strong> ${challengeData.challenge.createdBy}</p>
         <p><strong>Timestamp:</strong> ${new Date(challengeData.timestamp).toLocaleString()}</p>
       `;
@@ -284,7 +284,7 @@
       const gameData = {
         maze: maze,
         enemies: { entities: [{ x: 3.5, y: 3.5 }] },
-        config: { difficultyPreset: 'normal', enemyCount: 1, enemySpeed: 1.0, devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 } },
+        config: { difficultyPreset: 'normal', enemyCount: 1, enemySpeed: 1.0, devices: { disruptorCharges: 8, frostCharges: 6, pacifierCharges: 4 } },
         completionTime: 60000,
         playerName: 'TestPlayer'
       };
@@ -303,7 +303,7 @@
         version: 1,
         maze: { size: 21, rechargePadCount: 3, grid: Array.from({ length: 21 }, () => Array(21).fill(1)), exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
         enemies: { count: 3, speed: 1.0, spawns: [] },
-        devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
+        devices: { disruptorCharges: 8, frostCharges: 6, pacifierCharges: 4 },
         challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
         timestamp: Date.now()
       };
@@ -322,7 +322,7 @@
         version: 1,
         maze: { size: 21, rechargePadCount: 3, grid: Array.from({ length: 21 }, () => Array(21).fill(1)), exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
         enemies: { count: 3, speed: 1.0, spawns: [] },
-        devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
+        devices: { disruptorCharges: 8, frostCharges: 6, pacifierCharges: 4 },
         challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
         timestamp: Date.now()
       };
@@ -342,7 +342,7 @@
         version: 1,
         maze: { size: 21, rechargePadCount: 3, grid: Array.from({ length: 21 }, () => Array(21).fill(1)), exit: { x: 19, y: 19, wallX: 19, wallY: 18 }, pads: [] },
         enemies: { count: 3, speed: 1.0, spawns: [] },
-        devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 },
+        devices: { disruptorCharges: 8, frostCharges: 6, pacifierCharges: 4 },
         challenge: { createdBy: 'TestPlayer', completionTime: 60000, difficulty: 'normal' },
         timestamp: Date.now()
       };
@@ -366,7 +366,7 @@
       const gameData = {
         maze: maze,
         enemies: { entities: [{ x: 3.5, y: 3.5 }] },
-        config: { difficultyPreset: 'normal', enemyCount: 1, enemySpeed: 1.0, devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4 } },
+        config: { difficultyPreset: 'normal', enemyCount: 1, enemySpeed: 1.0, devices: { disruptorCharges: 8, frostCharges: 6, pacifierCharges: 4 } },
         completionTime: 60000,
         playerName: 'TestPlayer'
       };

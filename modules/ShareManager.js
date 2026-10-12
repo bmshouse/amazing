@@ -1,6 +1,6 @@
 // modules/ShareManager.js - Manages sharing UI and interactions
 import { ChallengeManager } from './ChallengeManager.js';
-import { DEVICE_MAPPING } from './GameConfig.js';
+import { DEVICE_ORDER } from './GameConfig.js';
 import { logger } from './Logger.js';
 
 // ShareManager module loaded (using logger in class methods)
@@ -75,13 +75,13 @@ export class ShareManager {
     this.challengeRechargePads = document.getElementById('challengeRechargePads');
     this.challengeTargetTime = document.getElementById('challengeTargetTime');
     this.challengeDisruptorCharges = document.getElementById('challengeDisruptorCharges');
-    this.challengeImmobilizerCharges = document.getElementById('challengeImmobilizerCharges');
+    this.challengeFrostCharges = document.getElementById('challengeFrostCharges');
     this.challengePacifierCharges = document.getElementById('challengePacifierCharges');
     this.exitChallengeButton = document.getElementById('exitChallengeButton');
 
     // Challenge device rows (parent elements to show/hide)
     this.challengeDisruptorRow = this.challengeDisruptorCharges?.parentElement;
-    this.challengeImmobilizerRow = this.challengeImmobilizerCharges?.parentElement;
+    this.challengeFrostRow = this.challengeFrostCharges?.parentElement;
     this.challengePacifierRow = this.challengePacifierCharges?.parentElement;
 
     // Challenge info elements
@@ -411,14 +411,14 @@ export class ShareManager {
       this.challengeTargetTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    // Populate device charges and show/hide based on enabled state using centralized mapping
+    // Populate device charges and show/hide based on enabled state 
     if (devices) {
-      // Map difficulty device names to DOM elements and device data
-      Object.entries(DEVICE_MAPPING.DIFFICULTY_TO_GAME).forEach(([difficultyName, gameName]) => {
-        const chargesProperty = `${gameName}Charges`;
-        const enabledProperty = `${gameName}Enabled`;
-        const chargesElement = this[`challenge${difficultyName.charAt(0).toUpperCase() + difficultyName.slice(1)}Charges`];
-        const rowElement = this[`challenge${difficultyName.charAt(0).toUpperCase() + difficultyName.slice(1)}Row`];
+      // Each device's charges and enabled flag sit on the devices object under its id
+      DEVICE_ORDER.forEach(device => {
+        const chargesProperty = `${device}Charges`;
+        const enabledProperty = `${device}Enabled`;
+        const chargesElement = this[`challenge${device.charAt(0).toUpperCase() + device.slice(1)}Charges`];
+        const rowElement = this[`challenge${device.charAt(0).toUpperCase() + device.slice(1)}Row`];
 
         const deviceEnabled = devices[enabledProperty] ?? true; // Default to true for backwards compatibility
 

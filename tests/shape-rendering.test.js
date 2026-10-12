@@ -159,7 +159,7 @@ describe('Shape Rendering System', () => {
         beginPath: () => {}, moveTo: () => {}, lineTo: () => {}, closePath: () => {}, fill: () => {},
         fillRect: () => {}, stroke: () => {}, ellipse: (...args) => calls.push(args)
       };
-      renderer.drawEnemy({ x: d, y: 0, heading: Math.PI, state: ENEMY_STATES.IDLE }, { x: 0, y: 0, a: 0 }, 800, H, null, {}, null);
+      renderer.drawEnemy({ x: d, y: 0, heading: Math.PI, state: ENEMY_STATES.IDLE }, { x: 0, y: 0, a: 0 }, 800, H, null, {}, null, -Math.PI * 250); // now where the hop is at its lowest
       const [, cy, , ry] = calls[0]; // first ellipse is the base sphere's body fill
       return cy + ry;
     };
@@ -171,6 +171,38 @@ describe('Shape Rendering System', () => {
         expect(baseBottom(d, H)).toBeCloseTo(floorY, 0);
       }
     });
+  });
+
+  it('draws the head across eye level so the crosshair hits it, as in 3D', () => {
+    const H = 600, d = 4;
+    const calls = [];
+    renderer.ctx = {
+      beginPath: () => {}, moveTo: () => {}, lineTo: () => {}, closePath: () => {}, fill: () => {},
+      fillRect: () => {}, stroke: () => {}, ellipse: (...args) => calls.push(args)
+    };
+    renderer.drawEnemy({ x: d, y: 0, heading: Math.PI, state: ENEMY_STATES.IDLE }, { x: 0, y: 0, a: 0 }, 800, H, null, {}, null, -Math.PI * 250); // now where the hop is at its lowest
+    const [, cy, , ry] = calls[6]; // third sphere's (the head's) body fill
+    expect(cy - ry).toBeLessThan(H / 2);
+    expect(cy + ry).toBeGreaterThan(H / 2);
+  });
+
+  it('spins a stunned snowman and hops an idle one, like the 3D model', () => {
+    const player = { x: 0, y: 0, a: 0 };
+    const faces = [], ys = [];
+    renderer._drawShape = (shape, x, y, size, color, alpha, options) => { faces.push(options.facing); ys.push(y); };
+    const period = GameConfig.RENDERING.SNOWMAN_SPIN_PERIOD;
+    for (const now of [0, period * Math.PI / 2]) {
+      renderer.drawEnemy({ x: 4, y: 0, state: ENEMY_STATES.STUNNED }, player, 800, 600, null, {}, null, now);
+    }
+    expect(faces[0].front).toBeCloseTo(1);
+    expect(faces[1].side).toBeCloseTo(1);
+
+    ys.length = 0;
+    const hop = GameConfig.RENDERING.SNOWMAN_HOP_PERIOD;
+    for (const now of [-hop * Math.PI / 2, hop * Math.PI / 2]) {
+      renderer.drawEnemy({ x: 4, y: 0, state: ENEMY_STATES.IDLE }, player, 800, 600, null, {}, null, now);
+    }
+    expect(ys[1]).toBeLessThan(ys[0]); // higher on screen at the top of the hop
   });
 
   it('drawEnemy uses snowman shape', () => {

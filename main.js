@@ -11,7 +11,7 @@ import { GameState } from './modules/GameState.js';
 import { EventSystemManager } from './modules/EventSystemManager.js';
 import { InputManager } from './modules/InputManager.js';
 import { ProjectileSystem } from './modules/ProjectileSystem.js';
-import { GameConfig, DEVICE_MAPPING, DEVICE_TYPES, STORAGE_KEYS, EVENTS } from './modules/GameConfig.js';
+import { GameConfig, DEVICE_TYPES, STORAGE_KEYS, EVENTS } from './modules/GameConfig.js';
 import { DifficultyConfig } from './modules/DifficultyConfig.js';
 import { I18nManager } from './modules/I18nManager.js';
 import { ShareManager } from './modules/ShareManager.js';
@@ -51,12 +51,12 @@ export function buildGameData({
       enemyCount: enemies.entities.length, // Use actual enemy count from game state
       enemySpeed: currentDifficulty.enemies.speed,
       devices: {
-        taserCharges: defenses.devices.taser.maxCharges, // Use actual starting charges from game state
-        stunCharges: defenses.devices.stun.maxCharges, // Use actual starting charges from game state
-        tranqCharges: defenses.devices.tranq.maxCharges, // Use actual starting charges from game state
-        taserEnabled: defenses.devices.taser.enabled, // Include enabled state
-        stunEnabled: defenses.devices.stun.enabled, // Include enabled state
-        tranqEnabled: defenses.devices.tranq.enabled // Include enabled state
+        disruptorCharges: defenses.devices.disruptor.maxCharges, // Use actual starting charges from game state
+        frostCharges: defenses.devices.frost.maxCharges, // Use actual starting charges from game state
+        pacifierCharges: defenses.devices.pacifier.maxCharges, // Use actual starting charges from game state
+        disruptorEnabled: defenses.devices.disruptor.enabled, // Include enabled state
+        frostEnabled: defenses.devices.frost.enabled, // Include enabled state
+        pacifierEnabled: defenses.devices.pacifier.enabled // Include enabled state
       }
     },
     completionTime,
@@ -120,14 +120,14 @@ export function bootstrap({ dev=false } = {}) {
     enemySpeed: document.getElementById('enemySpeed'),
     enemySpeedValue: document.getElementById('enemySpeedValue'),
     bars: {
-      taser: document.querySelector('#charges-taser span'),
-      stun: document.querySelector('#charges-stun span'),
-      tranq: document.querySelector('#charges-tranq span'),
+      [DEVICE_TYPES.DISRUPTOR]: document.querySelector('#charges-disruptor span'),
+      [DEVICE_TYPES.FROST]: document.querySelector('#charges-frost span'),
+      [DEVICE_TYPES.PACIFIER]: document.querySelector('#charges-pacifier span'),
     },
     chargeRows: {
-      taser: document.querySelector('#charges-taser').parentElement,
-      stun: document.querySelector('#charges-stun').parentElement,
-      tranq: document.querySelector('#charges-tranq').parentElement,
+      [DEVICE_TYPES.DISRUPTOR]: document.querySelector('#charges-disruptor').parentElement,
+      [DEVICE_TYPES.FROST]: document.querySelector('#charges-frost').parentElement,
+      [DEVICE_TYPES.PACIFIER]: document.querySelector('#charges-pacifier').parentElement,
     },
   };
 
@@ -739,12 +739,11 @@ export function bootstrap({ dev=false } = {}) {
       }
     }
     if (['Digit1','Digit2','Digit3'].includes(data.code)) {
-      const keyMapping = { Digit1:DEVICE_TYPES.TASER, Digit2:DEVICE_TYPES.STUN, Digit3:DEVICE_TYPES.TRANQ };
+      const keyMapping = { Digit1:DEVICE_TYPES.DISRUPTOR, Digit2:DEVICE_TYPES.FROST, Digit3:DEVICE_TYPES.PACIFIER };
       const requestedDevice = keyMapping[data.code];
-      const difficultyDevice = DEVICE_MAPPING.GAME_TO_DIFFICULTY[requestedDevice];
 
       // Check if device is enabled in current difficulty
-      if (currentDifficulty.devices[difficultyDevice]?.enabled) {
+      if (currentDifficulty.devices[requestedDevice]?.enabled) {
         defenses.setMode(requestedDevice);
         hudManager.speak(i18n.t(`game.devices.${requestedDevice}`));
         audio.beep('square', GameConfig.AUDIO.FREQ_WEAPON_SELECT, 0.06, 0.04);
@@ -855,16 +854,16 @@ export function bootstrap({ dev=false } = {}) {
         },
         devices: {
           disruptor: {
-            charges: challengeResult.config.devices.taserCharges,
-            enabled: challengeResult.config.devices.taserEnabled ?? true // Default to true for backwards compatibility
+            charges: challengeResult.config.devices.disruptorCharges,
+            enabled: challengeResult.config.devices.disruptorEnabled ?? true // Default to true for backwards compatibility
           },
-          immobilizer: {
-            charges: challengeResult.config.devices.stunCharges,
-            enabled: challengeResult.config.devices.stunEnabled ?? true // Default to true for backwards compatibility
+          frost: {
+            charges: challengeResult.config.devices.frostCharges,
+            enabled: challengeResult.config.devices.frostEnabled ?? true // Default to true for backwards compatibility
           },
           pacifier: {
-            charges: challengeResult.config.devices.tranqCharges,
-            enabled: challengeResult.config.devices.tranqEnabled ?? true // Default to true for backwards compatibility
+            charges: challengeResult.config.devices.pacifierCharges,
+            enabled: challengeResult.config.devices.pacifierEnabled ?? true // Default to true for backwards compatibility
           }
         }
       };
@@ -941,11 +940,10 @@ export function bootstrap({ dev=false } = {}) {
   }
 
   function applyDifficultyToDevices() {
-    // Update device charges and availability using centralized mapping
+    // Update device charges and availability 
     let anyDeviceEnabled = false;
 
-    Object.entries(currentDifficulty.devices).forEach(([deviceType, config]) => {
-      const gameDeviceType = DEVICE_MAPPING.DIFFICULTY_TO_GAME[deviceType];
+    Object.entries(currentDifficulty.devices).forEach(([gameDeviceType, config]) => {
       if (defenses.devices[gameDeviceType]) {
         defenses.devices[gameDeviceType].maxCharges = config.charges;
         defenses.devices[gameDeviceType].charges = config.charges;
@@ -960,7 +958,7 @@ export function bootstrap({ dev=false } = {}) {
           // Switch to first enabled device
           const enabledDevices = Object.entries(currentDifficulty.devices)
             .filter(([_, dev]) => dev.enabled)
-            .map(([type, _]) => DEVICE_MAPPING.DIFFICULTY_TO_GAME[type]);
+            .map(([type, _]) => type);
 
           if (enabledDevices.length > 0) {
             defenses.setMode(enabledDevices[0]);
@@ -980,8 +978,7 @@ export function bootstrap({ dev=false } = {}) {
 
     // Emit event for other systems (TouchHUD) to update
     eventSystem.emit(EVENTS.DEVICE_CONFIG, {
-      devices: currentDifficulty.devices,
-      mapping: DEVICE_MAPPING.DIFFICULTY_TO_GAME
+      devices: currentDifficulty.devices
     });
   }
 
@@ -1231,9 +1228,9 @@ export function bootstrap({ dev=false } = {}) {
   // ═════════════════════════════════════════════════════════════════
   function updateBars() {
     hudManager.updateChargeBars(
-      defenses.taserChargeRatio(),
-      defenses.stunChargeRatio(),
-      defenses.tranqChargeRatio()
+      defenses.disruptorChargeRatio(),
+      defenses.frostChargeRatio(),
+      defenses.pacifierChargeRatio()
     );
   }
   const barsIntervalId = setInterval(updateBars, GameConfig.PERFORMANCE.AMMO_BAR_UPDATE_INTERVAL);
@@ -1288,7 +1285,7 @@ export function bootstrap({ dev=false } = {}) {
     // A bolt that struck nothing stops at the first wall, rather than showing through it
     const end = hit ? { x: x2, y: y2 } : clipToWalls(maze, x1, y1, x2, y2);
     bolts.push({ x1, y1, x2: end.x, y2: end.y, color, born: performance.now(), life: GameConfig.EFFECTS.BOLT.LIFE });
-    if (hit) emitHit(DEVICE_TYPES.TASER, end.x, end.y, color, spawnParticle, Math.atan2(y2 - y1, x2 - x1));
+    if (hit) emitHit(DEVICE_TYPES.DISRUPTOR, end.x, end.y, color, spawnParticle, Math.atan2(y2 - y1, x2 - x1));
   };
 
   // Each device bursts in its own style (sparks, a ring, mist)

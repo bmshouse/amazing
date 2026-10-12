@@ -34,7 +34,7 @@
       "start_prompt": "Presiona <strong>Enter</strong> o haz <strong>clic</strong> para comenzar. Presiona <strong>R</strong> para reiniciar.",
       "device_list": {
         "disruptor": "<strong>1</strong> Disruptor (aturdimiento de corto alcance)",
-        "immobilizer": "<strong>2</strong> Inmovilizador (orbe lento)",
+        "frost": "<strong>2</strong> Escarcha (orbe lento)",
         "pacifier": "<strong>3</strong> Pacificador (dardo somnífero)"
       },
       "touch_instruction_1": "Usa el <strong>joystick virtual</strong> en la esquina inferior para moverte.",
@@ -44,7 +44,7 @@
       "touch_instruction_6": "¡Toca el <strong>⚙️ icono de engranaje</strong> para personalizar la sensibilidad táctil y la configuración del juego!",
       "touch_device_list": {
         "disruptor": "<strong>Botón D</strong> - Disruptor (aturdimiento de corto alcance)",
-        "immobilizer": "<strong>Botón I</strong> - Inmovilizador (orbe lento)",
+        "frost": "<strong>Botón F</strong> - Escarcha (orbe lento)",
         "pacifier": "<strong>Botón P</strong> - Pacificador (dardo somnífero)"
       },
       "touch_start": "🎮 Iniciar Juego",
@@ -90,11 +90,8 @@
   "game": {
     "devices": {
       "disruptor": "Disruptor",
-      "immobilizer": "Inmovilizador",
-      "pacifier": "Pacificador",
-      "taser": "Disruptor",
-      "stun": "Inmovilizador",
-      "tranq": "Pacificador"
+      "frost": "Escarcha",
+      "pacifier": "Pacificador"
     },
     "messages": {
       "boop": "¡Boop!",
