@@ -214,6 +214,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   width: 320px;
   max-height: 80vh;
   overflow-y: auto;
+  overflow-x: hidden;
   pointer-events: auto;
   background: rgba(10, 13, 30, 0.9);
   backdrop-filter: blur(8px);
@@ -314,6 +315,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 .config-input-group input[type="range"] {
   flex: 1;
+  min-width: 0;
   height: 4px;
   border-radius: 2px;
   background: #2a2f4a;
@@ -426,6 +428,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 .device-item .config-input-group {
   flex: 1;
+  min-width: 0;
 }
 
 /* Action Buttons */
