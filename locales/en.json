@@ -65,8 +65,8 @@
       "share_native": "Share",
       "play_again": "Play Again",
       "share_challenge": "Share Challenge",
-      "web_share_title": "CalmMaze Challenge",
-      "web_share_text": "Try this CalmMaze challenge: {{summary}}"
+      "web_share_title": "Amazing Challenge",
+      "web_share_text": "Try this Amazing challenge: {{summary}}"
     },
     "errors": {
       "copy_failed": "Failed to copy URL to clipboard",

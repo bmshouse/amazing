@@ -153,7 +153,7 @@ Works in all modern browsers including Chrome, Firefox, Safari, and Edge.
 
 ## Touch Screen Support
 
-CalmMaze FPS features comprehensive touch screen support for mobile and tablet devices:
+Amazing features comprehensive touch screen support for mobile and tablet devices:
 
 ### Features
 - **Dual Joystick System** - Separate movement (left, cyan) and look (right, orange) controls

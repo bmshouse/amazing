@@ -333,11 +333,11 @@ export const ENEMY_STATES = Object.freeze({
  * localStorage keys (values unchanged so existing saves keep working)
  */
 export const STORAGE_KEYS = Object.freeze({
-  USE_3D: 'calmmaze_use3d',
-  AUDIO: 'calmmaze_audio',
-  SENSITIVITY: 'calmmaze_sensitivity',
-  DIFFICULTY: 'calmmaze_difficulty',
-  LANGUAGE: 'calmmaze_language'
+  USE_3D: 'amazing_use3d',
+  AUDIO: 'amazing_audio',
+  SENSITIVITY: 'amazing_sensitivity',
+  DIFFICULTY: 'amazing_difficulty',
+  LANGUAGE: 'amazing_language'
 });
 
 /**

@@ -92,7 +92,7 @@ describe('GameConfig', () => {
 
     it('should keep localStorage keys stable so existing saves load', () => {
       expect(Object.values(STORAGE_KEYS).sort()).toEqual([
-        'calmmaze_audio', 'calmmaze_difficulty', 'calmmaze_language', 'calmmaze_sensitivity', 'calmmaze_use3d'
+        'amazing_audio', 'amazing_difficulty', 'amazing_language', 'amazing_sensitivity', 'amazing_use3d'
       ]);
     });
 
