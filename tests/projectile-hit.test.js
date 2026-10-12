@@ -22,7 +22,7 @@ describe('Projectile hits', () => {
 
   const shoot = ({ y = 1.5, x = 2.5, v = 5.0, r = 0.05, dt = 16, frames = 200 } = {}) => {
     projectiles.addProjectile({
-      x, y, a: 0, v, r, color: '#fff', type: DEVICE_TYPES.TRANQ, born: performance.now(),
+      x, y, a: 0, v, r, color: '#fff', type: DEVICE_TYPES.PACIFIER, born: performance.now(),
       device: { applyEffect: (e) => { hits.push(e); } }
     });
     for (let i = 0; i < frames && projectiles.getProjectiles().length; i++) projectiles.update(dt);
@@ -103,7 +103,7 @@ describe('Projectile hits', () => {
 
     it('reports a dart that times out', () => {
       enemies.entities = [];
-      projectiles.addProjectile({ x: 3.5, y: 1.5, a: 0, v: 0, r: 0.05, color: '#abc', type: DEVICE_TYPES.TRANQ, born: performance.now() - 20_000 });
+      projectiles.addProjectile({ x: 3.5, y: 1.5, a: 0, v: 0, r: 0.05, color: '#abc', type: DEVICE_TYPES.PACIFIER, born: performance.now() - 20_000 });
       projectiles.update(16);
       expect(misses).toEqual([{ x: 3.5, y: 1.5, color: '#abc' }]);
     });

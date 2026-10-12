@@ -122,22 +122,22 @@ export class HUDManager {
 
   /**
    * Updates all charge bars
-   * @param {number} taserRatio - Taser charge ratio (0-1)
-   * @param {number} stunRatio - Stun charge ratio (0-1)
-   * @param {number} tranqRatio - Tranq charge ratio (0-1)
+   * @param {number} disruptorRatio - Disruptor charge ratio (0-1)
+   * @param {number} frostRatio - Frost charge ratio (0-1)
+   * @param {number} pacifierRatio - Pacifier charge ratio (0-1)
    */
-  updateChargeBars(taserRatio, stunRatio, tranqRatio) {
+  updateChargeBars(disruptorRatio, frostRatio, pacifierRatio) {
     const clamp = (val) => Math.max(0, Math.min(1, val));
 
     if (this.elements.bars) {
-      if (this.elements.bars.taser) {
-        this.elements.bars.taser.style.transform = `scaleX(${clamp(taserRatio)})`;
+      if (this.elements.bars.disruptor) {
+        this.elements.bars.disruptor.style.transform = `scaleX(${clamp(disruptorRatio)})`;
       }
-      if (this.elements.bars.stun) {
-        this.elements.bars.stun.style.transform = `scaleX(${clamp(stunRatio)})`;
+      if (this.elements.bars.frost) {
+        this.elements.bars.frost.style.transform = `scaleX(${clamp(frostRatio)})`;
       }
-      if (this.elements.bars.tranq) {
-        this.elements.bars.tranq.style.transform = `scaleX(${clamp(tranqRatio)})`;
+      if (this.elements.bars.pacifier) {
+        this.elements.bars.pacifier.style.transform = `scaleX(${clamp(pacifierRatio)})`;
       }
     }
   }

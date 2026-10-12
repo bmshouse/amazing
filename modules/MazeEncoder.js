@@ -5,7 +5,7 @@
 //   u8 version | u8 size | u8 rechargePadCount | grid bits, 8 cells per byte, row by row (1 = wall)
 //   u8 exitX, exitY, exitWallX, exitWallY (cells)
 //   u8 padCount, then x, y per pad (cells) | u8 spawnCount, then x, y per snowman (cell; it starts at the centre)
-//   u8 taser, stun and tranq charges | u8 flags (bit 0-2: taser, stun, tranq enabled)
+//   u8 disruptor, frost and pacifier charges | u8 flags (bit 0-2: disruptor, frost, pacifier enabled)
 //   u16 enemy speed x 100 | u32 completion time in ms (0 = none) | u16 + u32 timestamp in ms
 //   u8 length + UTF-8 difficulty | u8 length + UTF-8 player name
 import { GameConfig } from './GameConfig.js';
@@ -73,12 +73,12 @@ export class MazeEncoder {
 
     // Device configuration
     const deviceConfig = {
-      taserCharges: config?.devices?.taserCharges ?? config?.devices?.taser?.charges ?? GameConfig.DEVICES.TASER.MAX_CHARGES,
-      stunCharges: config?.devices?.stunCharges ?? config?.devices?.stun?.charges ?? GameConfig.DEVICES.STUN.MAX_CHARGES,
-      tranqCharges: config?.devices?.tranqCharges ?? config?.devices?.tranq?.charges ?? GameConfig.DEVICES.TRANQ.MAX_CHARGES,
-      taserEnabled: config?.devices?.taserEnabled ?? config?.devices?.taser?.enabled ?? true,
-      stunEnabled: config?.devices?.stunEnabled ?? config?.devices?.stun?.enabled ?? true,
-      tranqEnabled: config?.devices?.tranqEnabled ?? config?.devices?.tranq?.enabled ?? true
+      disruptorCharges: config?.devices?.disruptorCharges ?? config?.devices?.disruptor?.charges ?? GameConfig.DEVICES.DISRUPTOR.MAX_CHARGES,
+      frostCharges: config?.devices?.frostCharges ?? config?.devices?.frost?.charges ?? GameConfig.DEVICES.FROST.MAX_CHARGES,
+      pacifierCharges: config?.devices?.pacifierCharges ?? config?.devices?.pacifier?.charges ?? GameConfig.DEVICES.PACIFIER.MAX_CHARGES,
+      disruptorEnabled: config?.devices?.disruptorEnabled ?? config?.devices?.disruptor?.enabled ?? true,
+      frostEnabled: config?.devices?.frostEnabled ?? config?.devices?.frost?.enabled ?? true,
+      pacifierEnabled: config?.devices?.pacifierEnabled ?? config?.devices?.pacifier?.enabled ?? true
     };
 
     return {
@@ -134,10 +134,10 @@ export class MazeEncoder {
       for (const pad of maze.pads) { out.u8(pad.x); out.u8(pad.y); }
       out.u8(enemies.spawns.length);
       for (const spawn of enemies.spawns) { out.u8(Math.floor(spawn.x)); out.u8(Math.floor(spawn.y)); }
-      out.u8(devices.taserCharges);
-      out.u8(devices.stunCharges);
-      out.u8(devices.tranqCharges);
-      out.u8((devices.taserEnabled ? 1 : 0) | (devices.stunEnabled ? 2 : 0) | (devices.tranqEnabled ? 4 : 0));
+      out.u8(devices.disruptorCharges);
+      out.u8(devices.frostCharges);
+      out.u8(devices.pacifierCharges);
+      out.u8((devices.disruptorEnabled ? 1 : 0) | (devices.frostEnabled ? 2 : 0) | (devices.pacifierEnabled ? 4 : 0));
       out.u16(enemies.speed * 100);
       out.u32(challenge.completionTime || 0);
       out.u16(Math.floor(serializedData.timestamp / TWO_POW_32));
@@ -174,9 +174,9 @@ export class MazeEncoder {
 
       const pads = Array.from({ length: input.u8() }, () => ({ x: input.u8(), y: input.u8() }));
       const spawns = Array.from({ length: input.u8() }, () => ({ x: input.u8() + 0.5, y: input.u8() + 0.5 }));
-      const taserCharges = input.u8();
-      const stunCharges = input.u8();
-      const tranqCharges = input.u8();
+      const disruptorCharges = input.u8();
+      const frostCharges = input.u8();
+      const pacifierCharges = input.u8();
       const flags = input.u8();
       const speed = input.u16() / 100;
       const completionTime = input.u32() || null;
@@ -191,12 +191,12 @@ export class MazeEncoder {
         maze: { size, rechargePadCount, grid, exit, pads },
         enemies: { count: spawns.length, speed, spawns },
         devices: {
-          taserCharges,
-          stunCharges,
-          tranqCharges,
-          taserEnabled: !!(flags & 1),
-          stunEnabled: !!(flags & 2),
-          tranqEnabled: !!(flags & 4)
+          disruptorCharges,
+          frostCharges,
+          pacifierCharges,
+          disruptorEnabled: !!(flags & 1),
+          frostEnabled: !!(flags & 2),
+          pacifierEnabled: !!(flags & 4)
         },
         challenge: { createdBy, completionTime, difficulty }
       };
@@ -264,9 +264,9 @@ export class MazeEncoder {
 
       // Check device configuration
       if (!gameState.devices ||
-          typeof gameState.devices.taserCharges !== 'number' ||
-          typeof gameState.devices.stunCharges !== 'number' ||
-          typeof gameState.devices.tranqCharges !== 'number') {
+          typeof gameState.devices.disruptorCharges !== 'number' ||
+          typeof gameState.devices.frostCharges !== 'number' ||
+          typeof gameState.devices.pacifierCharges !== 'number') {
         return false;
       }
 

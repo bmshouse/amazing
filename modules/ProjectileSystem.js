@@ -100,12 +100,12 @@ export class ProjectileSystem {
   applyLegacyEffect(projectile, enemy) {
     const t = performance.now();
     switch (projectile.type) {
-      case DEVICE_TYPES.STUN:
+      case DEVICE_TYPES.FROST:
         enemy.state = ENEMY_STATES.SLOWED;
-        enemy.speedMul = GameConfig.DEVICES.STUN.SLOWDOWN_FACTOR;
+        enemy.speedMul = GameConfig.DEVICES.FROST.SLOWDOWN_FACTOR;
         enemy.stateTime = t;
         break;
-      case DEVICE_TYPES.TRANQ:
+      case DEVICE_TYPES.PACIFIER:
         enemy.state = ENEMY_STATES.TRANQ;
         enemy.speedMul = 0;
         enemy.stateTime = t;

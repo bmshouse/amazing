@@ -1,16 +1,15 @@
-// modules/devices/StunDevice.js - Projectile device that slows creatures
+// modules/devices/PacifierDevice.js - Fast projectile device that immobilizes creatures
 import { IDevice } from './IDevice.js';
 import { GameConfig, DEVICE_TYPES, ENEMY_STATES } from '../GameConfig.js';
 
-const CFG = GameConfig.DEVICES.STUN;
+const CFG = GameConfig.DEVICES.PACIFIER;
 
-export class StunDevice extends IDevice {
+export class PacifierDevice extends IDevice {
   constructor() {
-    super(DEVICE_TYPES.STUN, CFG.MAX_CHARGES, CFG.COOLDOWN);
+    super(DEVICE_TYPES.PACIFIER, CFG.MAX_CHARGES, CFG.COOLDOWN);
     this.projectileSpeed = CFG.PROJECTILE_SPEED;
     this.projectileRadius = CFG.PROJECTILE_RADIUS;
     this.effectDuration = CFG.EFFECT_DURATION;
-    this.slowdownFactor = CFG.SLOWDOWN_FACTOR;
   }
 
   activate(player, enemyController, audio, onActivation, projectileSystem) {
@@ -18,7 +17,7 @@ export class StunDevice extends IDevice {
 
     this.consumeCharge();
 
-    // Create slow-moving orb projectile
+    // Create fast-moving dart projectile
     const projectile = {
       x: player.x,
       y: player.y,
@@ -26,13 +25,13 @@ export class StunDevice extends IDevice {
       v: this.projectileSpeed,
       r: this.projectileRadius,
       color: CFG.COLOR,
-      type: DEVICE_TYPES.STUN,
+      type: DEVICE_TYPES.PACIFIER,
       born: performance.now(),
       device: this
     };
 
     projectileSystem.addProjectile(projectile);
-    audio.beep('sine', 600, 0.06, 0.05);
+    audio.beep('sine', 420, 0.06, 0.05);
 
     // Muzzle flash just ahead of the player (closer than this it swamps the screen)
     const fxX = player.x + Math.cos(player.a) * 0.5;
@@ -43,8 +42,8 @@ export class StunDevice extends IDevice {
   }
 
   applyEffect(enemy) {
-    enemy.state = ENEMY_STATES.SLOWED;
-    enemy.speedMul = this.slowdownFactor;
+    enemy.state = ENEMY_STATES.TRANQ;
+    enemy.speedMul = 0;
     enemy.stateTime = performance.now();
   }
 
@@ -53,11 +52,11 @@ export class StunDevice extends IDevice {
   }
 
   getDescription() {
-    return 'Projectile that slows down creatures on impact';
+    return 'Fast dart that completely immobilizes creatures';
   }
 
   showRangeIndicator(player, onRangeIndicator) {
-    // Show projectile path as a moderate line indicating trajectory
+    // Show projectile path as a precise line for fast dart
     const startX = player.x + Math.cos(player.a) * 0.3;
     const startY = player.y + Math.sin(player.a) * 0.3;
     const maxRange = CFG.INDICATOR_RANGE;

@@ -239,9 +239,9 @@ export class TouchHUD {
 
     // Device types mapping
     const devices = [
-      { id: DEVICE_TYPES.TASER, label: 'D', key: '1' },
-      { id: DEVICE_TYPES.STUN, label: 'I', key: '2' },
-      { id: DEVICE_TYPES.TRANQ, label: 'P', key: '3' }
+      { id: DEVICE_TYPES.DISRUPTOR, label: 'D', key: '1' },
+      { id: DEVICE_TYPES.FROST, label: 'F', key: '2' },
+      { id: DEVICE_TYPES.PACIFIER, label: 'P', key: '3' }
     ];
 
     devices.forEach((device, index) => {
@@ -375,7 +375,7 @@ export class TouchHUD {
 
       // Listen for device configuration changes
       this.eventSystemManager.on(EVENTS.DEVICE_CONFIG, (data) => {
-        this.updateDeviceVisibility(data.devices, data.mapping);
+        this.updateDeviceVisibility(data.devices);
       });
     }
 
@@ -632,11 +632,10 @@ export class TouchHUD {
     });
   }
 
-  updateDeviceVisibility(devices, mapping) {
+  updateDeviceVisibility(devices) {
     // Update device button visibility based on enabled state
     Object.entries(devices).forEach(([deviceType, config]) => {
-      const gameDeviceType = mapping[deviceType];
-      const button = this.deviceButtons.get(gameDeviceType);
+      const button = this.deviceButtons.get(deviceType);
 
       if (button) {
         // Show/hide button based on enabled state

@@ -17,7 +17,7 @@ function shareable(size = 21, extra = {}) {
     config: {
       enemySpeed: 1.3,
       difficultyPreset: 'normal',
-      devices: { taserCharges: 8, stunCharges: 6, tranqCharges: 4, taserEnabled: true, stunEnabled: false, tranqEnabled: true }
+      devices: { disruptorCharges: 8, frostCharges: 6, pacifierCharges: 4, disruptorEnabled: true, frostEnabled: false, pacifierEnabled: true }
     },
     completionTime: 123456,
     playerName: 'Zoë 🎄',

@@ -93,12 +93,12 @@ describe('buildGameData', () => {
       playerName: 'Test'
     });
 
-    expect(result.config.devices).toHaveProperty('taserCharges');
-    expect(result.config.devices).toHaveProperty('stunCharges');
-    expect(result.config.devices).toHaveProperty('tranqCharges');
-    expect(typeof result.config.devices.taserCharges).toBe('number');
-    expect(typeof result.config.devices.stunCharges).toBe('number');
-    expect(typeof result.config.devices.tranqCharges).toBe('number');
+    expect(result.config.devices).toHaveProperty('disruptorCharges');
+    expect(result.config.devices).toHaveProperty('frostCharges');
+    expect(result.config.devices).toHaveProperty('pacifierCharges');
+    expect(typeof result.config.devices.disruptorCharges).toBe('number');
+    expect(typeof result.config.devices.frostCharges).toBe('number');
+    expect(typeof result.config.devices.pacifierCharges).toBe('number');
   });
 
   it('should include device enabled state in config', () => {
@@ -111,12 +111,12 @@ describe('buildGameData', () => {
       playerName: 'Test'
     });
 
-    expect(result.config.devices).toHaveProperty('taserEnabled');
-    expect(result.config.devices).toHaveProperty('stunEnabled');
-    expect(result.config.devices).toHaveProperty('tranqEnabled');
-    expect(typeof result.config.devices.taserEnabled).toBe('boolean');
-    expect(typeof result.config.devices.stunEnabled).toBe('boolean');
-    expect(typeof result.config.devices.tranqEnabled).toBe('boolean');
+    expect(result.config.devices).toHaveProperty('disruptorEnabled');
+    expect(result.config.devices).toHaveProperty('frostEnabled');
+    expect(result.config.devices).toHaveProperty('pacifierEnabled');
+    expect(typeof result.config.devices.disruptorEnabled).toBe('boolean');
+    expect(typeof result.config.devices.frostEnabled).toBe('boolean');
+    expect(typeof result.config.devices.pacifierEnabled).toBe('boolean');
   });
 
   it('should include completionTime property', () => {
@@ -169,8 +169,8 @@ describe('buildGameData', () => {
 
   it('should use maxCharges from devices (not current charges)', () => {
     // Consume some charges
-    defenses.devices.taser.charges = 3;
-    defenses.devices.taser.maxCharges = 8;
+    defenses.devices.disruptor.charges = 3;
+    defenses.devices.disruptor.maxCharges = 8;
 
     const result = buildGameData({
       maze,
@@ -181,7 +181,7 @@ describe('buildGameData', () => {
       playerName: 'Test'
     });
 
-    expect(result.config.devices.taserCharges).toBe(8); // maxCharges, not current
+    expect(result.config.devices.disruptorCharges).toBe(8); // maxCharges, not current
   });
 
   it('should fallback difficulty preset to name or default', () => {

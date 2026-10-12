@@ -8,15 +8,15 @@ import { GameState } from '../modules/GameState.js';
 describe('SOLID Architecture', () => {
   it('GameConfig provides centralized constants', () => {
     expect(GameConfig.PLAYER.SPEED).toBe(2.4);
-    expect(GameConfig.DEVICES.TASER.MAX_CHARGES).toBe(8);
+    expect(GameConfig.DEVICES.DISRUPTOR.MAX_CHARGES).toBe(10);
     expect(GameConfig.COLORS.EXIT_DOOR).toBe('#a8f8abff');
   });
 
   it('DeviceFactory creates device instances', () => {
-    const taser = DeviceFactory.createDevice(DEVICE_TYPES.TASER);
-    expect(taser.name).toBe(DEVICE_TYPES.TASER);
-    expect(taser.maxCharges).toBe(8);
-    expect(taser.canActivate()).toBe(true);
+    const disruptor = DeviceFactory.createDevice(DEVICE_TYPES.DISRUPTOR);
+    expect(disruptor.name).toBe(DEVICE_TYPES.DISRUPTOR);
+    expect(disruptor.maxCharges).toBe(10);
+    expect(disruptor.canActivate()).toBe(true);
 
     const allDevices = DeviceFactory.createAllDevices();
     expect(Object.keys(allDevices)).toEqual([...DEVICE_ORDER]);

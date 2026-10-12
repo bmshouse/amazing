@@ -212,13 +212,8 @@ describe('EventSystemManager and InputManager Integration', () => {
     const deviceConfig = {
       devices: {
         disruptor: { enabled: true, charges: 8 },
-        immobilizer: { enabled: true, charges: 6 },
+        frost: { enabled: true, charges: 6 },
         pacifier: { enabled: true, charges: 4 }
-      },
-      mapping: {
-        disruptor: DEVICE_TYPES.TASER,
-        immobilizer: DEVICE_TYPES.STUN,
-        pacifier: DEVICE_TYPES.TRANQ
       }
     };
 

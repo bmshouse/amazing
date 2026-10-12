@@ -34,7 +34,7 @@
       "start_prompt": "Press <strong>Enter</strong> or <strong>click</strong> to start. Press <strong>R</strong> to restart.",
       "device_list": {
         "disruptor": "<strong>1</strong> Disruptor (short-range stun)",
-        "immobilizer": "<strong>2</strong> Immobilizer (slow orb)",
+        "frost": "<strong>2</strong> Frost (slow orb)",
         "pacifier": "<strong>3</strong> Pacifier (sleepy dart)"
       },
       "touch_instruction_1": "Use the <strong>virtual joystick</strong> in the bottom corner to move around.",
@@ -44,7 +44,7 @@
       "touch_instruction_6": "Tap the <strong>⚙️ gear icon</strong> to customize touch sensitivity and game settings!",
       "touch_device_list": {
         "disruptor": "<strong>D button</strong> - Disruptor (short-range stun)",
-        "immobilizer": "<strong>I button</strong> - Immobilizer (slow orb)",
+        "frost": "<strong>F button</strong> - Frost (slow orb)",
         "pacifier": "<strong>P button</strong> - Pacifier (sleepy dart)"
       },
       "touch_start": "🎮 Start Game",
@@ -90,11 +90,8 @@
   "game": {
     "devices": {
       "disruptor": "Disruptor",
-      "immobilizer": "Immobilizer",
-      "pacifier": "Pacifier",
-      "taser": "Disruptor",
-      "stun": "Immobilizer",
-      "tranq": "Pacifier"
+      "frost": "Frost",
+      "pacifier": "Pacifier"
     },
     "messages": {
       "boop": "Boop!",

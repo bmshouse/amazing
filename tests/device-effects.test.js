@@ -1,7 +1,7 @@
 // tests/device-effects.test.js - each device has its own flair: impact bursts, bolt, styled darts
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { particleState, emitHit, emitMiss, emitZap, clipToWalls, bloom } from '../modules/Effects.js';
-import { TaserDevice } from '../modules/devices/TaserDevice.js';
+import { DisruptorDevice } from '../modules/devices/DisruptorDevice.js';
 import { SpriteRenderer } from '../modules/SpriteRenderer.js';
 import { Model3DRenderer } from '../modules/rendering/Model3DRenderer.js';
 import { GameConfig, DEVICE_TYPES } from '../modules/GameConfig.js';
@@ -58,7 +58,7 @@ describe('impact effects', () => {
   const speedOf = (p) => Math.hypot(p.vx, p.vy, p.vh);
 
   it('Disruptor throws fast, falling star sparks', () => {
-    const sparks = hit(DEVICE_TYPES.TASER);
+    const sparks = hit(DEVICE_TYPES.DISRUPTOR);
     expect(sparks.length).toBeGreaterThanOrEqual(8);
     sparks.forEach(p => {
       expect(p.shape).toBe('star');
@@ -67,8 +67,8 @@ describe('impact effects', () => {
     });
   });
 
-  it('Immobilizer sends out an even ring', () => {
-    const ring = hit(DEVICE_TYPES.STUN).filter(p => p.color === '#abcdef');
+  it('Frost sends out an even ring', () => {
+    const ring = hit(DEVICE_TYPES.FROST).filter(p => p.color === '#abcdef');
     expect(ring.length).toBeGreaterThanOrEqual(8);
     ring.forEach(p => expect(speedOf(p)).toBeCloseTo(speedOf(ring[0])));
     expect(ring.reduce((sum, p) => sum + p.vy, 0)).toBeCloseTo(0); // spread all the way round
@@ -77,14 +77,14 @@ describe('impact effects', () => {
 
   it('opens the ring facing the shooter, across the heading and up, with no motion along it', () => {
     const heading = Math.PI / 3;
-    const ring = hit(DEVICE_TYPES.STUN, heading).filter(p => p.color === '#abcdef');
+    const ring = hit(DEVICE_TYPES.FROST, heading).filter(p => p.color === '#abcdef');
     const along = (p) => p.vx * Math.cos(heading) + p.vy * Math.sin(heading);
     ring.forEach(p => expect(along(p)).toBeCloseTo(0));
     expect(Math.max(...ring.map(p => p.vh))).toBeGreaterThan(1); // reaches straight up
   });
 
   it('Pacifier puffs drifting, swelling mist', () => {
-    const mist = hit(DEVICE_TYPES.TRANQ).filter(p => p.grow > 1);
+    const mist = hit(DEVICE_TYPES.PACIFIER).filter(p => p.grow > 1);
     expect(mist.length).toBeGreaterThanOrEqual(5);
     mist.forEach(p => {
       expect(p.vh).toBeGreaterThan(0);
@@ -150,21 +150,21 @@ describe('Disruptor bolt', () => {
   it('reaches the snowman it hit', () => {
     const onBolt = vi.fn();
     const enemyController = { raycastForEnemy: () => ({ x: 3.2, y: 3.05 }) };
-    new TaserDevice().activate(player, enemyController, audio, () => {}, null, onBolt);
-    expect(onBolt).toHaveBeenCalledWith(2, 3, 3.2, 3.05, GameConfig.DEVICES.TASER.COLOR, true);
+    new DisruptorDevice().activate(player, enemyController, audio, () => {}, null, onBolt);
+    expect(onBolt).toHaveBeenCalledWith(2, 3, 3.2, 3.05, GameConfig.DEVICES.DISRUPTOR.COLOR, true);
   });
 
   it('runs out to the end of its reach on a miss', () => {
     const onBolt = vi.fn();
-    new TaserDevice().activate(player, { raycastForEnemy: () => null }, audio, () => {}, null, onBolt);
+    new DisruptorDevice().activate(player, { raycastForEnemy: () => null }, audio, () => {}, null, onBolt);
     const [, , x2, y2, , hit] = onBolt.mock.calls[0];
-    expect(x2).toBeCloseTo(2 + GameConfig.DEVICES.TASER.RANGE);
+    expect(x2).toBeCloseTo(2 + GameConfig.DEVICES.DISRUPTOR.RANGE);
     expect(y2).toBeCloseTo(3);
     expect(hit).toBe(false);
   });
 
   it('still works with no bolt listener', () => {
-    expect(new TaserDevice().activate(player, { raycastForEnemy: () => null }, audio, () => {})).toBe(true);
+    expect(new DisruptorDevice().activate(player, { raycastForEnemy: () => null }, audio, () => {})).toBe(true);
   });
 
   describe('rendering', () => {
@@ -213,9 +213,9 @@ describe('device-styled darts', () => {
       renderer = new SpriteRenderer({ getContext: () => ctx });
     });
 
-    it('draws the Immobilizer orb with a halo and orbiting motes', () => {
-      renderer.drawProjectile(dart(DEVICE_TYPES.STUN), player, 640, 360, openMaze);
-      const s = style(DEVICE_TYPES.STUN);
+    it('draws the Frost orb with a halo and orbiting motes', () => {
+      renderer.drawProjectile(dart(DEVICE_TYPES.FROST), player, 640, 360, openMaze);
+      const s = style(DEVICE_TYPES.FROST);
       const trail = GameConfig.RENDERING.PROJECTILE_TRAIL.length;
       expect(ctx.ellipse).toHaveBeenCalledTimes(1 + trail + 1 + s.motes.count);
     });
@@ -223,8 +223,8 @@ describe('device-styled darts', () => {
     it('draws the Pacifier dart with a long twinkling trail and a bright core', () => {
       const fills = [];
       ctx.ellipse.mockImplementation(() => fills.push(ctx.fillStyle));
-      renderer.drawProjectile(dart(DEVICE_TYPES.TRANQ), player, 640, 360, openMaze);
-      const s = style(DEVICE_TYPES.TRANQ);
+      renderer.drawProjectile(dart(DEVICE_TYPES.PACIFIER), player, 640, 360, openMaze);
+      const s = style(DEVICE_TYPES.PACIFIER);
       expect(s.trail.length).toBeGreaterThan(GameConfig.RENDERING.PROJECTILE_TRAIL.length);
       expect(ctx.ellipse).toHaveBeenCalledTimes(s.trail.length + 2); // trail, head, core
       expect(fills).toContain(s.twinkle);
@@ -246,18 +246,18 @@ describe('device-styled darts', () => {
       r.enabled = true;
     });
 
-    it('builds the Immobilizer orb with a halo and motes, head first', () => {
-      const p = dart(DEVICE_TYPES.STUN);
+    it('builds the Frost orb with a halo and motes, head first', () => {
+      const p = dart(DEVICE_TYPES.FROST);
       r.updateProjectiles([p], player, openMaze);
       const group = r.projectilePool.get(p);
-      const s = style(DEVICE_TYPES.STUN);
+      const s = style(DEVICE_TYPES.FROST);
       expect(group.children).toHaveLength(1 + GameConfig.RENDERING.PROJECTILE_TRAIL.length + 1 + s.motes.count);
       expect(group.children[0]).toBe(group.userData.head);
       expect(group.userData.motes).toHaveLength(s.motes.count);
     });
 
     it('moves the motes around the head from frame to frame, staying close to it', () => {
-      const p = { ...dart(DEVICE_TYPES.STUN), x: 5 }; // well clear of the camera, so fully grown in
+      const p = { ...dart(DEVICE_TYPES.FROST), x: 5 }; // well clear of the camera, so fully grown in
       r.updateProjectiles([p], player, openMaze);
       const mote = r.projectilePool.get(p).userData.motes[0];
       const first = mote.position.clone();
@@ -265,22 +265,22 @@ describe('device-styled darts', () => {
       r.updateProjectiles([p], player, openMaze);
       spy.mockRestore();
       expect(mote.position.distanceTo(first)).toBeGreaterThan(0.001);
-      expect(mote.position.length()).toBeCloseTo(style(DEVICE_TYPES.STUN).motes.orbit * p.r);
+      expect(mote.position.length()).toBeCloseTo(style(DEVICE_TYPES.FROST).motes.orbit * p.r);
     });
 
     it('keeps the halo and motes tucked in on a dart that has only just launched', () => {
-      const p = { ...dart(DEVICE_TYPES.STUN), x: player.x + GameConfig.RENDERING.PROJECTILE_MIN_DISTANCE + 0.05 };
+      const p = { ...dart(DEVICE_TYPES.FROST), x: player.x + GameConfig.RENDERING.PROJECTILE_MIN_DISTANCE + 0.05 };
       r.updateProjectiles([p], player, openMaze);
       const { halo, motes } = r.projectilePool.get(p).userData;
-      expect(halo.scale.x).toBeLessThan(p.r * style(DEVICE_TYPES.STUN).halo.scale * 0.2);
+      expect(halo.scale.x).toBeLessThan(p.r * style(DEVICE_TYPES.FROST).halo.scale * 0.2);
       expect(motes[0].position.length()).toBeLessThan(p.r * 0.2);
     });
 
     it('builds the Pacifier dart with the long trail and a core', () => {
-      const p = dart(DEVICE_TYPES.TRANQ);
+      const p = dart(DEVICE_TYPES.PACIFIER);
       r.updateProjectiles([p], player, openMaze);
       const group = r.projectilePool.get(p);
-      expect(group.children).toHaveLength(style(DEVICE_TYPES.TRANQ).trail.length + 2);
+      expect(group.children).toHaveLength(style(DEVICE_TYPES.PACIFIER).trail.length + 2);
       expect(group.userData.core).toBeTruthy();
     });
   });

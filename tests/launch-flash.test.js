@@ -1,8 +1,8 @@
 // tests/launch-flash.test.js - small muzzle flash for darts, and the Disruptor's reach matching the head
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TranqDevice } from '../modules/devices/TranqDevice.js';
-import { StunDevice } from '../modules/devices/StunDevice.js';
-import { TaserDevice } from '../modules/devices/TaserDevice.js';
+import { PacifierDevice } from '../modules/devices/PacifierDevice.js';
+import { FrostDevice } from '../modules/devices/FrostDevice.js';
+import { DisruptorDevice } from '../modules/devices/DisruptorDevice.js';
 import { SpriteRenderer } from '../modules/SpriteRenderer.js';
 import { EnemyController } from '../modules/enemies.js';
 import { Maze } from '../modules/maze.js';
@@ -19,8 +19,8 @@ describe('Muzzle flash', () => {
   });
 
   it.each([
-    ['Pacifier', () => new TranqDevice()],
-    ['Immobilizer', () => new StunDevice()]
+    ['Pacifier', () => new PacifierDevice()],
+    ['Frost', () => new FrostDevice()]
   ])('%s launches flag the flash as a muzzle flash, half a unit out', (_name, make) => {
     expect(make().activate(player, null, audio, onActivation, projectileSystem)).toBe(true);
     const [x, y, , muzzle] = onActivation.mock.calls[0];
@@ -31,7 +31,7 @@ describe('Muzzle flash', () => {
 
   it('keeps the Disruptor flash as it was, since that is its hit feedback', () => {
     const enemyController = { raycastForEnemy: () => null };
-    new TaserDevice().activate(player, enemyController, audio, onActivation);
+    new DisruptorDevice().activate(player, enemyController, audio, onActivation);
     const [x, , , muzzle] = onActivation.mock.calls[0];
     expect(muzzle).toBeUndefined();
     expect(x).toBeCloseTo(2.8);
@@ -74,7 +74,7 @@ describe('Disruptor reach', () => {
 
   const zap = () => {
     enemies.player = { x: 1.5, y: 1.5, a: 0 };
-    new TaserDevice().activate(enemies.player, enemies, audio, () => {});
+    new DisruptorDevice().activate(enemies.player, enemies, audio, () => {});
     return enemies.entities[0].state;
   };
 

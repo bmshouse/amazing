@@ -1,4 +1,32 @@
 // modules/GameConfig.js - Centralized configuration for game constants
+
+/**
+ * Stacked-sphere layout of a snowman in world units, shared by the 2D sprite and the 3D model so both
+ * stand the same height. Spheres overlap (centres closer than the sum of the radii) and the base sits
+ * on the floor. A radius of 0 leaves that sphere out.
+ * @param {number[]} radii - Bottom, middle and top (head) radii
+ * @param {number} stack - Centre spacing as a fraction of the touching distance
+ * @returns {{r: number, y: number}[]} Radius and centre height above the floor, bottom to top
+ */
+export function snowmanSpheres([bottom, middle, top], stack) {
+  const spheres = [{ r: bottom, y: bottom }];
+  for (const r of [middle, top]) {
+    if (r <= 0) continue;
+    const below = spheres[spheres.length - 1];
+    spheres.push({ r, y: below.y + (below.r + r) * stack });
+  }
+  return spheres;
+}
+
+/**
+ * Internal device identifiers (UI names: disruptor / frost / pacifier)
+ */
+export const DEVICE_TYPES = Object.freeze({
+  DISRUPTOR: 'disruptor',
+  FROST: 'frost',
+  PACIFIER: 'pacifier'
+});
+
 export const GameConfig = {
   // Rendering constants
   RENDERING: {
@@ -39,6 +67,10 @@ export const GameConfig = {
     EYE_HEIGHT: 0.5,     // camera height above the floor; walls are 1 unit tall, so the floor is 0.5 below the eye
     SNOWMAN_STACK: 0.78, // 3D snowman sphere spacing as a fraction of the touching distance (lower = more overlap)
     EXIT_DOOR_SIZE: 0.5, // half the door marker width in cells (the marker is one cell wide)
+    SNOWMAN_RADII: [0.15, 0.12, 0.1], // bottom, middle and head sphere radii in world units (2D and 3D)
+    SNOWMAN_SPIN_PERIOD: 500, // ms per radian of a stunned snowman's spin (2D and 3D)
+    SNOWMAN_HOP_HEIGHT: 0.025, // an idle snowman hops between 0 and twice this above the floor (2D and 3D)
+    SNOWMAN_HOP_PERIOD: 500,   // ms per radian of the hop
     ENEMY_SIZE: 0.15, // Match 3D snowman bottom sphere radius
     ENEMY_HIT_RADIUS: 0.1,   // what a dart can hit: the head's radius, since darts fly at head height
     PROJECTILE_HEIGHT: 0.45, // dart height above the floor, just under the eye so it stays clear of the crosshair
@@ -101,15 +133,15 @@ export const GameConfig = {
 
   // Device constants
   DEVICES: {
-    TASER: {
-      MAX_CHARGES: 8,
+    DISRUPTOR: {
+      MAX_CHARGES: 10,
       COOLDOWN: 250,
       RANGE: 1.6,
       EFFECT_DURATION: 1500,
       COLOR: '#ffd166'
     },
-    STUN: {
-      MAX_CHARGES: 6,
+    FROST: {
+      MAX_CHARGES: 5,
       COOLDOWN: 600,
       PROJECTILE_SPEED: 3.2,
       PROJECTILE_RADIUS: 0.08,
@@ -118,8 +150,8 @@ export const GameConfig = {
       COLOR: '#00d1ff',
       INDICATOR_RANGE: 3.0
     },
-    TRANQ: {
-      MAX_CHARGES: 4,
+    PACIFIER: {
+      MAX_CHARGES: 3,
       COOLDOWN: 750,
       PROJECTILE_SPEED: 5.0,
       PROJECTILE_RADIUS: 0.05,
@@ -172,12 +204,12 @@ export const GameConfig = {
   // a projectile whose type has no style keeps the plain bead-and-trail look.
   EFFECTS: {
     PROJECTILE_STYLE: {
-      stun: {
+      [DEVICE_TYPES.FROST]: {
         pulse: { amount: 0.25, speed: 9 },                       // head swells and shrinks, speed in rad/s
         halo: { scale: 2.4, opacity: 0.22 },                     // soft glow around the head, relative to head size
         motes: { count: 3, orbit: 1.9, scale: 0.25, speed: 8, opacity: 0.85 } // little lights circling the head
       },
-      tranq: {
+      [DEVICE_TYPES.PACIFIER]: {
         core: { color: '#ffffff', scale: 0.45 },                 // bright needle tip inside the head
         twinkle: '#ffffff',                                      // every other trail bead flickers to this colour
         trail: [
@@ -211,10 +243,10 @@ export const GameConfig = {
     BEEP_DURATION: 0.08,
 
     // Frequencies for different actions
-    FREQ_TASER_HIT: 720,
-    FREQ_TASER_MISS: 520,
-    FREQ_STUN: 600,
-    FREQ_TRANQ: 420,
+    FREQ_DISRUPTOR_HIT: 720,
+    FREQ_DISRUPTOR_MISS: 520,
+    FREQ_FROST: 600,
+    FREQ_PACIFIER: 420,
     FREQ_WEAPON_SELECT: 660,
     FREQ_GAME_START: 520,
     FREQ_RESTART: 480,
@@ -238,9 +270,9 @@ export const GameConfig = {
     SNOWMAN_CARROT: '#ff8a1f',
 
     // Weapon effect colors
-    TASER: '#ffd166',
-    STUN: '#00d1ff',
-    TRANQ: '#a29bfe',
+    DISRUPTOR: '#ffd166',
+    FROST: '#00d1ff',
+    PACIFIER: '#a29bfe',
 
     // Particle colors
     PARTICLE_BOOP: '#ff0000', // Red hearts for boop particles
@@ -280,20 +312,11 @@ export const GameConfig = {
   }
 };
 
-/**
- * Internal device identifiers (UI names: disruptor / immobilizer / pacifier)
- */
-export const DEVICE_TYPES = Object.freeze({
-  TASER: 'taser',
-  STUN: 'stun',
-  TRANQ: 'tranq'
-});
-
 // Hotbar order (keys 1-3)
 export const DEVICE_ORDER = Object.freeze([
-  DEVICE_TYPES.TASER,
-  DEVICE_TYPES.STUN,
-  DEVICE_TYPES.TRANQ
+  DEVICE_TYPES.DISRUPTOR,
+  DEVICE_TYPES.FROST,
+  DEVICE_TYPES.PACIFIER
 ]);
 
 /**
@@ -333,25 +356,6 @@ export const EVENTS = Object.freeze({
   DEVICE_CHANGE: 'devicechange',
   DEVICE_CONFIG: 'deviceconfig'
 });
-
-/**
- * Device name mapping between difficulty configuration and game code
- * This centralized mapping eliminates duplication across the codebase
- */
-export const DEVICE_MAPPING = {
-  // Map from difficulty config device names to internal game device names
-  DIFFICULTY_TO_GAME: {
-    disruptor: DEVICE_TYPES.TASER,
-    immobilizer: DEVICE_TYPES.STUN,
-    pacifier: DEVICE_TYPES.TRANQ
-  },
-  // Map from internal game device names to difficulty config names
-  GAME_TO_DIFFICULTY: {
-    [DEVICE_TYPES.TASER]: 'disruptor',
-    [DEVICE_TYPES.STUN]: 'immobilizer',
-    [DEVICE_TYPES.TRANQ]: 'pacifier'
-  }
-};
 
 // Utility functions for accessing config values
 export const getDeviceConfig = (deviceType) => {

@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DifficultyConfig } from '../modules/DifficultyConfig.js';
+import { STORAGE_KEYS } from '../modules/GameConfig.js';
 
 describe('DifficultyConfig', () => {
   let difficultyConfig;
 
   beforeEach(() => {
+    localStorage.clear();
     difficultyConfig = new DifficultyConfig();
   });
 
@@ -77,12 +79,12 @@ describe('DifficultyConfig', () => {
   it('returns enabled devices correctly', () => {
     // All devices enabled by default
     let enabledDevices = difficultyConfig.getEnabledDevices();
-    expect(enabledDevices).toEqual(['disruptor', 'immobilizer', 'pacifier']);
+    expect(enabledDevices).toEqual(['disruptor', 'frost', 'pacifier']);
 
     // Disable one device
     difficultyConfig.updateDevice('pacifier', 'enabled', false);
     enabledDevices = difficultyConfig.getEnabledDevices();
-    expect(enabledDevices).toEqual(['disruptor', 'immobilizer']);
+    expect(enabledDevices).toEqual(['disruptor', 'frost']);
   });
 
   it('updates device properties correctly', () => {
@@ -102,13 +104,13 @@ describe('DifficultyConfig', () => {
     const config = difficultyConfig.getConfig();
     expect(config.preset).toBe('normal');
     expect(config.maze.size).toBe(21);
-    expect(config.devices.disruptor.charges).toBe(8);
+    expect(config.devices.disruptor.charges).toBe(10);
   });
 
   it('validates that at least one device remains enabled', () => {
     // Disable all devices
     difficultyConfig.updateDevice('disruptor', 'enabled', false);
-    difficultyConfig.updateDevice('immobilizer', 'enabled', false);
+    difficultyConfig.updateDevice('frost', 'enabled', false);
     difficultyConfig.updateDevice('pacifier', 'enabled', false);
 
     // Validation should re-enable at least one device
@@ -137,5 +139,23 @@ describe('DifficultyConfig', () => {
     const importedConfig = newConfig.getConfig();
     expect(importedConfig.maze.size).toBe(originalConfig.maze.size);
     expect(importedConfig.devices.disruptor.charges).toBe(originalConfig.devices.disruptor.charges);
+  });
+
+  it('weights charges so the weakest device has the most and the strongest the fewest', () => {
+    const expected = { easy: [12, 6, 4], normal: [10, 5, 3], hard: [6, 3, 2], teensafe: [16, 8, 6] };
+    for (const [preset, [d, f, p]] of Object.entries(expected)) {
+      difficultyConfig.applyPreset(preset);
+      const { devices } = difficultyConfig.getConfig();
+      expect([devices.disruptor.charges, devices.frost.charges, devices.pacifier.charges]).toEqual([d, f, p]);
+    }
+  });
+
+  it('loads settings saved when the Frost device was called the Immobilizer', () => {
+    localStorage.setItem(STORAGE_KEYS.DIFFICULTY, JSON.stringify({
+      devices: { disruptor: { enabled: true, charges: 7 }, immobilizer: { enabled: false, charges: 9 }, pacifier: { enabled: true, charges: 3 } }
+    }));
+    const loaded = new DifficultyConfig().getConfig();
+    expect(loaded.devices.frost).toEqual({ enabled: false, charges: 9 });
+    expect(loaded.devices.immobilizer).toBeUndefined();
   });
 });

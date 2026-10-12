@@ -26,18 +26,18 @@ describe('GameConfig', () => {
   });
 
   it('getDeviceConfig should return correct device config', () => {
-    const taserConfig = getDeviceConfig(DEVICE_TYPES.TASER);
-    expect(taserConfig).toBeDefined();
-    expect(taserConfig.MAX_CHARGES).toBe(8);
-    expect(taserConfig.COOLDOWN).toBe(250);
+    const disruptorConfig = getDeviceConfig(DEVICE_TYPES.DISRUPTOR);
+    expect(disruptorConfig).toBeDefined();
+    expect(disruptorConfig.MAX_CHARGES).toBe(10);
+    expect(disruptorConfig.COOLDOWN).toBe(250);
 
-    const stunConfig = getDeviceConfig(DEVICE_TYPES.STUN);
-    expect(stunConfig).toBeDefined();
-    expect(stunConfig.MAX_CHARGES).toBe(6);
+    const frostConfig = getDeviceConfig(DEVICE_TYPES.FROST);
+    expect(frostConfig).toBeDefined();
+    expect(frostConfig.MAX_CHARGES).toBe(5);
 
-    const tranqConfig = getDeviceConfig(DEVICE_TYPES.TRANQ);
-    expect(tranqConfig).toBeDefined();
-    expect(tranqConfig.MAX_CHARGES).toBe(4);
+    const pacifierConfig = getDeviceConfig(DEVICE_TYPES.PACIFIER);
+    expect(pacifierConfig).toBeDefined();
+    expect(pacifierConfig.MAX_CHARGES).toBe(3);
   });
 
   it('getColor should return correct color values', () => {
@@ -80,50 +80,10 @@ describe('GameConfig', () => {
     expect(mazeConfig.CELL_OPEN).toBe(0);
   });
 
-  describe('DEVICE_MAPPING', () => {
-    it('should define bidirectional device name mappings', () => {
-      expect(DEVICE_MAPPING).toBeDefined();
-      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME).toBeDefined();
-      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY).toBeDefined();
-    });
-
-    it('should map difficulty config names to game device names', () => {
-      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.disruptor).toBe(DEVICE_TYPES.TASER);
-      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.immobilizer).toBe(DEVICE_TYPES.STUN);
-      expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME.pacifier).toBe(DEVICE_TYPES.TRANQ);
-    });
-
-    it('should map game device names to difficulty config names', () => {
-      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY[DEVICE_TYPES.TASER]).toBe('disruptor');
-      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY[DEVICE_TYPES.STUN]).toBe('immobilizer');
-      expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY[DEVICE_TYPES.TRANQ]).toBe('pacifier');
-    });
-
-    it('should have consistent bidirectional mappings', () => {
-      // Verify that mappings are consistent in both directions
-      Object.entries(DEVICE_MAPPING.DIFFICULTY_TO_GAME).forEach(([difficultyName, gameName]) => {
-        expect(DEVICE_MAPPING.GAME_TO_DIFFICULTY[gameName]).toBe(difficultyName);
-      });
-
-      Object.entries(DEVICE_MAPPING.GAME_TO_DIFFICULTY).forEach(([gameName, difficultyName]) => {
-        expect(DEVICE_MAPPING.DIFFICULTY_TO_GAME[difficultyName]).toBe(gameName);
-      });
-    });
-
-    it('should map to valid device types', () => {
-      // Verify that game device names correspond to actual device configs
-      Object.values(DEVICE_MAPPING.DIFFICULTY_TO_GAME).forEach(gameName => {
-        const deviceConfig = getDeviceConfig(gameName);
-        expect(deviceConfig).toBeDefined();
-        expect(deviceConfig.MAX_CHARGES).toBeGreaterThan(0);
-      });
-    });
-  });
-
-  // Pins the literal values that saved data, shared links and locale keys depend on
+  // Pins the literal values that saved data and locale keys depend on (device ids double as their UI names)
   describe('Identifier constants', () => {
     it('should keep device ids stable', () => {
-      expect(DEVICE_TYPES).toEqual({ TASER: 'taser', STUN: 'stun', TRANQ: 'tranq' });
+      expect(DEVICE_TYPES).toEqual({ DISRUPTOR: 'disruptor', FROST: 'frost', PACIFIER: 'pacifier' });
     });
 
     it('should keep enemy states stable', () => {

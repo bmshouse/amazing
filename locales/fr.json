@@ -34,7 +34,7 @@
       "start_prompt": "Appuyez sur <strong>Entrée</strong> ou <strong>cliquez</strong> pour commencer. Appuyez sur <strong>R</strong> pour redémarrer.",
       "device_list": {
         "disruptor": "<strong>1</strong> Perturbateur (étourdissement courte portée)",
-        "immobilizer": "<strong>2</strong> Immobilisateur (orbe lent)",
+        "frost": "<strong>2</strong> Givre (orbe lent)",
         "pacifier": "<strong>3</strong> Pacificateur (fléchette somnifère)"
       },
       "touch_instruction_1": "Utilisez le <strong>joystick virtuel</strong> dans le coin inférieur pour vous déplacer.",
@@ -44,7 +44,7 @@
       "touch_instruction_6": "Touchez l'<strong>⚙️ icône d'engrenage</strong> pour personnaliser la sensibilité tactile et les paramètres du jeu !",
       "touch_device_list": {
         "disruptor": "<strong>Bouton D</strong> - Perturbateur (étourdissement courte portée)",
-        "immobilizer": "<strong>Bouton I</strong> - Immobilisateur (orbe lent)",
+        "frost": "<strong>Bouton F</strong> - Givre (orbe lent)",
         "pacifier": "<strong>Bouton P</strong> - Pacificateur (fléchette somnifère)"
       },
       "touch_start": "🎮 Démarrer le Jeu",
@@ -90,11 +90,8 @@
   "game": {
     "devices": {
       "disruptor": "Perturbateur",
-      "immobilizer": "Immobilisateur",
-      "pacifier": "Pacificateur",
-      "taser": "Perturbateur",
-      "stun": "Immobilisateur",
-      "tranq": "Pacificateur"
+      "frost": "Givre",
+      "pacifier": "Pacificateur"
     },
     "messages": {
       "boop": "Boop !",

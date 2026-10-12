@@ -1,18 +1,18 @@
 // modules/devices/DeviceFactory.js - Factory for creating device instances
-import { TaserDevice } from './TaserDevice.js';
-import { StunDevice } from './StunDevice.js';
-import { TranqDevice } from './TranqDevice.js';
+import { DisruptorDevice } from './DisruptorDevice.js';
+import { FrostDevice } from './FrostDevice.js';
+import { PacifierDevice } from './PacifierDevice.js';
 import { DEVICE_TYPES, DEVICE_ORDER } from '../GameConfig.js';
 
 export class DeviceFactory {
   static createDevice(type) {
     switch (type.toLowerCase()) {
-      case DEVICE_TYPES.TASER:
-        return new TaserDevice();
-      case DEVICE_TYPES.STUN:
-        return new StunDevice();
-      case DEVICE_TYPES.TRANQ:
-        return new TranqDevice();
+      case DEVICE_TYPES.DISRUPTOR:
+        return new DisruptorDevice();
+      case DEVICE_TYPES.FROST:
+        return new FrostDevice();
+      case DEVICE_TYPES.PACIFIER:
+        return new PacifierDevice();
       default:
         throw new Error(`Unknown device type: ${type}`);
     }

@@ -405,7 +405,7 @@ export class EnemyController {
   }
 
   /**
-   * Casts a ray to find the first enemy hit (for instant hit weapons like taser)
+   * Casts a ray to find the first enemy hit (for instant hit weapons like the disruptor)
    * @param {number} x - Starting X coordinate of the ray
    * @param {number} y - Starting Y coordinate of the ray
    * @param {number} a - Ray angle in radians

@@ -184,18 +184,18 @@
                   <span class="device-name" data-i18n="game.devices.disruptor">Disruptor</span>
                 </label>
                 <div class="config-input-group">
-                  <input id="disruptorCharges" type="range" min="1" max="15" value="8" step="1">
-                  <span id="disruptorChargesValue" class="config-value">8</span>
+                  <input id="disruptorCharges" type="range" min="1" max="16" value="10" step="1">
+                  <span id="disruptorChargesValue" class="config-value">10</span>
                 </div>
               </div>
               <div class="device-item">
                 <label class="device-toggle">
-                  <input type="checkbox" id="enableImmobilizer" checked>
-                  <span class="device-name" data-i18n="game.devices.immobilizer">Immobilizer</span>
+                  <input type="checkbox" id="enableFrost" checked>
+                  <span class="device-name" data-i18n="game.devices.frost">Frost</span>
                 </label>
                 <div class="config-input-group">
-                  <input id="immobilizerCharges" type="range" min="1" max="12" value="6" step="1">
-                  <span id="immobilizerChargesValue" class="config-value">6</span>
+                  <input id="frostCharges" type="range" min="1" max="12" value="5" step="1">
+                  <span id="frostChargesValue" class="config-value">5</span>
                 </div>
               </div>
               <div class="device-item">
@@ -204,8 +204,8 @@
                   <span class="device-name" data-i18n="game.devices.pacifier">Pacifier</span>
                 </label>
                 <div class="config-input-group">
-                  <input id="pacifierCharges" type="range" min="1" max="10" value="4" step="1">
-                  <span id="pacifierChargesValue" class="config-value">4</span>
+                  <input id="pacifierCharges" type="range" min="1" max="10" value="3" step="1">
+                  <span id="pacifierChargesValue" class="config-value">3</span>
                 </div>
               </div>
             </div>
@@ -313,8 +313,8 @@
               <span id="challengeDisruptorCharges" class="detail-value">-</span>
             </div>
             <div class="detail-subitem">
-              <span class="detail-label" data-i18n="game.devices.immobilizer">Immobilizer</span>
-              <span id="challengeImmobilizerCharges" class="detail-value">-</span>
+              <span class="detail-label" data-i18n="game.devices.frost">Frost</span>
+              <span id="challengeFrostCharges" class="detail-value">-</span>
             </div>
             <div class="detail-subitem">
               <span class="detail-label" data-i18n="game.devices.pacifier">Pacifier</span>
@@ -337,15 +337,15 @@
     <div class="row bottom">
       <div class="hud-group charges">
         <div class="charges-row">
-          <span class="label" data-i18n="game.devices.disruptor">Disruptor</span><div id="charges-taser" class="bar"><span></span></div>
+          <span class="label" data-i18n="game.devices.disruptor">Disruptor</span><div id="charges-disruptor" class="bar"><span></span></div>
           <span class="label small">[1]</span>
         </div>
         <div class="charges-row">
-          <span class="label" data-i18n="game.devices.immobilizer">Immobilizer</span><div id="charges-stun" class="bar"><span></span></div>
+          <span class="label" data-i18n="game.devices.frost">Frost</span><div id="charges-frost" class="bar"><span></span></div>
           <span class="label small">[2]</span>
         </div>
         <div class="charges-row">
-          <span class="label" data-i18n="game.devices.pacifier">Pacifier</span><div id="charges-tranq" class="bar"><span></span></div>
+          <span class="label" data-i18n="game.devices.pacifier">Pacifier</span><div id="charges-pacifier" class="bar"><span></span></div>
           <span class="label small">[3]</span>
         </div>
       </div>
@@ -362,7 +362,7 @@
         <li><span data-i18n-html="ui.tutorial.instruction_4">Friendly critters will gently boop you back. Use defensive tools:</span>
           <ul>
             <li data-i18n-html="ui.tutorial.device_list.disruptor"><strong>1</strong> Disruptor (short-range stun)</li>
-            <li data-i18n-html="ui.tutorial.device_list.immobilizer"><strong>2</strong> Immobilizer (slow orb)</li>
+            <li data-i18n-html="ui.tutorial.device_list.frost"><strong>2</strong> Frost (slow orb)</li>
             <li data-i18n-html="ui.tutorial.device_list.pacifier"><strong>3</strong> Pacifier (sleepy dart)</li>
           </ul>
         </li>
@@ -378,7 +378,7 @@
         <li><span data-i18n-html="ui.tutorial.touch_instruction_4">Friendly critters will gently boop you back. Use defensive tools with the <strong>device buttons</strong>:</span>
           <ul>
             <li data-i18n-html="ui.tutorial.touch_device_list.disruptor"><strong>D button</strong> - Disruptor (short-range stun)</li>
-            <li data-i18n-html="ui.tutorial.touch_device_list.immobilizer"><strong>I button</strong> - Immobilizer (slow orb)</li>
+            <li data-i18n-html="ui.tutorial.touch_device_list.frost"><strong>F button</strong> - Frost (slow orb)</li>
             <li data-i18n-html="ui.tutorial.touch_device_list.pacifier"><strong>P button</strong> - Pacifier (sleepy dart)</li>
           </ul>
         </li>

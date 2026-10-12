@@ -140,15 +140,31 @@ describe('3D snowman model', () => {
     }
   });
 
-  it('tips a tranquilized snowman onto its back and resets the pose when it wakes', () => {
-    const enemy = makeEnemy(2, 0, { state: ENEMY_STATES.TRANQ });
-    r.updateEnemies([enemy], player, 0, null);
-    const mesh = r.enemyPool.get(enemy).mesh;
-    expect(mesh.rotation.x).toBeCloseTo(-Math.PI / 2);
+  describe('eyes', () => {
+    const looks = (mesh) => {
+      const shown = [];
+      mesh.traverse(c => { if (c.name.startsWith('eye-') && c.visible) shown.push(c.name); });
+      return [...new Set(shown)];
+    };
 
-    enemy.state = ENEMY_STATES.IDLE;
-    r.updateEnemies([enemy], player, 0, null);
-    expect(mesh.rotation.x).toBe(0);
+    it('shows open, dazed X and closed eyes for idle, stunned and tranquilized snowmen', () => {
+      const enemy = makeEnemy(2, 0);
+      r.updateEnemies([enemy], player, 0, null);
+      const mesh = r.enemyPool.get(enemy).mesh;
+      expect(looks(mesh)).toEqual(['eye-open']);
+
+      enemy.state = ENEMY_STATES.STUNNED;
+      r.updateEnemies([enemy], player, 0, null);
+      expect(looks(mesh)).toEqual(['eye-x']);
+
+      enemy.state = ENEMY_STATES.TRANQ;
+      r.updateEnemies([enemy], player, 0, null);
+      expect(looks(mesh)).toEqual(['eye-closed']);
+
+      enemy.state = ENEMY_STATES.IDLE;
+      r.updateEnemies([enemy], player, 0, null);
+      expect(looks(mesh)).toEqual(['eye-open']);
+    });
   });
 
   describe('standing on the floor', () => {
@@ -157,25 +173,14 @@ describe('3D snowman model', () => {
       return new THREE.Box3().setFromObject(mesh);
     };
 
-    it('rests a tranquilized snowman on the floor instead of hovering', () => {
-      for (const heading of [0, 1, Math.PI / 2, 3, -2]) {
-        const enemy = makeEnemy(2, 1, { state: ENEMY_STATES.TRANQ, heading });
-        r.updateEnemies([enemy], player, 0, null);
-        const box = bounds(r.enemyPool.get(enemy).mesh);
-        expect(box.min.y).toBeGreaterThan(-0.02); // not sunk into the floor
-        expect(box.min.y).toBeLessThan(0.03);     // and not floating above it
-        r.enemyPool.clear();
-      }
-    });
-
-    it('lies along its heading, centred on the enemy position', () => {
-      const enemy = makeEnemy(2, 1, { state: ENEMY_STATES.TRANQ, heading: 0 });
+    it('keeps a tranquilized snowman standing on the floor', () => {
+      const enemy = makeEnemy(2, 1, { state: ENEMY_STATES.TRANQ, heading: 1 });
       r.updateEnemies([enemy], player, 0, null);
-      const box = bounds(r.enemyPool.get(enemy).mesh);
-      const center = box.getCenter(new THREE.Vector3());
-      expect(center.x).toBeCloseTo(2, 1);
-      expect(center.z).toBeCloseTo(1, 1);
-      expect(box.max.x - box.min.x).toBeGreaterThan(box.max.z - box.min.z); // long axis is along x
+      const mesh = r.enemyPool.get(enemy).mesh;
+      const box = bounds(mesh);
+      expect(mesh.rotation.x).toBe(0);
+      expect(box.min.y).toBeCloseTo(0, 2);
+      expect(box.max.y - box.min.y).toBeGreaterThan(0.5);
     });
 
     it('keeps an upright snowman on the floor too', () => {

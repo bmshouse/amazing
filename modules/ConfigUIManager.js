@@ -10,6 +10,7 @@
  * - Device configuration (enable/disable, charges)
  * - Reset/Apply button functionality
  */
+import { DEVICE_ORDER } from './GameConfig.js';
 export class ConfigUIManager {
   /**
    * Creates a new ConfigUIManager instance
@@ -204,7 +205,7 @@ export class ConfigUIManager {
   _updateDeviceUI() {
     if (!this.currentDifficulty.devices) return;
 
-    ['disruptor', 'immobilizer', 'pacifier'].forEach(deviceType => {
+    DEVICE_ORDER.forEach(deviceType => {
       const device = this.currentDifficulty.devices[deviceType];
       if (!device) return;
 
@@ -430,7 +431,7 @@ export class ConfigUIManager {
    * @private
    */
   _setupDeviceListeners() {
-    ['disruptor', 'immobilizer', 'pacifier'].forEach(deviceType => {
+    DEVICE_ORDER.forEach(deviceType => {
       const enableCheckbox = document.getElementById(`enable${deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}`);
       const chargeSlider = document.getElementById(`${deviceType}Charges`);
 

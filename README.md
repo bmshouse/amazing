@@ -32,7 +32,7 @@ No installation, build step, or server required!
 - **Comprehensive Testing** - 224 unit and integration tests with 56.8% code coverage
 
 ### Gameplay
-- **Three Device Types** - Disruptor (short range), Immobilizer (projectile), Pacifier (precise)
+- **Three Device Types** - Disruptor (short range), Frost (slowing orb), Pacifier (precise)
 - **Friendly Snowman Enemies** - White snowmen that gently boop you back with red heart particles
 - **Smart Enemy AI** - Pathfinding creatures with state-based behaviors (stunned/slowed/tranquilized)
 - **Recharge Pads** - Blue circular stations that refill all device charges
@@ -51,7 +51,7 @@ No installation, build step, or server required!
 - **Mouse** - Look around (click canvas first for pointer lock)
 - **Q/E** - Turn left/right (keyboard-only alternative)
 - **Shift** - Sprint/glide
-- **1/2/3** - Switch between devices (Disruptor/Immobilizer/Pacifier)
+- **1/2/3** - Switch between devices (Disruptor/Frost/Pacifier)
 - **Space / Left Click** - Activate device
 - **R** - Restart current maze
 - **Enter** - Start game / Play again after victory
@@ -67,7 +67,7 @@ No installation, build step, or server required!
 ### Touch Controls (Mobile/Tablet)
 - **Left Joystick (Cyan)** - Move around the maze
 - **Right Joystick (Orange)** - Look around/camera control
-- **D/I/P Buttons** - Activate Disruptor/Immobilizer/Pacifier devices
+- **D/F/P Buttons** - Activate Disruptor/Frost/Pacifier devices
 - **Swipe Left/Right** - Quick device switching
 - **Tap Game Area** - Activate current device
 - **⚙️ Settings Icon** - Access configuration and sensitivity controls
@@ -90,7 +90,7 @@ The game uses a modular event-driven architecture organized into functional dire
 - **State Management** (`GameState.js`) for game lifecycle
 - **Event System** (`EventSystemManager.js`) for decoupled module communication
 - **Game Systems** - `maze.js`, `player.js`, `enemies.js`, `defenses.js`
-- **Projectile System** (`ProjectileSystem.js`) for immobilizer projectiles
+- **Projectile System** (`ProjectileSystem.js`) for frost and pacifier projectiles
 - **UI Management** (`HUDManager.js`, `ConfigUIManager.js`) for display and configuration
 - **Difficulty System** (`DifficultyConfig.js`) for dynamic difficulty scaling
 - **Internationalization** (`I18nManager.js`) for multi-language support
@@ -104,7 +104,7 @@ The game uses a modular event-driven architecture organized into functional dire
 **Device System** (`modules/devices/`)
 - `DeviceFactory.js` - Factory pattern for device instantiation
 - `IDevice.js` - Base interface for all defense devices
-- `StunDevice.js`, `TaserDevice.js`, `TranqDevice.js` - Three device implementations
+- `DisruptorDevice.js`, `FrostDevice.js`, `PacifierDevice.js` - Three device implementations
 
 **Input Systems** (`modules/input/`)
 - `TouchManager.js` - Touch capability detection and event handling
