@@ -65,8 +65,8 @@
       "share_native": "Partager",
       "play_again": "Rejouer",
       "share_challenge": "Partager le Défi",
-      "web_share_title": "Défi CalmMaze",
-      "web_share_text": "Essayez ce défi CalmMaze : {{summary}}"
+      "web_share_title": "Défi Amazing",
+      "web_share_text": "Essayez ce défi Amazing : {{summary}}"
     },
     "errors": {
       "copy_failed": "Échec de la copie de l'URL dans le presse-papiers",
